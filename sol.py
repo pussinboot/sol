@@ -24,6 +24,8 @@
 # ultimately this program will run on top of resolume, selecting clips in it
 # will select the clip in resolume and change certain params automagically (?)
 
+from xml_parse import parse_all
+
 class Library():
 	"""
 	collection of all our clips and tags and clips by tag
@@ -33,12 +35,16 @@ class Library():
 		self.clips = []
 		self.tags = {} # a dictionary is a hash map
 		self.tags_trie = None # this will be used to search tags fast 
-	
+		self.names_trie = None
+
 	def __str__(self):
 		str_tor = "--- Library ---"
 		for tag in self.tags:
 			str_tor += "\n-> ["+str(tag)+"] - " + ", ".join([clip.get_name() for clip in self.tags[tag]])
 		return str_tor
+
+	def __len__(self):
+		return len(self.clips)
 
 	def add_clip(self,clip):
 		self.clips.append(clip)
@@ -57,17 +63,27 @@ class Library():
 			cur_dict['_end_'] = '_end_'
 		return tor
 
+	def clip_from_xml_parse(self,parsed_clip):
+		return Clip(parsed_clip['filename'],parsed_clip['name'],parsed_clip)
+
+	def init_from_xml(self,xmlfilename):
+		for clip in parse_all(xmlfilename):
+			self.add_clip(self.clip_from_xml_parse(clip))
+
 class Clip():
 	"""
 	used to store video clips - filepath, preview, tags, relevant config info
 	"""
 
-	def __init__(self,filepath,tags=[]):
+	def __init__(self,filepath,name=None,params={},tags=[]):
 		self.filepath = filepath
+		self.params = params
 		self.tags = []
+		if name is None:
+			self.name = filepath[2:] # will update this to strip out file extension/directory w/ regex : )
 		for tag in tags:
 			self.add_tag(tag)
-		self.name = filepath[2:] # will update this to strip out file extension/directory w/ regex : )
+		
 
 	def __str__(self):
 		return "clip @ " + str(self.filepath) + " tags: " + ", ".join(self.tags)
@@ -90,6 +106,18 @@ class Clip():
 	def get_name(self):
 		return self.name
 
+	def set_name(self,newname):
+		self.name = newname
+
+	def get_param(self, param):
+		if param in self.params:
+			return self.params[param]
+
+	def set_param(self, param, value):
+		if param in self.params:
+			self.params[param] = value
+
+
 
 
 
@@ -97,7 +125,7 @@ if __name__ == '__main__':
 	test_clip = Clip("./dank_meme.mov")
 	test_clip.add_tag("dank")
 	test_clip.add_tag("meme")
-	test_clip_2 = Clip("./rare_pepe.webm",["pepe","rare","meme"])
+	test_clip_2 = Clip("./rare_pepe.webm",tags=["pepe","rare","meme"])
 	#print(test_clip)
 	#print(test_clip_2)
 	# clip @ ./dank_meme.mov tags: dank, meme
@@ -111,3 +139,5 @@ if __name__ == '__main__':
 	#-> [pepe] - rare_pepe.webm
 	#-> [dank] - dank_meme.mov
 	#-> [meme] - dank_meme.mov, rare_pepe.webm
+	test_library.init_from_xml("animeme.avc")
+	print(len(test_library)) # 585
