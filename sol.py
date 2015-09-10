@@ -35,7 +35,7 @@ class Library():
 		self.clips = []
 		self.tags = {} # a dictionary is a hash map
 		self.tags_trie = None # this will be used to search tags fast 
-		self.names_trie = None
+		self.names = []
 
 	def __str__(self):
 		str_tor = "--- Library ---"
@@ -53,6 +53,7 @@ class Library():
 				self.tags[tag].append(clip)
 			else:
 				self.tags[tag] = [clip]
+		self.names.append(clip.get_name())
 
 	def make_trie(self,*words):
 		tor = dict()
@@ -70,6 +71,9 @@ class Library():
 		for clip in parse_all(xmlfilename):
 			self.add_clip(self.clip_from_xml_parse(clip))
 
+	def get_clip_names(self):
+		return self.names
+
 class Clip():
 	"""
 	used to store video clips - filepath, preview, tags, relevant config info
@@ -81,6 +85,8 @@ class Clip():
 		self.tags = []
 		if name is None:
 			self.name = filepath[2:] # will update this to strip out file extension/directory w/ regex : )
+		else:
+			self.name = name
 		for tag in tags:
 			self.add_tag(tag)
 		
