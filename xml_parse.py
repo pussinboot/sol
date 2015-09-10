@@ -1,5 +1,4 @@
 from bs4 import BeautifulSoup
-
 # tags we are interested in
 
 # source - name, shortName
@@ -36,13 +35,36 @@ def parse_clip(video_clip):
 				poi.append(choice['value'])
 	
 	width, height = None, None
-	if check_name(ps[1],'Width'):
-		width = ps[1].values['curValue']
+	if len(ps) > 2:
+		if check_name(ps[1],'Width'):
+			width = ps[1].values['curValue']
+	
+		if check_name(ps[2],'Height'):
+			height = ps[2].values['curValue']
 
-	if check_name(ps[2],'Height'):
-		height = ps[2].values['curValue']
+	dic_tor = {'filename': filename, 'name':name, 'range': [start_pos, stop_pos], 'speedup': speedup, 'dims' : [width, height], 'poi':poi}
 
-	return [filename, name, start_pos, stop_pos, speedup, width, height,poi]
+	return dic_tor
+
+def print_clip(parsed_clip):
+	print("fname: " + parsed_clip['filename'])
+	print("shortname: " + parsed_clip['name'])
+	print("start: {0} end: {1}".format(*parsed_clip['range']))
+	print("speedup factor: "+ parsed_clip['speedup'])
+	print("width: {0} height: {1}".format(*parsed_clip['dims']))
+	print("points of interest --")
+	for point_of_int in parsed_clip['poi']:
+		print(point_of_int)	
+
+# next step - parse em all n see what happens
+
+def parse_all(xmlfile):
+	xml_soup = BeautifulSoup(open(xmlfile),"xml")
+	vidclips = xml_soup.find_all('videoClip')
+	tor = [None] * len(vidclips)
+	for i, clip in enumerate(vidclips):
+		tor[i] = parse_clip(clip)
+	return tor
 
 if __name__ == '__main__':
 
@@ -50,11 +72,9 @@ if __name__ == '__main__':
 
 	test = parse_clip(animeme.videoClip)
 	
-	print("fname: " + test[0])
-	print("shortname: " + test[1])
-	print("start: " + test[2] + " end: " + test[3])
-	print("speedup factor: "+ test[4])
-	print("width: " + test[5] + " height: " + test[6])
-	print("points of interest --")
-	for point_of_int in test[7]:
-		print(point_of_int)	
+	print_clip(test)
+
+	all_clips = parse_all("animeme.avc")
+	#print(len(all_clips)) # 583
+	print_clip(all_clips[0])
+
