@@ -3,4 +3,4 @@
 
 w.i.p.
 
-![preview](./preview.png)
+![preview](https://raw.githubusercontent.com/pussinboot/sol/master/preview.PNG)
