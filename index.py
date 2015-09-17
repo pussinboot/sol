@@ -6,11 +6,22 @@ from bisect import bisect_left
 class Index(object):
 
 	def __init__(self, words):
-		self.index = [ (w.lower(), w) for w in words ]
+		self.index = [ (w.lower(), w) for w in words ] 
+		for word in words:
+			for ix, c in enumerate(word):
+				if c == " ":
+					self.index.append((word[ix+1:].lower(),word))
+
+		#self.index = [ (w.lower(), word) for w in [word[ix+1:] for ix, c in enumerate(word) for word in words if c == " "] ] 
+		#space_ix = [word[ix+1:] for ix, c in enumerate(word) if c == " "]
+
 		self.index.sort()
 
-	def add_word(self, w):
-		self.index.append((w.lower(), w))
+	def add_word(self, word):
+		self.index.append((word.lower(),word))
+		for ix, c in enumerate(word):
+				if c == " ":
+					self.index.append((word[ix+1:].lower(),word))
 		self.index.sort()
 
 	def by_prefix(self, prefix,n=1):
