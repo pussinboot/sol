@@ -32,9 +32,8 @@ class Library():
 	"""
 
 	def __init__(self):
-		self.clips = []
-		self.tags = {} # a dictionary is a hash map
-		self.tags_trie = None # this will be used to search tags fast 
+		self.clips = {} # this will be easier
+		self.tags = {} 
 		self.names = []
 
 	def __str__(self):
@@ -47,22 +46,17 @@ class Library():
 		return len(self.clips)
 
 	def add_clip(self,clip):
-		self.clips.append(clip)
+		if clip.get_name() in self.clips:
+			clip.set_name(clip.get_name()+"_")
+		self.clips[clip.get_name()] = clip
+
 		for tag in clip.get_tags():
 			if tag in self.tags:
 				self.tags[tag].append(clip)
 			else:
 				self.tags[tag] = [clip]
-		self.names.append(clip.get_name())
 
-	def make_trie(self,*words):
-		tor = dict()
-		for word in words:
-			cur_dict = tor
-			for letter in word:
-				cur_dict = cur_dict.setdefault(letter, {})
-			cur_dict['_end_'] = '_end_'
-		return tor
+		self.names.append(clip.get_name())
 
 	def clip_from_xml_parse(self,parsed_clip):
 		return Clip(parsed_clip['filename'],parsed_clip['name'],parsed_clip)
@@ -73,6 +67,9 @@ class Library():
 
 	def get_clip_names(self):
 		return self.names
+
+	def get_clip_from_name(self,name):
+		return self.clips[name]
 
 class Clip():
 	"""
@@ -147,3 +144,4 @@ if __name__ == '__main__':
 	#-> [meme] - dank_meme.mov, rare_pepe.webm
 	test_library.init_from_xml("animeme.avc")
 	print(len(test_library)) # 585
+	print(test_library.get_clip_names())
