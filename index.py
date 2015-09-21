@@ -28,20 +28,22 @@ class Index(object):
 		"""Return n lexicographically smallest word(s) that start(/s) with a given
 		prefix.
 		"""
-		tor = []
+		tor = set([])
 		prefix = prefix.lower()
 		i = bisect_left(self.index, (prefix, ''))
 
-		while len(tor) < n:
+		while len(tor) <= len(self.index): # not caring about n
 			if 0 <= i < len(self.index):
 				found = self.index[i]
 				if not found[0].startswith(prefix):
 					break
-				tor.append(found[1])
+				tor.add(found[1])
 				i = i + 1
 			else:
 				break
 
+		tor = list(tor)
+		tor.sort()
 		return tor
 
 if __name__ == '__main__':
