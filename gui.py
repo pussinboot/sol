@@ -115,6 +115,20 @@ class MainWin:
 		self.stop_button = tk.Button(self.timeline_controls,text='[ ]',command=useless_button,width=6)
 		self.stop_button.pack()
 
+
+class Searcher():
+	def __init__(self):
+		self.library = Library()
+		# for now
+		self.library.init_from_xml("animeme.avc")
+		self.index = Index(self.library.get_clip_names())
+
+	def search(self,term): # let's try having 2nd value be 
+		return self.index.by_prefix(term)
+
+	def get_from_name(self,name):
+		return self.library.get_clip_from_name(name)
+
 class SearchTab(tk.Frame):
 	"""
 	tab for searching by whatever
@@ -133,14 +147,13 @@ class SearchTab(tk.Frame):
 		self.mainframe = mainframe
 		self.search_query = tk.StringVar()
 		self.search_field = tk.Entry(self,textvariable=self.search_query)
-		test_library = Library()
-		test_library.init_from_xml("animeme.avc")
-		self.searcher = Index(test_library.get_clip_names()) # this is from what we search
+
+		self.searcher = Searcher()#Index(test_library.get_clip_names()) # this is from what we search
 
 		# setup the tree
 		self.search_tree = ttk.Treeview(self,selectmode='browse', show='tree')#, height = 20)
 		# start with all results
-		res = self.searcher.by_prefix("")
+		res = self.searcher.search("")
 		self.tree_root = self.search_tree.insert('', 'end',iid="root", text='All',open=True)
 		for r in res:
 			self.search_tree.insert(self.tree_root, 'end', text=r)#[0],values=r[1])
@@ -151,7 +164,7 @@ class SearchTab(tk.Frame):
 		def search(event, *args):
 			search_term = self.search_query.get()
 			if search_term != "":
-				res = self.searcher.by_prefix(search_term)
+				res = self.searcher.search(search_term)
 				self.search_tree.item("root",open=False)
 				if self.search_tree.exists("search"):
 					self.search_tree.delete("search")
@@ -169,19 +182,20 @@ class SearchTab(tk.Frame):
 		
 		def testfun(event,*args):
 			item = self.search_tree.selection()[0]
-			room = self.search_tree.item(item,"text")
-			vals = self.search_tree.item(item,"values")
-			#print("you clicked on", room,"\nwith values",vals)
-			try:
-				x,y = int(vals[3]),int(vals[4])
-				self.mainframe.map_select(vals[0],x,y)
-			except:
-				self.mainframe.map_select(vals[0])
-			self.roomno.set(vals[1])
-			self.location.set(vals[2])
-			self.roomname.set(room)
+			name = self.search_tree.item(item,"text")
+			clip = self.searcher.get_from_name(name)
+			print("you clicked on", name)
+			print(clip)
+			#try:
+			#	x,y = int(vals[3]),int(vals[4])
+			#	self.mainframe.map_select(vals[0],x,y)
+			#except:
+			#	self.mainframe.map_select(vals[0])
+			#self.roomno.set(vals[1])
+			#self.location.set(vals[2])
+			#self.roomname.set(room)
 
-		#self.search_tree.bind('<<TreeviewSelect>>',testfun)
+		self.search_tree.bind('<<TreeviewSelect>>',testfun)
 
 		
 root = tk.Tk()
