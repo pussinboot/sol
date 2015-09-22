@@ -58,6 +58,10 @@ class Library():
 
 		self.names.append(clip.get_name())
 
+	def remove_clip_from_tag(self,clip,tag):
+		if tag in self.tags:
+			self.tags[tag].remove(clip)
+
 	def clip_from_xml_parse(self,parsed_clip):
 		return Clip(parsed_clip['filename'],parsed_clip['name'],parsed_clip)
 

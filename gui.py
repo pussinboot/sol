@@ -184,8 +184,9 @@ class SearchTab(tk.Frame):
 			item = self.search_tree.selection()[0]
 			name = self.search_tree.item(item,"text")
 			clip = self.searcher.get_from_name(name)
-			print("you clicked on", name)
+			#print("you clicked on", name)
 			print(clip)
+			ClipPopUp(self.mainframe,clip)
 			#try:
 			#	x,y = int(vals[3]),int(vals[4])
 			#	self.mainframe.map_select(vals[0],x,y)
@@ -197,7 +198,67 @@ class SearchTab(tk.Frame):
 
 		self.search_tree.bind('<<TreeviewSelect>>',testfun)
 
-		
+class ClipPopUp():
+	def __init__(self,mainframe,clip):
+		self.clip = clip
+		self.parent = mainframe
+		self.top = tk.Toplevel()
+		self.top_frame = tk.Frame(self.top)
+		self.top_frame.pack(side=tk.TOP)
+		# replace with clip image eventually
+		self.img_label = tk.Label(self.top_frame,image=mainframe.sample_clip)
+		self.img_label.pack(side=tk.LEFT,anchor=tk.NW)
+		# name, filelocation
+		self.name_file_frame = tk.Frame(self.top_frame)
+		self.name_file_frame.pack(side=tk.RIGHT,anchor=tk.NE)
+		self.name_var = tk.StringVar()
+		self.name_var.set(self.clip.get_name())
+		self.name_lab =  tk.Entry(self.name_file_frame,textvariable=self.name_var)
+		self.name_lab.pack()
+		self.fname_lab = tk.Label(self.name_file_frame,text=self.clip.get_param('filename')) 
+		# if filename is beyond certain length, make it read ... at cutoff with fulltext on hover
+		self.fname_lab.pack()
+		# if we change the name, need to regenerate search index 
+		# params that you can set
+		self.param_frame = tk.Frame(self.top)
+		self.param_frame.pack(side=tk.BOTTOM)
+		tk.Label(self.param_frame,text='start').grid(row=0,column=0)
+		tk.Label(self.param_frame,text='end').grid(row=1,column=0)
+		tk.Label(self.param_frame,text='speedup').grid(row=2,column=0)
+
+		tk.Label(self.param_frame,text='width').grid(row=0,column=2)
+		tk.Label(self.param_frame,text='height').grid(row=1,column=2)
+
+		self.start_var = tk.StringVar()
+		self.end_var = tk.StringVar()
+		self.speedup_var = tk.StringVar()
+		self.width_var = tk.StringVar()
+		self.height_var = tk.StringVar()
+
+		[s, e] = self.clip.get_param('range')
+		[w, h] = self.clip.get_param('dims')
+		spdup = self.clip.get_param('speedup')
+		self.start_var.set(s)
+		self.end_var.set(e)
+		self.speedup_var.set(spdup)
+		self.width_var.set(w)
+		self.height_var.set(h)
+
+		tk.Label(self.param_frame,textvariable=self.start_var).grid(row=0,column=1)
+		tk.Label(self.param_frame,textvariable=self.end_var).grid(row=1,column=1)
+		tk.Entry(self.param_frame,textvariable=self.speedup_var).grid(row=2,column=1)
+		tk.Entry(self.param_frame,textvariable=self.width_var).grid(row=0,column=3)
+		tk.Entry(self.param_frame,textvariable=self.height_var).grid(row=1,column=3)
+		# TAGS
+		# for each tag already exists make a little label w/ X to remove it
+		# then at end put entry in, if type comma it makes new tag label & adds it
+
+# next steps -- 
+# browse by tag
+# double click to open clip window that has all params (editable)
+# drag n drop to place on the clips in clip view 
+# collections of those clips
+# save state		
 root = tk.Tk()
 root.title("sol")
 mainwin = MainWin(root)
