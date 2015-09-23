@@ -53,6 +53,7 @@ from tkinter import ttk
 from PIL import ImageTk,Image
 from index import Index
 from sol import Library
+from tag_list import TagFrame
 import pickle
 import os
 
@@ -223,7 +224,7 @@ class SearchTab(tk.Frame):
 			clip = self.searcher.get_from_name(name)
 			#print("you clicked on", name)
 			#print(clip)
-			ClipPopUp(self.mainframe,clip)
+			ClipPopUp(self.mainframe,clip) # when this closes make sure to reset all_clip list .-.
 
 		self.search_tree.bind('<<TreeviewSelect>>',testfun)
 
@@ -250,7 +251,7 @@ class ClipPopUp():
 		# if we change the name, need to regenerate search index 
 		# params that you can set
 		self.param_frame = tk.Frame(self.top)
-		self.param_frame.pack(side=tk.BOTTOM)
+		self.param_frame.pack(side=tk.TOP)
 		tk.Label(self.param_frame,text='start').grid(row=0,column=0)
 		tk.Label(self.param_frame,text='end').grid(row=1,column=0)
 		tk.Label(self.param_frame,text='speedup').grid(row=2,column=0)
@@ -280,7 +281,11 @@ class ClipPopUp():
 		tk.Entry(self.param_frame,textvariable=self.height_var).grid(row=1,column=3)
 		# TAGS
 		# for each tag already exists make a little label w/ X to remove it
-		# then at end put entry in, if type comma it makes new tag label & adds it
+		# then at end put entry in, if type comma it makes new tag label & adds it # not yet lol
+		self.tag_frame = tk.Frame(self.top)
+		self.taglist = TagFrame(self.tag_frame,self.clip,self.parent.searcher.library)
+		self.tag_frame.pack(side=tk.TOP)
+
 
 	def edit_clip_name(self,newname):
 		oldname = self.clip.get_name()
@@ -297,10 +302,10 @@ class ClipPopUp():
 
 # next steps -- 
 # browse by tag
-# double click to open clip window that has all params (editable)
+# double click to open clip window that has all params (editable) HALF-CHECK (single click and editing them doesnt do anything yet)
 # drag n drop to place on the clips in clip view 
 # collections of those clips
-# save state		
+# save state	CHECK (kinda, saves library for now)	
 root = tk.Tk()
 root.title("sol")
 mainwin = MainWin(root)
