@@ -53,10 +53,22 @@ from tkinter import ttk
 from PIL import ImageTk,Image
 from index import Index
 from sol import Library
+import pickle
+import os
+
 class MainWin:
 
 	def __init__(self,parent):
 		self.parent = parent
+
+		self.searcher = Searcher()
+
+		def quitter():
+			self.searcher.quit()
+			self.parent.destroy()
+
+		self.parent.protocol("WM_DELETE_WINDOW", quitter)
+
 		self.top_container = ttk.Frame(parent,borderwidth=5, relief=tk.RIDGE,height=400,width=500)
 		self.top_container.pack(side=tk.TOP, expand=tk.YES, fill=tk.BOTH) 
 
@@ -118,10 +130,32 @@ class MainWin:
 
 class Searcher():
 	def __init__(self):
-		self.library = Library()
-		# for now
-		self.library.init_from_xml("animeme.avc")
+
+		if not os.path.exists('saved_library'): # will change to be name of the .avc file ok
+			print("making new save data")
+			self.library = Library()
+			# for now
+			self.library.init_from_xml("animeme.avc")
+
+		else:
+				read = open('saved_library','rb')
+				print("reading old save data")
+				try:
+					self.library = pickle.load(read)
+					read.close()
+				except:
+					print("error with pickle")
+					read.close()
+					os.remove('saved_library')
+					self.__init__()
+
+		self.savedata = open('saved_library','wb')	
 		self.index = Index(self.library.get_clip_names())
+
+	def quit(self):
+		print("saving data")
+		pickle.dump(self.library,self.savedata)
+		self.savedata.close()
 
 	def search(self,term): # let's try having 2nd value be 
 		return self.index.by_prefix(term)
@@ -148,16 +182,19 @@ class SearchTab(tk.Frame):
 		self.search_query = tk.StringVar()
 		self.search_field = tk.Entry(self,textvariable=self.search_query)
 
-		self.searcher = Searcher()#Index(test_library.get_clip_names()) # this is from what we search
-
+		self.searcher = mainframe.searcher #Searcher()
 		# setup the tree
 		self.search_tree = ttk.Treeview(self,selectmode='browse', show='tree')#, height = 20)
 		# start with all results
-		res = self.searcher.search("")
-		self.tree_root = self.search_tree.insert('', 'end',iid="root", text='All',open=True)
-		for r in res:
-			self.search_tree.insert(self.tree_root, 'end', text=r)#[0],values=r[1])
 
+		def tree_reset():
+			if self.search_tree.exists("root"):
+				self.search_tree.delete("root")
+			res = self.searcher.search("")
+			self.tree_root = self.search_tree.insert('', 'end',iid="root", text='All',open=True)
+			for r in res:
+				self.search_tree.insert(self.tree_root, 'end', text=r)#[0],values=r[1])
+		tree_reset()
 		self.search_field.pack(side=tk.TOP,anchor=tk.N,fill=tk.X)#.grid(row=1,column=1,sticky=tk.N)
 		self.search_tree.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)#.grid(row=2,column=1,sticky=tk.N) 
 
@@ -185,16 +222,8 @@ class SearchTab(tk.Frame):
 			name = self.search_tree.item(item,"text")
 			clip = self.searcher.get_from_name(name)
 			#print("you clicked on", name)
-			print(clip)
+			#print(clip)
 			ClipPopUp(self.mainframe,clip)
-			#try:
-			#	x,y = int(vals[3]),int(vals[4])
-			#	self.mainframe.map_select(vals[0],x,y)
-			#except:
-			#	self.mainframe.map_select(vals[0])
-			#self.roomno.set(vals[1])
-			#self.location.set(vals[2])
-			#self.roomname.set(room)
 
 		self.search_tree.bind('<<TreeviewSelect>>',testfun)
 
@@ -252,6 +281,19 @@ class ClipPopUp():
 		# TAGS
 		# for each tag already exists make a little label w/ X to remove it
 		# then at end put entry in, if type comma it makes new tag label & adds it
+
+	def edit_clip_name(self,newname):
+		oldname = self.clip.get_name()
+		# library 
+		# remove clip and then add new one w/ changed name lol
+		self.mainframe.searcher.library.remove_clip(self.clip)
+		self.clip.set_name(newname)
+		self.mainframe.searcher.library.add_clip(self.clip)
+		# index
+		# remove clipname and then add new name
+		self.mainframe.searcher.index.remove_word(oldname)
+		self.mainframe.searcher.index.add_word(newname)
+		
 
 # next steps -- 
 # browse by tag
