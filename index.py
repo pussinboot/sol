@@ -24,6 +24,16 @@ class Index(object):
 					self.index.append((word[ix+1:].lower(),word))
 		self.index.sort()
 
+	def remove_word(self,word):
+		if (word.lower(),word) in self.index:
+			to_remove = [(word.lower(),word)]
+			for ix, c in enumerate(word):
+					if c == " ":
+						to_remove.append((word[ix+1:].lower(),word))
+			for rem in to_remove:
+				self.index.remove(rem)
+			#self.index.sort()
+
 	def by_prefix(self, prefix,n=1):
 		"""Return n lexicographically smallest word(s) that start(/s) with a given
 		prefix.
@@ -52,7 +62,11 @@ if __name__ == '__main__':
 	queries = ["a", "ang", "an", "ANT"]
 
 	users = Index(names)
-	for q in queries:
-		print(users.by_prefix(q,3))
+	#for q in queries:
+	#	print(users.by_prefix(q,3))
+	#print(users.by_prefix("A"))
+	#users.remove_word("Angry")
+	#print(users.by_prefix("A"))
+
 
 
