@@ -81,6 +81,12 @@ class Library():
 		for clip in parse_all(xmlfilename):
 			self.add_clip(self.clip_from_xml_parse(clip))
 
+	def get_tags(self):
+		return self.tags
+
+	def get_clips_from_tag(self,tag):
+		return [clip.get_name() for clip in self.tags[tag]]
+		
 	def get_clip_names(self):
 		return self.names
 
