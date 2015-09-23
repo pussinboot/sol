@@ -93,7 +93,7 @@ class MainWin:
 		# tabs
 		#self.search_tab = tk.Frame(self.tab_container) # new
 		self.search_tab = SearchTab(self.tab_container,self)
-		self.tag_tab = tk.Frame(self.tab_container)
+		self.tag_tab = TagTab(self.tab_container,self)
 		self.file_tab = tk.Frame(self.tab_container)
 		self.collection_tab = tk.Frame(self.tab_container)
 		self.tab_container.add(self.search_tab,text='all')
@@ -152,6 +152,7 @@ class Searcher():
 
 		self.savedata = open('saved_library','wb')	
 		self.index = Index(self.library.get_clip_names())
+		self.tag_index = Index(self.library.get_tags())
 
 	def quit(self):
 		print("saving data")
@@ -161,15 +162,15 @@ class Searcher():
 	def search(self,term): # let's try having 2nd value be 
 		return self.index.by_prefix(term)
 
+	def search_tag(self,term):
+		return self.tag_index.by_prefix(term)
+
 	def get_from_name(self,name):
 		return self.library.get_clip_from_name(name)
 
 class SearchTab(tk.Frame):
 	"""
-	tab for searching by whatever
-	if all - search by name
-	if tag - search by tag
-	etc.
+	tab for searching by name
 	"""
 	def __init__(self,parent,mainframe):
 		# tk necessities
@@ -228,6 +229,57 @@ class SearchTab(tk.Frame):
 
 		self.search_tree.bind('<<TreeviewSelect>>',testfun)
 
+class TagTab(tk.Frame):
+	"""
+	tab for searching by tag
+	diff - tree is list of all tags with clips under their tags
+			search expands the corresponding tags
+	"""
+	def __init__(self,parent,mainframe):
+		tk.Frame.__init__(self,parent)
+
+		self.mainframe = mainframe
+		self.search_query = tk.StringVar()
+		self.search_field = tk.Entry(self,textvariable=self.search_query)
+
+		self.searcher = mainframe.searcher #Searcher()
+		# setup the tree
+		self.search_tree = ttk.Treeview(self,selectmode='browse', show='tree')#, height = 20)
+		self.last_open_tags = [] # used to only open the tag searched for (kinda)
+		def tree_reset():
+			if self.search_tree.exists("root"):
+				self.search_tree.delete("root")
+			tags = self.searcher.search_tag("")
+			
+			for tag in tags:
+				self.search_tree.insert('', 'end',iid=tag, text=tag,open=False)
+				for clip in self.searcher.library.get_clips_from_tag(tag):
+					self.search_tree.insert(tag, 'end', text=clip)#[0],values=r[1])
+		tree_reset()
+		self.search_field.pack(side=tk.TOP,anchor=tk.N,fill=tk.X)#.grid(row=1,column=1,sticky=tk.N)
+		self.search_tree.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)#.grid(row=2,column=1,sticky=tk.N) 
+
+		def search(event, *args):
+			search_term = self.search_query.get()
+			if search_term != "":
+				tags = self.searcher.search_tag(search_term)
+				for old_tag in self.last_open_tags:
+					if self.search_tree.exists(old_tag): self.search_tree.item(old_tag,open=False)
+				for tag in tags:
+					if self.search_tree.exists(tag): self.search_tree.item(tag,open=True)
+				self.last_open_tags = tags
+
+		self.search_query.trace('w',search)
+		
+		def testfun(event,*args):
+			item = self.search_tree.selection()[0]
+			name = self.search_tree.item(item,"text")
+			clip = self.searcher.get_from_name(name)
+			#print("you clicked on", name)
+			#print(clip)
+			ClipPopUp(self.mainframe,clip) # when this closes make sure to reset all_clip list .-.
+
+		self.search_tree.bind('<<TreeviewSelect>>',testfun)
 class ClipPopUp():
 	def __init__(self,mainframe,clip):
 		self.clip = clip
