@@ -64,6 +64,12 @@ class Library():
 		for tag in clip.get_tags():
 			self.remove_clip_from_tag(clip,tag)
 
+	def remove_tag(self,tag):
+		if tag in self.tags:
+			for clip in self.tags[tag]:
+				clip.remove_tag(tag)
+			del self.tags[tag]
+
 	def add_clip_to_tag(self,clip,tag):
 		if tag in self.tags:
 			self.tags[tag].append(clip)
@@ -72,7 +78,10 @@ class Library():
 
 	def remove_clip_from_tag(self,clip,tag):
 		if tag in self.tags:
-			self.tags[tag].remove(clip)
+			if len(self.tags[tag]) == 1:
+				del self.tags[tag]
+			else:
+				self.tags[tag].remove(clip)
 
 	def clip_from_xml_parse(self,parsed_clip):
 		return Clip(parsed_clip['filename'],parsed_clip['name'],parsed_clip)

@@ -5,10 +5,12 @@ class TagFrame(tk.Frame):
 	"""
 	frame that can hold a list of tags which can be added or deleted
 	"""
-	def __init__(self,parent,clip=None,library=None):
+	def __init__(self,parent,clip=None,mainframe=None):
 		tk.Frame.__init__(self,parent)
 		self.clip = clip
-		self.library = library
+		self.mainframe = mainframe
+		self.searcher = mainframe.searcher
+		self.library = self.searcher.library
 		try:
 			self.tags = self.clip.get_tags()
 		except:
@@ -24,7 +26,7 @@ class TagFrame(tk.Frame):
 		new_tag_entry = tk.Entry(new_tag_frame,textvariable=self.new_tag_var,width=5)
 		new_tag_entry.pack(side=tk.LEFT)
 
-		def tag_adder():
+		def tag_adder(*args):
 			newtag = self.new_tag_var.get()
 			if newtag not in self.tags:
 				if newtag != "":
@@ -32,6 +34,7 @@ class TagFrame(tk.Frame):
 					self.new_tag_var.set("")
 
 		new_tag_plus = tk.Button(new_tag_frame,text="+",command=tag_adder)
+		new_tag_entry.bind('<Return>',tag_adder)
 		new_tag_plus.pack(side=tk.LEFT)
 		new_tag_frame.pack(side=tk.RIGHT)
 
@@ -39,16 +42,13 @@ class TagFrame(tk.Frame):
 		self.tags.append(tag)
 		self.make_tag(tag).pack(side=tk.LEFT)
 		# add the tag to the clip 
-		self.clip.add_tag(tag)
-		# add the clip to the tag of the library
-		self.library.add_clip_to_tag(self.clip,tag)
+		self.searcher.add_tag_to_clip(tag,self.clip)
+		self.mainframe.tag_needs_refresh = True
 
 	def remove_tag(self,tag):
 		self.tags.remove(tag)
-		# remove the tag from the clip
-		self.clip.remove_tag(tag)
-		# remove the clip from the tag of the library
-		self.library.remove_clip_from_tag(self.clip,tag)
+		self.searcher.remove_tag_from_clip(tag,self.clip)
+		self.mainframe.tag_needs_refresh = True
 
 	def make_tag(self,tag):
 		frame = tk.Frame(self.parent,borderwidth=2, relief=tk.RIDGE)

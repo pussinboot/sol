@@ -50,6 +50,7 @@
 
 import tkinter as tk
 from tkinter import ttk
+import tkinter.messagebox as tkmessagebox
 from PIL import ImageTk,Image
 from index import Index
 from sol import Library
@@ -63,6 +64,9 @@ class MainWin:
 		self.parent = parent
 
 		self.searcher = Searcher()
+
+		self.all_needs_refresh=True
+		self.tag_needs_refresh=True
 
 		def quitter():
 			self.searcher.quit()
@@ -100,6 +104,18 @@ class MainWin:
 		self.tab_container.add(self.tag_tab,text='tags')
 		self.tab_container.add(self.file_tab,text='files')
 		self.tab_container.add(self.collection_tab,text='cols')
+
+
+		def refresher(event,*args):
+			cur_tab = event.widget.tab(event.widget.index("current"),"text")
+			#print(cur_tab)
+			if cur_tab == 'all':
+				self.search_tab.tree_reset()
+			elif cur_tab == 'tags':
+				#print('reseting tags')
+				self.tag_tab.tree_reset()
+
+		self.tab_container.bind_all('<<NotebookTabChanged>>',refresher)
 
 		#self.search_term = tk.StringVar()
 		#self.search_entry = tk.Entry(self.search_tab,textvariable=self.search_term)
@@ -165,6 +181,20 @@ class Searcher():
 	def search_tag(self,term):
 		return self.tag_index.by_prefix(term)
 
+	def add_tag_to_clip(self,tag,clip):
+		clip.add_tag(tag)
+		self.library.add_clip_to_tag(clip,tag)
+		self.tag_index.add_word(tag)
+
+	def remove_tag_from_clip(self,tag,clip):
+		clip.remove_tag(tag)
+		self.library.remove_clip_from_tag(clip,tag)
+
+	def remove_tag_from_library(self,tag):
+		self.tag_index.remove_word(tag)
+		self.library.remove_tag(tag)
+
+
 	def get_from_name(self,name):
 		return self.library.get_clip_from_name(name)
 
@@ -186,19 +216,43 @@ class SearchTab(tk.Frame):
 
 		self.searcher = mainframe.searcher #Searcher()
 		# setup the tree
-		self.search_tree = ttk.Treeview(self,selectmode='browse', show='tree')#, height = 20)
+		self.search_frame = tk.Frame(self)
+		self.search_tree = ttk.Treeview(self.search_frame,selectmode='extended', show='tree')#, height = 20)
 		# start with all results
 
-		def tree_reset():
-			if self.search_tree.exists("root"):
-				self.search_tree.delete("root")
-			res = self.searcher.search("")
-			self.tree_root = self.search_tree.insert('', 'end',iid="root", text='All',open=True)
-			for r in res:
-				self.search_tree.insert(self.tree_root, 'end', text=r)#[0],values=r[1])
-		tree_reset()
+		self.tree_reset()
 		self.search_field.pack(side=tk.TOP,anchor=tk.N,fill=tk.X)#.grid(row=1,column=1,sticky=tk.N)
-		self.search_tree.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)#.grid(row=2,column=1,sticky=tk.N) 
+		self.search_tree.pack(side=tk.LEFT,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)#.grid(row=2,column=1,sticky=tk.N) 
+		self.ysb = ttk.Scrollbar(self, orient='vertical', command=self.search_tree.yview)
+		self.search_tree.configure(yscrollcommand=self.ysb.set)
+		self.ysb.pack(side=tk.RIGHT,anchor=tk.N,fill=tk.Y)
+		self.search_frame.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)
+
+		# tag adder
+
+		self.new_tag_var = tk.StringVar()
+
+		def add_tag_to_multiple(*args):
+			new_tag = self.new_tag_var.get()
+			if new_tag != "":
+				items = self.search_tree.selection()
+				for item in items:
+					name = self.search_tree.item(item,"text")
+					#print(name)
+					clip = self.searcher.library.get_clip_from_name(name)
+					self.searcher.add_tag_to_clip(new_tag,clip)
+				#self.new_tag_var.set("")
+				self.mainframe.tag_needs_refresh = True
+
+		self.tag_frame = tk.Frame(self)
+		self.new_tag_entry = tk.Entry(self.tag_frame,textvariable=self.new_tag_var)
+		self.new_tag_entry.pack(side=tk.LEFT,anchor=tk.N,fill=tk.X,expand=True)
+		self.new_tag_entry.bind('<Return>',add_tag_to_multiple)
+
+		self.new_tag_plus = tk.Button(self.tag_frame,text="add tag",command=add_tag_to_multiple,height=1)
+		self.new_tag_plus.pack(side=tk.LEFT)
+		self.tag_frame.pack(fill=tk.X,expand=False)
+
 
 		def search(event, *args):
 			search_term = self.search_query.get()
@@ -219,15 +273,20 @@ class SearchTab(tk.Frame):
 
 		self.search_query.trace('w',search)
 		
-		def testfun(event,*args):
-			item = self.search_tree.selection()[0]
-			name = self.search_tree.item(item,"text")
-			clip = self.searcher.get_from_name(name)
-			#print("you clicked on", name)
-			#print(clip)
-			ClipPopUp(self.mainframe,clip) # when this closes make sure to reset all_clip list .-.
+		def doubleclicker(event,*args):
+			double_click_on_clip(self)
 
-		self.search_tree.bind('<<TreeviewSelect>>',testfun)
+		self.search_tree.bind('<Double-1>',doubleclicker)
+
+	def tree_reset(self):
+			if self.mainframe.all_needs_refresh:
+				if self.search_tree.exists("root"):
+					self.search_tree.delete("root")
+				res = self.searcher.search("")
+				self.tree_root = self.search_tree.insert('', 'end',iid="root", text='All',open=True)
+				for r in res:
+					self.search_tree.insert(self.tree_root, 'end', text=r)#[0],values=r[1])
+				self.mainframe.all_needs_refresh = False
 
 class TagTab(tk.Frame):
 	"""
@@ -244,20 +303,17 @@ class TagTab(tk.Frame):
 
 		self.searcher = mainframe.searcher #Searcher()
 		# setup the tree
-		self.search_tree = ttk.Treeview(self,selectmode='browse', show='tree')#, height = 20)
+		self.search_frame = tk.Frame(self)
+		self.search_tree = ttk.Treeview(self.search_frame,selectmode='browse', show='tree')#, height = 20)
 		self.last_open_tags = [] # used to only open the tag searched for (kinda)
-		def tree_reset():
-			if self.search_tree.exists("root"):
-				self.search_tree.delete("root")
-			tags = self.searcher.search_tag("")
-			
-			for tag in tags:
-				self.search_tree.insert('', 'end',iid=tag, text=tag,open=False)
-				for clip in self.searcher.library.get_clips_from_tag(tag):
-					self.search_tree.insert(tag, 'end', text=clip)#[0],values=r[1])
-		tree_reset()
+		
+		#self.tree_reset()
 		self.search_field.pack(side=tk.TOP,anchor=tk.N,fill=tk.X)#.grid(row=1,column=1,sticky=tk.N)
-		self.search_tree.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)#.grid(row=2,column=1,sticky=tk.N) 
+		self.search_tree.pack(side=tk.LEFT,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)#.grid(row=2,column=1,sticky=tk.N) 
+		self.ysb = ttk.Scrollbar(self.search_frame, orient='vertical', command=self.search_tree.yview)
+		self.search_tree.configure(yscrollcommand=self.ysb.set)
+		self.ysb.pack(side=tk.RIGHT,anchor=tk.N,fill=tk.Y)
+		self.search_frame.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)
 
 		def search(event, *args):
 			search_term = self.search_query.get()
@@ -271,19 +327,67 @@ class TagTab(tk.Frame):
 
 		self.search_query.trace('w',search)
 		
-		def testfun(event,*args):
-			item = self.search_tree.selection()[0]
-			name = self.search_tree.item(item,"text")
-			clip = self.searcher.get_from_name(name)
-			#print("you clicked on", name)
-			#print(clip)
-			ClipPopUp(self.mainframe,clip) # when this closes make sure to reset all_clip list .-.
+		def doubleclicker(event,*args):
+			double_click_on_clip(self)
 
-		self.search_tree.bind('<<TreeviewSelect>>',testfun)
+		#self.search_tree.bind('<<TreeviewSelect>>',testfun)
+		self.search_tree.bind('<Double-1>',doubleclicker)
+
+		# if something is selected press delete to - remove the entire tag or remove clip from tag
+		def deleter(event,*args):
+			item = self.search_tree.selection()[0]
+			type = self.search_tree.item(item,"values")[0] # == 'clip' or 'tag' : ^)
+			if type == 'tag':
+				if tkmessagebox.askokcancel("delete", "are you sure you want to delete this tag? (will remove tag from all clips)"):
+					# delete tag from library and from all clips that have it
+					tag = self.search_tree.item(item,"text")
+					#print("DELETE", tag)
+					self.searcher.remove_tag_from_library(tag)
+					self.mainframe.tag_needs_refresh = True
+			else:
+				parent = self.search_tree.parent(item)
+				clip = self.searcher.get_from_name(self.search_tree.item(item,"text")) 
+				tag = self.search_tree.item(parent,"text")
+				self.searcher.remove_tag_from_clip(tag,clip)
+				self.mainframe.tag_needs_refresh = True
+			self.tree_reset()
+				
+		self.search_tree.bind('<Delete>',deleter)
+	def tree_reset(self):
+		if self.mainframe.tag_needs_refresh:
+			tags = self.searcher.search_tag("")
+			self.search_tree.delete(*self.search_tree.get_children())
+			for tag in tags:
+				try: # because of threading sometimes the index doesnt remove tag right awaay, so we have to account for this if deleting
+					clips = self.searcher.library.get_clips_from_tag(tag)
+					self.search_tree.insert('', 'end',iid=tag, text=tag,open=False,values="tag")
+					for clip in clips:
+						self.search_tree.insert(tag, 'end', text=clip,values="clip")
+				except:
+					pass
+				
+			self.mainframe.tag_needs_refresh = False
+
+def double_click_on_clip(tab):
+	item = tab.search_tree.selection()[0]
+	name = tab.search_tree.item(item,"text")
+	try:
+		clip = tab.searcher.get_from_name(name)
+		#print("you clicked on", name)
+		#print(clip)
+		popup = ClipPopUp(tab.mainframe,clip)
+		def quitter(*args):
+			tab.tree_reset()
+			popup.top.destroy()
+		popup.top.protocol("WM_DELETE_WINDOW",quitter)
+		popup.top.bind('<Escape>',quitter)
+	except:
+		pass
+
 class ClipPopUp():
 	def __init__(self,mainframe,clip):
 		self.clip = clip
-		self.parent = mainframe
+		self.mainframe = mainframe
 		self.top = tk.Toplevel()
 		self.top_frame = tk.Frame(self.top)
 		self.top_frame.pack(side=tk.TOP)
@@ -335,7 +439,7 @@ class ClipPopUp():
 		# for each tag already exists make a little label w/ X to remove it
 		# then at end put entry in, if type comma it makes new tag label & adds it # not yet lol
 		self.tag_frame = tk.Frame(self.top)
-		self.taglist = TagFrame(self.tag_frame,self.clip,self.parent.searcher.library)
+		self.taglist = TagFrame(self.tag_frame,self.clip,self.mainframe)
 		self.tag_frame.pack(side=tk.TOP)
 
 
@@ -350,6 +454,8 @@ class ClipPopUp():
 		# remove clipname and then add new name
 		self.mainframe.searcher.index.remove_word(oldname)
 		self.mainframe.searcher.index.add_word(newname)
+		# set names to be refreshed
+		self.mainframe.all_needs_refresh = True
 		
 
 # next steps -- 
