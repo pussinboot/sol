@@ -21,7 +21,7 @@ class ClipContainer:
 		self.label.image = self.img
 		self.label.dnd_accept = self.dnd_accept
 		self.clip = self.clip_name = None
-		self.label.bind('<Double-1>',self.doubleclick)
+		self.label.bind('<Double-1>',self.doubleclick) # for now it'll open 2 edit, will want 2 activate l8r tho
 		
 
 	def change_img_from_file(self,new_img):
@@ -37,25 +37,38 @@ class ClipContainer:
 	def change_text(self,new_text):
 		self.label.config(text=new_text)
 
+	def refresh_text(self):
+		if self.clip:
+			self.change_text(self.clip.name)
+
 	def change_clip(self,clip_name):
 		self.clip_name = clip_name
 		self.clip = self.searcher.get_from_name(clip_name)
 		if not self.clip:
 			self.change_text(self.starting_text)
 			self.change_img_from_img(self.default_img)
-			self.label.unbind('<ButtonPress>') # this disables dragging around (no add +)
+			self.label.unbind('<ButtonPress-1>') # this disables dragging around
+			self.label.unbind('<ButtonPress-3>') 
 		else:
 			self.change_text(clip_name)
 			# change image, if clip_name is empty / our clip is none, set the img to default img -.-
-			self.label.bind("<ButtonPress>", self.press,add="+") # now we can drag it around
+			self.label.bind("<ButtonPress-1>", self.press,add="+") # now we can drag it around
+			self.label.bind('<ButtonPress-3>',self.remove_clip) # rightclick 2 remove clip
+	
+	def remove_clip(self,*args):
+		self.change_clip("")
+
 	def doubleclick(self,event):
 		if self.clip:
 			popup = ClipPopUp(self.mainwin,self.clip)
 			def quitter(*args):
 				popup.top.destroy()
+				# missing refresh of current tree # so need to store last tree in mainwin
 			popup.top.protocol("WM_DELETE_WINDOW",quitter)
 			popup.top.bind('<Escape>',quitter)
+	
 	# tkdnd stuff here
+	
 	def press(self, event):
 		if dnd_start(self, event):
 			print(self.clip.name,"selected")
@@ -79,10 +92,12 @@ class ClipContainer:
 
 	def dnd_end(self,target,event):
 		# print('target:',target)
-		if target != self:
-			self.change_clip("")
+		if target is not None and target != self:
+			self.remove_clip()
 
 def make_tree_clip(event):
+	if event.state != 8:
+		return
 	tv = event.widget
 	if tv.identify_row(event.y) not in tv.selection():
 		tv.selection_set(tv.identify_row(event.y))    
@@ -167,8 +182,15 @@ class ClipPopUp():
 		self.taglist = TagFrame(self.tag_frame,self.clip,self.mainframe)
 		self.tag_frame.pack(side=tk.TOP)
 
+		def edit_name(*args):
+			newname = self.name_var.get()
+			self.edit_clip_name(newname)
+
+		self.name_lab.bind("<Return>",edit_name)
+
 
 	def edit_clip_name(self,newname):
+		print('aaaaa')
 		oldname = self.clip.get_name()
 		# library 
 		# remove clip and then add new one w/ changed name lol
@@ -181,4 +203,6 @@ class ClipPopUp():
 		self.mainframe.searcher.index.add_word(newname)
 		# set names to be refreshed
 		self.mainframe.all_needs_refresh = True
-		
+		#self.mainframe.refresher()
+		for clip_cont in self.mainframe.clip_containers:
+			clip_cont.refresh_text()
