@@ -100,7 +100,10 @@ class Library():
 		return self.names
 
 	def get_clip_from_name(self,name):
-		return self.clips[name]
+		try:
+			return self.clips[name]
+		except:
+			return None
 
 class Clip():
 	"""

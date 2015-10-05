@@ -54,7 +54,9 @@ import tkinter.messagebox as tkmessagebox
 from PIL import ImageTk,Image
 from index import Index
 from sol import Library
-from tag_list import TagFrame
+from gui_clip_view import ClipContainer,make_tree_clip,ClipPopUp
+
+
 import pickle
 import os
 
@@ -89,7 +91,8 @@ class MainWin:
 		self.sample_clip = ImageTk.PhotoImage(Image.open('sample_clip.png'))
 		for i in range(1,5):
 			for j in range(1,5):
-				clip_label = tk.Label(self.clips_container,image=self.sample_clip,text=str(i + (j-1)*4),compound='top').grid(row=j,column=i)
+				ClipContainer(self,str(i + (j-1)*4)).label.grid(row=j,column=i)
+				# clip_label = tk.Label(self.clips_container,image=self.sample_clip,text=str(i + (j-1)*4),compound='top').grid(row=j,column=i)
 		
 		self.tab_container = ttk.Notebook(self.top_container)
 		self.tab_container.pack(side=tk.RIGHT,expand=tk.YES,fill=tk.BOTH)
@@ -194,7 +197,6 @@ class Searcher():
 		self.tag_index.remove_word(tag)
 		self.library.remove_tag(tag)
 
-
 	def get_from_name(self,name):
 		return self.library.get_clip_from_name(name)
 
@@ -277,6 +279,8 @@ class SearchTab(tk.Frame):
 			double_click_on_clip(self)
 
 		self.search_tree.bind('<Double-1>',doubleclicker)
+
+		self.search_tree.bind('<ButtonPress>',make_tree_clip, add="+")
 
 	def tree_reset(self):
 			if self.mainframe.all_needs_refresh:
@@ -384,85 +388,12 @@ def double_click_on_clip(tab):
 	except:
 		pass
 
-class ClipPopUp():
-	def __init__(self,mainframe,clip):
-		self.clip = clip
-		self.mainframe = mainframe
-		self.top = tk.Toplevel()
-		self.top_frame = tk.Frame(self.top)
-		self.top_frame.pack(side=tk.TOP)
-		# replace with clip image eventually
-		self.img_label = tk.Label(self.top_frame,image=mainframe.sample_clip)
-		self.img_label.pack(side=tk.LEFT,anchor=tk.NW)
-		# name, filelocation
-		self.name_file_frame = tk.Frame(self.top_frame)
-		self.name_file_frame.pack(side=tk.RIGHT,anchor=tk.NE)
-		self.name_var = tk.StringVar()
-		self.name_var.set(self.clip.get_name())
-		self.name_lab =  tk.Entry(self.name_file_frame,textvariable=self.name_var)
-		self.name_lab.pack()
-		self.fname_lab = tk.Label(self.name_file_frame,text=self.clip.get_param('filename')) 
-		# if filename is beyond certain length, make it read ... at cutoff with fulltext on hover
-		self.fname_lab.pack()
-		# if we change the name, need to regenerate search index 
-		# params that you can set
-		self.param_frame = tk.Frame(self.top)
-		self.param_frame.pack(side=tk.TOP)
-		tk.Label(self.param_frame,text='start').grid(row=0,column=0)
-		tk.Label(self.param_frame,text='end').grid(row=1,column=0)
-		tk.Label(self.param_frame,text='speedup').grid(row=2,column=0)
-
-		tk.Label(self.param_frame,text='width').grid(row=0,column=2)
-		tk.Label(self.param_frame,text='height').grid(row=1,column=2)
-
-		self.start_var = tk.StringVar()
-		self.end_var = tk.StringVar()
-		self.speedup_var = tk.StringVar()
-		self.width_var = tk.StringVar()
-		self.height_var = tk.StringVar()
-
-		[s, e] = self.clip.get_param('range')
-		[w, h] = self.clip.get_param('dims')
-		spdup = self.clip.get_param('speedup')
-		self.start_var.set(s)
-		self.end_var.set(e)
-		self.speedup_var.set(spdup)
-		self.width_var.set(w)
-		self.height_var.set(h)
-
-		tk.Label(self.param_frame,textvariable=self.start_var).grid(row=0,column=1)
-		tk.Label(self.param_frame,textvariable=self.end_var).grid(row=1,column=1)
-		tk.Entry(self.param_frame,textvariable=self.speedup_var).grid(row=2,column=1)
-		tk.Entry(self.param_frame,textvariable=self.width_var).grid(row=0,column=3)
-		tk.Entry(self.param_frame,textvariable=self.height_var).grid(row=1,column=3)
-		# TAGS
-		# for each tag already exists make a little label w/ X to remove it
-		# then at end put entry in, if type comma it makes new tag label & adds it # not yet lol
-		self.tag_frame = tk.Frame(self.top)
-		self.taglist = TagFrame(self.tag_frame,self.clip,self.mainframe)
-		self.tag_frame.pack(side=tk.TOP)
-
-
-	def edit_clip_name(self,newname):
-		oldname = self.clip.get_name()
-		# library 
-		# remove clip and then add new one w/ changed name lol
-		self.mainframe.searcher.library.remove_clip(self.clip)
-		self.clip.set_name(newname)
-		self.mainframe.searcher.library.add_clip(self.clip)
-		# index
-		# remove clipname and then add new name
-		self.mainframe.searcher.index.remove_word(oldname)
-		self.mainframe.searcher.index.add_word(newname)
-		# set names to be refreshed
-		self.mainframe.all_needs_refresh = True
-		
 
 # next steps -- 
-# browse by tag
+# browse by tag CHECK
 # double click to open clip window that has all params (editable) HALF-CHECK (single click and editing them doesnt do anything yet)
 # drag n drop to place on the clips in clip view 
-# collections of those clips
+# collections of those clips <- next step
 # save state	CHECK (kinda, saves library for now)	
 root = tk.Tk()
 root.title("sol")
