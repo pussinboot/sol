@@ -154,7 +154,10 @@ class Clip():
 		if param in self.params:
 			self.params[param] = value
 
-
+class Collection:
+	def __init__(clips=[None],max_clips=16):
+		self.clips = [None]*max_clips
+		self.clips[:len(clips)] = clips
 
 
 
@@ -176,6 +179,6 @@ if __name__ == '__main__':
 	#-> [pepe] - rare_pepe.webm
 	#-> [dank] - dank_meme.mov
 	#-> [meme] - dank_meme.mov, rare_pepe.webm
-	test_library.init_from_xml("animeme.avc")
-	print(len(test_library)) # 585
-	print(test_library.get_clip_names())
+	# test_library.init_from_xml("animeme.avc")
+	# print(len(test_library)) # 585
+	# print(test_library.get_clip_names())

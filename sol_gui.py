@@ -89,9 +89,12 @@ class MainWin:
 		self.clips_container.pack(side=tk.LEFT,expand=tk.NO)#,fill=tk.X)
 
 		self.sample_clip = ImageTk.PhotoImage(Image.open('sample_clip.png'))
+		self.clip_containers = []
 		for i in range(1,5):
 			for j in range(1,5):
-				ClipContainer(self,str(i + (j-1)*4)).label.grid(row=j,column=i)
+				new_cc = ClipContainer(self,str(i + (j-1)*4))
+				new_cc.label.grid(row=j,column=i)
+				self.clip_containers.append(new_cc)
 				# clip_label = tk.Label(self.clips_container,image=self.sample_clip,text=str(i + (j-1)*4),compound='top').grid(row=j,column=i)
 		
 		self.tab_container = ttk.Notebook(self.top_container)
@@ -109,16 +112,9 @@ class MainWin:
 		self.tab_container.add(self.collection_tab,text='cols')
 
 
-		def refresher(event,*args):
-			cur_tab = event.widget.tab(event.widget.index("current"),"text")
-			#print(cur_tab)
-			if cur_tab == 'all':
-				self.search_tab.tree_reset()
-			elif cur_tab == 'tags':
-				#print('reseting tags')
-				self.tag_tab.tree_reset()
+		
 
-		self.tab_container.bind_all('<<NotebookTabChanged>>',refresher)
+		self.tab_container.bind_all('<<NotebookTabChanged>>',self.refresher)
 
 		#self.search_term = tk.StringVar()
 		#self.search_entry = tk.Entry(self.search_tab,textvariable=self.search_term)
@@ -146,7 +142,15 @@ class MainWin:
 		self.play_pause_button.pack()
 		self.stop_button = tk.Button(self.timeline_controls,text='[ ]',command=useless_button,width=6)
 		self.stop_button.pack()
-
+		
+	def refresher(self,event,*args):
+				cur_tab = event.widget.tab(event.widget.index("current"),"text")
+				#print(cur_tab)
+				if cur_tab == 'all':
+					self.search_tab.tree_reset()
+				elif cur_tab == 'tags':
+					#print('reseting tags')
+					self.tag_tab.tree_reset()
 
 class Searcher():
 	def __init__(self):
@@ -391,10 +395,11 @@ def double_click_on_clip(tab):
 
 # next steps -- 
 # browse by tag CHECK
-# double click to open clip window that has all params (editable) HALF-CHECK (single click and editing them doesnt do anything yet)
-# drag n drop to place on the clips in clip view 
+# double click to open clip window that has all params (editable) HALF-CHECK (editing them doesnt do anything yet)
+# drag n drop to place on the clips in clip view CHECK
 # collections of those clips <- next step
-# save state	CHECK (kinda, saves library for now)	
+# save state	CHECK (kinda, saves library for now) // need 2 redo this part to save collections and be safe so crash doesnt corrupt entire save	
+
 root = tk.Tk()
 root.title("sol")
 mainwin = MainWin(root)
