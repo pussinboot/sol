@@ -190,7 +190,6 @@ class ClipPopUp():
 
 
 	def edit_clip_name(self,newname):
-		print('aaaaa')
 		oldname = self.clip.get_name()
 		# library 
 		# remove clip and then add new one w/ changed name lol
@@ -203,6 +202,7 @@ class ClipPopUp():
 		self.mainframe.searcher.index.add_word(newname)
 		# set names to be refreshed
 		self.mainframe.all_needs_refresh = True
-		#self.mainframe.refresher()
+		self.mainframe.refresher(None,self.mainframe.last_tab)
+		
 		for clip_cont in self.mainframe.clip_containers:
 			clip_cont.refresh_text()
