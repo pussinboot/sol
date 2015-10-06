@@ -44,6 +44,7 @@ class ClipContainer:
 	def change_clip(self,clip_name):
 		self.clip_name = clip_name
 		self.clip = self.searcher.get_from_name(clip_name)
+		print('get got',self.clip)
 		if not self.clip:
 			self.change_text(self.starting_text)
 			self.change_img_from_img(self.default_img)
@@ -91,7 +92,7 @@ class ClipContainer:
 		self.dnd_leave(source, event)
 
 	def dnd_end(self,target,event):
-		# print('target:',target)
+		#print('target:',target)
 		if target is not None and target != self:
 			self.remove_clip()
 
@@ -120,7 +121,8 @@ class TreeClip:
 		print(event.x,event.y)
 
 	def dnd_end(self,target,event):
-		print('target:',target)
+		#print('target:',target)
+		pass
 	#def 
 
 
@@ -189,20 +191,25 @@ class ClipPopUp():
 		self.name_lab.bind("<Return>",edit_name)
 
 
-	def edit_clip_name(self,newname):
+	def edit_clip_name(self,newname): # bug here
 		oldname = self.clip.get_name()
 		# library 
 		# remove clip and then add new one w/ changed name lol
-		self.mainframe.searcher.library.remove_clip(self.clip)
-		self.clip.set_name(newname)
-		self.mainframe.searcher.library.add_clip(self.clip)
-		# index
+		
+		self.mainframe.searcher.library.rename_clip(self.clip,newname)
+
+		# self.mainframe.searcher.library.remove_clip(self.clip)
+		# self.clip.set_name(newname)
+		# self.mainframe.searcher.library.add_clip(self.clip)
+		
+		# everything below works
+
 		# remove clipname and then add new name
 		self.mainframe.searcher.index.remove_word(oldname)
 		self.mainframe.searcher.index.add_word(newname)
 		# set names to be refreshed
 		self.mainframe.all_needs_refresh = True
 		self.mainframe.refresher(None,self.mainframe.last_tab)
-		
+
 		for clip_cont in self.mainframe.clip_containers:
 			clip_cont.refresh_text()

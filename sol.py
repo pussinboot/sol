@@ -58,9 +58,16 @@ class Library():
 
 		self.names.append(clip.get_name())
 
+	def rename_clip(self,clip,new_name):
+		self.remove_clip(clip)
+		clip.set_name(new_name)
+		self.add_clip(clip)
+
 	def remove_clip(self,clip):
 		name = clip.get_name()
-		if name in self.clips: del self.clips[name]
+		if name in self.clips: 
+			del self.clips[name]
+			self.names.remove(name)
 		for tag in clip.get_tags():
 			self.remove_clip_from_tag(clip,tag)
 

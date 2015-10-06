@@ -68,6 +68,7 @@ class MainWin:
 		self.searcher = Searcher()
 
 		self.all_needs_refresh=True
+		self.tag_needs_refresh=True
 		self.last_tab = None
 
 		def quitter():
@@ -81,6 +82,8 @@ class MainWin:
 		self.top_container.pack(side=tk.TOP, expand=tk.YES, fill=tk.BOTH) 
 		
 		# clips (& collections, left side)
+		self.sample_clip = ImageTk.PhotoImage(Image.open('sample_clip.png'))
+
 		self.clips_container = tk.Frame(self.top_container)
 		self.clips_container.pack(side=tk.LEFT,expand=tk.NO)#,fill=tk.X)
 
@@ -153,25 +156,30 @@ class Searcher():
 			self.library.init_from_xml("animeme.avc")
 
 		else:
-				read = open('saved_library','rb')
-				print("reading old save data")
-				try:
-					self.library = pickle.load(read)
-					read.close()
-				except:
-					print("error with pickle")
-					read.close()
-					os.remove('saved_library')
-					self.__init__()
+			self.load_library('saved_library',True)
 
-		self.savedata = open('saved_library','wb')	
+		#self.savedata = open('saved_library','wb')	
 		self.index = Index(self.library.get_clip_names())
 		self.tag_index = Index(self.library.get_tags())
 
+	def load_library(self,filename,debug=False):
+		if debug: print("reading old save data")
+		with open(filename,'rb') as read:
+			try:
+				self.library = pickle.load(read)
+			except:
+				if debug: print('error reading',filename)
+				read.close()
+				os.remove('filename')
+				self.__init__()
+
+	def save_library(self,filename,debug=False):
+		if debug: print('saving data')
+		with open(filename,'wb') as write:
+			pickle.dump(self.library,write)
+
 	def quit(self):
-		print("saving data")
-		pickle.dump(self.library,self.savedata)
-		self.savedata.close()
+		self.save_library('saved_library',True)
 
 	def search(self,term): # let's try having 2nd value be 
 		return self.index.by_prefix(term)
