@@ -340,6 +340,12 @@ class TagTab(tk.Frame):
 		#self.search_tree.bind('<<TreeviewSelect>>',testfun)
 		self.search_tree.bind('<Double-1>',doubleclicker)
 
+		def make_tree_clip_tag(event, *args):
+			make_tree_clip(event,True)
+
+
+		self.search_tree.bind('<ButtonPress>',make_tree_clip_tag, add="+")
+
 		# if something is selected press delete to - remove the entire tag or remove clip from tag
 		def deleter(event,*args):
 			item = self.search_tree.selection()[0]

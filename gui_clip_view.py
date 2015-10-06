@@ -20,7 +20,8 @@ class ClipContainer:
 		self.label = tk.Label(self.parent,image=self.img,text=starting_text,compound='top')
 		self.label.image = self.img
 		self.label.dnd_accept = self.dnd_accept
-		self.clip = self.clip_name = None
+		self.clip = None
+		self.clip_name = None
 		self.label.bind('<Double-1>',self.doubleclick) # for now it'll open 2 edit, will want 2 activate l8r tho
 		
 
@@ -40,11 +41,12 @@ class ClipContainer:
 	def refresh_text(self):
 		if self.clip:
 			self.change_text(self.clip.name)
+			self.clip_name = self.clip.name
 
 	def change_clip(self,clip_name):
 		self.clip_name = clip_name
 		self.clip = self.searcher.get_from_name(clip_name)
-		print('get got',self.clip)
+		# print('name:',clip_name,'clip got:',self.clip)
 		if not self.clip:
 			self.change_text(self.starting_text)
 			self.change_img_from_img(self.default_img)
@@ -72,7 +74,10 @@ class ClipContainer:
 	
 	def press(self, event):
 		if dnd_start(self, event):
-			print(self.clip.name,"selected")
+			pass
+			#print(self.clip.name,"selected")
+			#print(self.clip.name == self.label['text']) # it has correct name after change
+			#print(self.searcher.get_from_name(self.clip.name)) # it gets the right clip after change
 
 	def dnd_accept(self, source, event):
 		return self
@@ -96,17 +101,20 @@ class ClipContainer:
 		if target is not None and target != self:
 			self.remove_clip()
 
-def make_tree_clip(event):
+def make_tree_clip(event,tag=False):
 	if event.state != 8:
 		return
 	tv = event.widget
 	if tv.identify_row(event.y) not in tv.selection():
 		tv.selection_set(tv.identify_row(event.y))    
-
 	item = tv.selection()[0]
+	if tag:
+		if tv.item(item,"values")[0] != 'clip':
+			return
 	clip_name = tv.item(item,"text")
 	if dnd_start(TreeClip(clip_name),event):
-		print(clip_name,"selected")
+		pass
+		#print(clip_name,"selected")
 
 class TreeClip:
 	"""
@@ -116,9 +124,6 @@ class TreeClip:
 	def __init__(self,clip_name):
 		# note clip is just name of clip, that is used only once dropped 
 		self.clip_name = clip_name
-
-	def move(self, event):
-		print(event.x,event.y)
 
 	def dnd_end(self,target,event):
 		#print('target:',target)
