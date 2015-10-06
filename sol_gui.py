@@ -68,7 +68,7 @@ class MainWin:
 		self.searcher = Searcher()
 
 		self.all_needs_refresh=True
-		self.tag_needs_refresh=True
+		self.last_tab = None
 
 		def quitter():
 			self.searcher.quit()
@@ -76,50 +76,39 @@ class MainWin:
 
 		self.parent.protocol("WM_DELETE_WINDOW", quitter)
 
+		# top container (clips + tabs)
 		self.top_container = ttk.Frame(parent,borderwidth=5, relief=tk.RIDGE,height=400,width=500)
 		self.top_container.pack(side=tk.TOP, expand=tk.YES, fill=tk.BOTH) 
-
-		# contains clips & tabs (which include search field + results)
-		#
-
-		#self.left_container = tk.Frame(self.top_container) 
-		#self.left_container.pack(side=tk.LEFT,expand=tk.YES,fill=tk.BOTH)
 		
+		# clips (& collections, left side)
 		self.clips_container = tk.Frame(self.top_container)
 		self.clips_container.pack(side=tk.LEFT,expand=tk.NO)#,fill=tk.X)
 
-		self.sample_clip = ImageTk.PhotoImage(Image.open('sample_clip.png'))
-		self.clip_containers = []
+		self.clip_containers = [] # bad naming
+
 		for i in range(1,5):
 			for j in range(1,5):
 				new_cc = ClipContainer(self,str(i + (j-1)*4))
 				new_cc.label.grid(row=j,column=i)
 				self.clip_containers.append(new_cc)
-				# clip_label = tk.Label(self.clips_container,image=self.sample_clip,text=str(i + (j-1)*4),compound='top').grid(row=j,column=i)
 		
+		# tabs (right side)
 		self.tab_container = ttk.Notebook(self.top_container)
 		self.tab_container.pack(side=tk.RIGHT,expand=tk.YES,fill=tk.BOTH)
 		
-		# tabs
-		#self.search_tab = tk.Frame(self.tab_container) # new
 		self.search_tab = SearchTab(self.tab_container,self)
 		self.tag_tab = TagTab(self.tab_container,self)
 		self.file_tab = tk.Frame(self.tab_container)
 		self.collection_tab = tk.Frame(self.tab_container)
+
 		self.tab_container.add(self.search_tab,text='all')
 		self.tab_container.add(self.tag_tab,text='tags')
 		self.tab_container.add(self.file_tab,text='files')
 		self.tab_container.add(self.collection_tab,text='cols')
 
-
-		
-
 		self.tab_container.bind_all('<<NotebookTabChanged>>',self.refresher)
 
-		#self.search_term = tk.StringVar()
-		#self.search_entry = tk.Entry(self.search_tab,textvariable=self.search_term)
-		#self.search_entry.pack(side=tk.TOP, expand=tk.YES, fill=tk.X,anchor=tk.N)
-
+		# bottom container
 		self.bottom_container = ttk.Frame(parent,borderwidth=5, relief=tk.RIDGE,height=400,width=500)
 		self.bottom_container.pack(side=tk.TOP, expand=tk.YES, fill=tk.BOTH) 
 		
@@ -137,20 +126,22 @@ class MainWin:
 			print("a button was pressed")
 
 		self.rec_button = tk.Button(self.timeline_controls,text='O',command=useless_button,width=6)
-		self.rec_button.pack()
 		self.play_pause_button = tk.Button(self.timeline_controls,text='> ||',command=useless_button,width=6)
-		self.play_pause_button.pack()
 		self.stop_button = tk.Button(self.timeline_controls,text='[ ]',command=useless_button,width=6)
-		self.stop_button.pack()
 		
-	def refresher(self,event,*args):
-				cur_tab = event.widget.tab(event.widget.index("current"),"text")
+		self.rec_button.pack()
+		self.play_pause_button.pack()
+		self.stop_button.pack()
+
+	def refresher(self,event,cur_tab=None):
+				if cur_tab is None:	cur_tab = event.widget.tab(event.widget.index("current"),"text")
 				#print(cur_tab)
 				if cur_tab == 'all':
 					self.search_tab.tree_reset()
 				elif cur_tab == 'tags':
 					#print('reseting tags')
 					self.tag_tab.tree_reset()
+				self.last_tab = cur_tab
 
 class Searcher():
 	def __init__(self):
