@@ -162,9 +162,38 @@ class Clip():
 			self.params[param] = value
 
 class Collection:
-	def __init__(clips=[None],max_clips=16):
+	"""
+	used to store clips in a list that fills in a grid in main gui
+	if instantiated with more than max_clips, creates a new collection 
+	and links to it (doubly linked list modification)
+	"""
+	def __init__(self,name,clips=[None],max_clips=16,prev=None):
+		self.name = name
+		self.prev = prev
+		self.next = None
 		self.clips = [None]*max_clips
-		self.clips[:len(clips)] = clips
+		if len(clips) > max_clips:
+			self.clips = clips[:max_clips]
+			# figure out name of next clip
+			if self.prev:
+				curnum = int(name.split("_")[-1]) + 1
+				new_name = "".join(name.split("_")[:-1]) + "_" + str(curnum)
+			else:
+				new_name = name + "_1"
+			self.next = Collection(new_name,clips[max_clips:],max_clips,self)
+		else:
+			self.clips[:len(clips)] = clips
+
+	def __str__(self):
+		if self.prev:
+			prevname = self.prev.name
+		else:
+			prevname = "__"
+		if self.next:
+			nextname = self.next.name
+		else:
+			nextname = "__"
+		return "name: {0}\nprev: {1}\tnext: {2}\nClips: {3}".format(self.name,prevname,nextname,self.clips)
 
 
 
@@ -180,7 +209,13 @@ if __name__ == '__main__':
 	test_library = Library()
 	test_library.add_clip(test_clip)
 	test_library.add_clip(test_clip_2)
-	print(test_library)
+	# print(test_library)
+	print(test_clip.name)
+	test_library.rename_clip(test_clip,'poopoo.mov')
+	print(test_clip.name)
+
+	test_collection = Collection('test',[test_clip,test_clip_2]*25)
+	print(test_collection)
 	#--- Library ---
 	#-> [rare] - rare_pepe.webm
 	#-> [pepe] - rare_pepe.webm
