@@ -26,9 +26,9 @@ class ClipContainer:
 		self.clip = parent.collection[self.clipview_ind]
 		if self.clip is not None:
 			self.clip_name = self.clip.name
-			self.change_text(self.clip.name)
 		else:
 			self.clip_name = None
+		self.toggle_dnd()
 		self.label.bind('<Double-1>',self.doubleclick) # for now it'll open 2 edit, will want 2 activate l8r tho
 		
 
@@ -54,14 +54,18 @@ class ClipContainer:
 		self.clip_name = clip_name
 		self.clip = self.searcher.get_from_name(clip_name)
 		self.parent.collection[self.clipview_ind] = self.clip
+		# print(self.parent.collection)
 		# print('name:',clip_name,'clip got:',self.clip)
+		self.toggle_dnd()
+
+	def toggle_dnd(self):
 		if not self.clip:
 			self.change_text(self.starting_text)
 			self.change_img_from_img(self.default_img)
 			self.label.unbind('<ButtonPress-1>') # this disables dragging around
 			self.label.unbind('<ButtonPress-3>') 
 		else:
-			self.change_text(clip_name)
+			self.change_text(self.clip_name)
 			# change image, if clip_name is empty / our clip is none, set the img to default img -.-
 			self.label.bind("<ButtonPress-1>", self.press,add="+") # now we can drag it around
 			self.label.bind('<ButtonPress-3>',self.remove_clip) # rightclick 2 remove clip
@@ -249,33 +253,37 @@ class ClipView():
 		if not collection:
 			self.collection = Collection("new collection")
 		self.collection = self.instantiate_collection(collection)
+		self.update_containers()
 		# put in the clips
 		self.check_next_prev()
 
 	def instantiate_collection(self,collection=None,prev_collection=None):
 		if not collection:
 			collection = Collection("new collection",prev=prev_collection)
+		self.collection_label.configure(text=collection.name)
+		return collection
 
+	def update_containers(self):
 		for r in range(4):
 			for c in range(4):
 				i = r * 4 + c
 				self.clip_containers[i] = ClipContainer(self.mainframe,self,i+1,i)
 				self.clip_containers[i].grid(row=r,column=c)
-		
-		self.collection_label.configure(text=collection.name)
-		return collection
 
 	def make_next_and_switch(self):
 		self.collection.next = self.instantiate_collection(None,self.collection)
 		self.collection = self.collection.next
+		self.update_containers()
 		self.check_next_prev()
 
 	def go_to_next_collection(self):
 		self.collection = self.instantiate_collection(self.collection.next)
+		self.update_containers()
 		self.check_next_prev()
 
 	def go_to_prev_collection(self):
 		self.collection = self.instantiate_collection(self.collection.prev)
+		self.update_containers()
 		self.check_next_prev()
 
 	def check_next_prev(self):
