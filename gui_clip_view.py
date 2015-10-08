@@ -4,6 +4,7 @@ import tkinter as tk
 from tkdnd import dnd_start
 from tag_list import TagFrame
 from sol import Collection
+import tkinter.simpledialog as tksimpledialog
 
 class ClipContainer:
 	"""
@@ -243,6 +244,7 @@ class ClipView():
 		self.bottom_frame.pack(side=tk.BOTTOM,expand=tk.NO,anchor=tk.E)
 
 		self.collection_label = tk.Label(self.bottom_frame,text="__",pady=2)
+		self.collection_label.bind("<Double-1>",self.change_name_dialog)
 		self.prev_collection = tk.Button(self.bottom_frame,text="<",pady=0)
 		self.prev_collection.config(command=self.go_to_prev_collection)
 		self.next_collection = tk.Button(self.bottom_frame,text=">",pady=0)
@@ -299,3 +301,12 @@ class ClipView():
 			self.prev_collection.config(state='normal')
 		else:
 			self.prev_collection.config(state='disabled')
+
+	def change_name_dialog(self,*args):
+		new_name = tksimpledialog.askstring("rename collection",self.collection.name)
+		if new_name:
+			self.collection.name = new_name
+			self.collection_label.configure(text=new_name)
+			# mayb check that it is unique?
+			# update the collections collection :^)
+		
