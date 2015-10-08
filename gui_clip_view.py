@@ -11,17 +11,19 @@ class ClipContainer:
 	from where they are clicked on 2 activate /
 	they can also be dragged from one place to another
 	"""
-	def __init__(self,mainwin,parent,starting_text="clip",clip=None):
+	def __init__(self,mainwin,parent,starting_text="clip",clipview_ind=-1):
 		self.mainwin = mainwin
 		self.parent = parent
+		self.parent_frame = self.parent.top_frame
 		self.searcher = mainwin.searcher
 		self.starting_text = starting_text
 		self.default_img = self.img = ImageTk.PhotoImage(Image.open('sample_clip.png'))
-		self.label = tk.Label(self.parent,image=self.img,text=starting_text,compound='top')
+		self.label = tk.Label(self.parent_frame,image=self.img,text=starting_text,compound='top')
 		self.label.image = self.img
 		self.label.dnd_accept = self.dnd_accept
 		self.grid = self.label.grid
-		self.clip = clip
+		self.clipview_ind = clipview_ind
+		self.clip = parent.collection[self.clipview_ind]
 		if self.clip is not None:
 			self.clip_name = self.clip.name
 			self.change_text(self.clip.name)
@@ -51,6 +53,7 @@ class ClipContainer:
 	def change_clip(self,clip_name):
 		self.clip_name = clip_name
 		self.clip = self.searcher.get_from_name(clip_name)
+		self.parent.collection[self.clipview_ind] = self.clip
 		# print('name:',clip_name,'clip got:',self.clip)
 		if not self.clip:
 			self.change_text(self.starting_text)
@@ -94,7 +97,8 @@ class ClipContainer:
 		pass
 		
 	def dnd_leave(self, source, event):
-		self.parent.focus_set() # Hide highlight border
+		#self.parent.focus_set() # Hide highlight border
+		pass
 		
 	def dnd_commit(self, source, event):
 		#print('source:',source)
@@ -208,12 +212,6 @@ class ClipPopUp():
 		
 		self.mainframe.searcher.library.rename_clip(self.clip,newname)
 
-		# self.mainframe.searcher.library.remove_clip(self.clip)
-		# self.clip.set_name(newname)
-		# self.mainframe.searcher.library.add_clip(self.clip)
-		
-		# everything below works
-
 		# remove clipname and then add new name
 		self.mainframe.searcher.index.remove_word(oldname)
 		self.mainframe.searcher.index.add_word(newname)
@@ -231,14 +229,65 @@ class ClipView():
 	"""
 	def __init__(self,mainframe,clip_cont_frame,collection=None):
 		self.mainframe = mainframe
-		self.frame = clip_cont_frame
+		self.parent_frame = clip_cont_frame
+		self.top_frame = tk.Frame(self.parent_frame,borderwidth=0,relief=tk.RIDGE)
+		self.top_frame.pack(side=tk.TOP,expand=tk.YES,fill=tk.BOTH)
 		self.clip_containers = [None]*16
+		# at the bottom we want 2 buttons to cycle between collections that are linked together
+		# and a label to say what collection we're on rn, that if double clicked pops up enter new name 4 collection
+		self.bottom_frame = tk.Frame(self.parent_frame)
+		self.bottom_frame.pack(side=tk.BOTTOM,expand=tk.NO,anchor=tk.E)
+
+		self.collection_label = tk.Label(self.bottom_frame,text="__",pady=2)
+		self.prev_collection = tk.Button(self.bottom_frame,text="<",pady=0)
+		self.prev_collection.config(command=self.go_to_prev_collection)
+		self.next_collection = tk.Button(self.bottom_frame,text=">",pady=0)
+
+		self.next_collection.pack(side=tk.RIGHT,anchor=tk.SE)
+		self.prev_collection.pack(side=tk.RIGHT,anchor=tk.SE)
+		self.collection_label.pack()
 		if not collection:
-			self.collection = Collection("untitled")
-		else:
-			self.collection = collection
+			self.collection = Collection("new collection")
+		self.collection = self.instantiate_collection(collection)
+		# put in the clips
+		self.check_next_prev()
+
+	def instantiate_collection(self,collection=None,prev_collection=None):
+		if not collection:
+			collection = Collection("new collection",prev=prev_collection)
+
 		for r in range(4):
 			for c in range(4):
 				i = r * 4 + c
-				self.clip_containers[i] = ClipContainer(self.mainframe,self.frame,i+1,self.collection[i])
+				self.clip_containers[i] = ClipContainer(self.mainframe,self,i+1,i)
 				self.clip_containers[i].grid(row=r,column=c)
+		
+		self.collection_label.configure(text=collection.name)
+		return collection
+
+	def make_next_and_switch(self):
+		self.collection.next = self.instantiate_collection(None,self.collection)
+		self.collection = self.collection.next
+		self.check_next_prev()
+
+	def go_to_next_collection(self):
+		self.collection = self.instantiate_collection(self.collection.next)
+		self.check_next_prev()
+
+	def go_to_prev_collection(self):
+		self.collection = self.instantiate_collection(self.collection.prev)
+		self.check_next_prev()
+
+	def check_next_prev(self):
+		if self.collection.has_next():
+			# set to go to next collection
+			self.next_collection.config(command=self.go_to_next_collection)
+			self.next_collection.config(text=">")
+		else:
+			# set to make new collection
+			self.next_collection.config(command=self.make_next_and_switch)
+			self.next_collection.config(text="+")
+		if self.collection.has_prev():
+			self.prev_collection.config(state='normal')
+		else:
+			self.prev_collection.config(state='disabled')
