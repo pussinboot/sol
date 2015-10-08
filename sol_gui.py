@@ -54,7 +54,7 @@ import tkinter.messagebox as tkmessagebox
 from PIL import ImageTk,Image
 from index import Index
 from sol import Library
-from gui_clip_view import ClipContainer,make_tree_clip,ClipPopUp
+from gui_clip_view import *
 
 
 import pickle
@@ -78,23 +78,31 @@ class MainWin:
 		self.parent.protocol("WM_DELETE_WINDOW", quitter)
 
 		# top container (clips + tabs)
-		self.top_container = ttk.Frame(parent,borderwidth=5, relief=tk.RIDGE,height=400,width=500)
+		self.top_container = ttk.Frame(parent,borderwidth=5)#, relief=tk.RIDGE,height=400,width=500)
 		self.top_container.pack(side=tk.TOP, expand=tk.YES, fill=tk.BOTH) 
 		
 		# clips (& collections, left side)
 		self.sample_clip = ImageTk.PhotoImage(Image.open('sample_clip.png'))
 
-		self.clips_container = tk.Frame(self.top_container)
-		self.clips_container.pack(side=tk.LEFT,expand=tk.NO)#,fill=tk.X)
+		self.clips_container_l = tk.Frame(self.top_container)
+		self.clips_container_l.pack(side=tk.LEFT,expand=tk.NO)#,fill=tk.X)
 
-		self.clip_containers = [] # bad naming
 
-		for i in range(1,5):
-			for j in range(1,5):
-				new_cc = ClipContainer(self,str(i + (j-1)*4))
-				new_cc.label.grid(row=j,column=i)
-				self.clip_containers.append(new_cc)
+		self.clips_container_r = tk.Frame(self.top_container,relief=tk.RIDGE)
+		self.clips_container_r.pack(side=tk.RIGHT)#,fill=tk.X)
 		
+
+		### replacing this now
+
+		# self.clip_containers = [] # bad naming
+
+		# for i in range(1,5):
+		# 	for j in range(1,5):
+		# 		new_cc = ClipContainer(self,str(i + (j-1)*4))
+		# 		new_cc.label.grid(row=j,column=i)
+		# 		self.clip_containers.append(new_cc)
+		self.clipview_l = ClipView(self,self.clips_container_l) # 3rd param will be last loaded collection :) after i implement saving state
+		self.clipview_r = ClipView(self,self.clips_container_r)
 		# tabs (right side)
 		self.tab_container = ttk.Notebook(self.top_container)
 		self.tab_container.pack(side=tk.RIGHT,expand=tk.YES,fill=tk.BOTH)
@@ -404,10 +412,11 @@ def double_click_on_clip(tab):
 # drag n drop to place on the clips in clip view CHECK
 # collections of those clips <- next step
 # save state	CHECK (kinda, saves library for now) // need 2 redo this part to save collections and be safe so crash doesnt corrupt entire save	
+if __name__ == '__main__':
 
-root = tk.Tk()
-root.title("sol")
-mainwin = MainWin(root)
-root.mainloop()
+	root = tk.Tk()
+	root.title("sol")
+	mainwin = MainWin(root)
+	root.mainloop()
 
 #print(test_library.get_clip_names())
