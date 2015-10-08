@@ -172,15 +172,17 @@ class Collection:
 		self.prev = prev
 		self.next = None
 		self.clips = [None]*max_clips
+		if self.prev:
+			split_name = self.prev.name.split("_")
+			if len(split_name) > 1:
+				curnum = int(split_name[-1]) + 1
+				self.name = "".join(split_name[:-1]) + "_" + str(curnum)
+			else:
+				self.name = self.prev.name + "_1"
+			
 		if len(clips) > max_clips:
 			self.clips = clips[:max_clips]
-			# figure out name of next clip
-			if self.prev:
-				curnum = int(name.split("_")[-1]) + 1
-				new_name = "".join(name.split("_")[:-1]) + "_" + str(curnum)
-			else:
-				new_name = name + "_1"
-			self.next = Collection(new_name,clips[max_clips:],max_clips,self)
+			self.next = Collection("",clips[max_clips:],max_clips,self)
 		else:
 			self.clips[:len(clips)] = clips
 
@@ -208,6 +210,9 @@ class Collection:
 
 	def __getitem__(self, key):
 		return self.clips[key]
+
+	def __setitem__(self, key, value):
+		self.clips[key] = value
 
 
 

@@ -78,7 +78,7 @@ class MainWin:
 		self.parent.protocol("WM_DELETE_WINDOW", quitter)
 
 		# top container (clips + tabs)
-		self.top_container = ttk.Frame(parent,borderwidth=5)#, relief=tk.RIDGE,height=400,width=500)
+		self.top_container = ttk.Frame(parent,borderwidth=2)#, relief=tk.RIDGE,height=400,width=500)
 		self.top_container.pack(side=tk.TOP, expand=tk.YES, fill=tk.BOTH) 
 		
 		# clips (& collections, left side)
@@ -87,20 +87,9 @@ class MainWin:
 		self.clips_container_l = tk.Frame(self.top_container)
 		self.clips_container_l.pack(side=tk.LEFT,expand=tk.NO)#,fill=tk.X)
 
-
 		self.clips_container_r = tk.Frame(self.top_container,relief=tk.RIDGE)
 		self.clips_container_r.pack(side=tk.RIGHT)#,fill=tk.X)
 		
-
-		### replacing this now
-
-		# self.clip_containers = [] # bad naming
-
-		# for i in range(1,5):
-		# 	for j in range(1,5):
-		# 		new_cc = ClipContainer(self,str(i + (j-1)*4))
-		# 		new_cc.label.grid(row=j,column=i)
-		# 		self.clip_containers.append(new_cc)
 		self.clipview_l = ClipView(self,self.clips_container_l) # 3rd param will be last loaded collection :) after i implement saving state
 		self.clipview_r = ClipView(self,self.clips_container_r)
 		# tabs (right side)
@@ -234,7 +223,7 @@ class SearchTab(tk.Frame):
 		# start with all results
 
 		self.tree_reset()
-		self.search_field.pack(side=tk.TOP,anchor=tk.N,fill=tk.X)#.grid(row=1,column=1,sticky=tk.N)
+		self.search_field.pack(side=tk.TOP,anchor=tk.N,fill=tk.X,pady=2)#.grid(row=1,column=1,sticky=tk.N)
 		self.search_tree.pack(side=tk.LEFT,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)#.grid(row=2,column=1,sticky=tk.N) 
 		self.ysb = ttk.Scrollbar(self, orient='vertical', command=self.search_tree.yview)
 		self.search_tree.configure(yscrollcommand=self.ysb.set)
@@ -259,7 +248,7 @@ class SearchTab(tk.Frame):
 
 		self.tag_frame = tk.Frame(self)
 		self.new_tag_entry = tk.Entry(self.tag_frame,textvariable=self.new_tag_var)
-		self.new_tag_entry.pack(side=tk.LEFT,anchor=tk.N,fill=tk.X,expand=True)
+		self.new_tag_entry.pack(side=tk.LEFT,anchor=tk.N,fill=tk.X,expand=True,pady=2)
 		self.new_tag_entry.bind('<Return>',add_tag_to_multiple)
 
 		self.new_tag_plus = tk.Button(self.tag_frame,text="add tag",command=add_tag_to_multiple,height=1)
@@ -323,7 +312,7 @@ class TagTab(tk.Frame):
 		self.last_open_tags = [] # used to only open the tag searched for (kinda)
 		
 		#self.tree_reset()
-		self.search_field.pack(side=tk.TOP,anchor=tk.N,fill=tk.X)#.grid(row=1,column=1,sticky=tk.N)
+		self.search_field.pack(side=tk.TOP,anchor=tk.N,fill=tk.X,pady=2)#.grid(row=1,column=1,sticky=tk.N)
 		self.search_tree.pack(side=tk.LEFT,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)#.grid(row=2,column=1,sticky=tk.N) 
 		self.ysb = ttk.Scrollbar(self.search_frame, orient='vertical', command=self.search_tree.yview)
 		self.search_tree.configure(yscrollcommand=self.ysb.set)
