@@ -193,7 +193,21 @@ class Collection:
 			nextname = self.next.name
 		else:
 			nextname = "__"
-		return "name: {0}\nprev: {1}\tnext: {2}\nClips: {3}".format(self.name,prevname,nextname,self.clips)
+		def get_clip_name(clip):
+			if clip:
+				return clip.name
+			return "None"
+		clipstext = "\t".join(["[%i]: " % i + get_clip_name(clip) for i, clip in enumerate(self.clips)])
+		return "name: {0}\nprev: {1}\tnext: {2}\nClips: {3}".format(self.name,prevname,nextname,clipstext)
+
+	def has_next(self):
+		return self.next is not None
+
+	def has_prev(self):
+		return self.prev is not None
+
+	def __getitem__(self, key):
+		return self.clips[key]
 
 
 
@@ -210,12 +224,15 @@ if __name__ == '__main__':
 	test_library.add_clip(test_clip)
 	test_library.add_clip(test_clip_2)
 	# print(test_library)
-	print(test_clip.name)
-	test_library.rename_clip(test_clip,'poopoo.mov')
-	print(test_clip.name)
+	#print(test_clip.name)
+	#test_library.rename_clip(test_clip,'poopoo.mov')
+	#print(test_clip.name)
 
-	test_collection = Collection('test',[test_clip,test_clip_2]*25)
-	print(test_collection)
+	#test_collection = Collection('test',[test_clip,test_clip_2]*25)
+	#print(test_collection)
+	#print(test_collection.next)
+	#print(test_collection.next.next)
+	#print(test_collection.next.next.next)
 	#--- Library ---
 	#-> [rare] - rare_pepe.webm
 	#-> [pepe] - rare_pepe.webm

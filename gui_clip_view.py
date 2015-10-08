@@ -3,7 +3,7 @@ from PIL import ImageTk,Image
 import tkinter as tk
 from tkdnd import dnd_start
 from tag_list import TagFrame
-
+from sol import Collection
 
 class ClipContainer:
 	"""
@@ -11,17 +11,22 @@ class ClipContainer:
 	from where they are clicked on 2 activate /
 	they can also be dragged from one place to another
 	"""
-	def __init__(self,mainwin,starting_text="clip"):
+	def __init__(self,mainwin,parent,starting_text="clip",clip=None):
 		self.mainwin = mainwin
-		self.parent = mainwin.clips_container
+		self.parent = parent
 		self.searcher = mainwin.searcher
 		self.starting_text = starting_text
 		self.default_img = self.img = ImageTk.PhotoImage(Image.open('sample_clip.png'))
 		self.label = tk.Label(self.parent,image=self.img,text=starting_text,compound='top')
 		self.label.image = self.img
 		self.label.dnd_accept = self.dnd_accept
-		self.clip = None
-		self.clip_name = None
+		self.grid = self.label.grid
+		self.clip = clip
+		if self.clip is not None:
+			self.clip_name = self.clip.name
+			self.change_text(self.clip.name)
+		else:
+			self.clip_name = None
 		self.label.bind('<Double-1>',self.doubleclick) # for now it'll open 2 edit, will want 2 activate l8r tho
 		
 
@@ -218,3 +223,22 @@ class ClipPopUp():
 
 		for clip_cont in self.mainframe.clip_containers:
 			clip_cont.refresh_text()
+
+class ClipView():
+	"""
+	this is contains the clip containers, if passed a collection @ start
+	fills in clips.
+	"""
+	def __init__(self,mainframe,clip_cont_frame,collection=None):
+		self.mainframe = mainframe
+		self.frame = clip_cont_frame
+		self.clip_containers = [None]*16
+		if not collection:
+			self.collection = Collection("untitled")
+		else:
+			self.collection = collection
+		for r in range(4):
+			for c in range(4):
+				i = r * 4 + c
+				self.clip_containers[i] = ClipContainer(self.mainframe,self.frame,i+1,self.collection[i])
+				self.clip_containers[i].grid(row=r,column=c)
