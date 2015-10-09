@@ -122,13 +122,13 @@ class MainWin:
 
 	def refresher(self,event,cur_tab=None):
 				if cur_tab is None:	cur_tab = event.widget.tab(event.widget.index("current"),"text")
+				self.last_tab = cur_tab
 				#print(cur_tab)
 				if cur_tab == 'all':
 					self.search_tab.tree_reset()
 				elif cur_tab == 'tags':
 					#print('reseting tags')
 					self.tag_tab.tree_reset()
-				self.last_tab = cur_tab
 
 	def get_collection(self,name):
 		if name in self.collections:
@@ -227,6 +227,9 @@ class Searcher():
 	def get_from_name(self,name):
 		return self.library.get_clip_from_name(name)
 
+	def has_name(self,name):
+		return name in self.library.clips
+
 class SearchTab(tk.Frame):
 	"""
 	tab for searching by name
@@ -310,6 +313,7 @@ class SearchTab(tk.Frame):
 		self.search_tree.bind('<ButtonPress>',make_tree_clip, add="+")
 
 	def tree_reset(self):
+		if self.mainframe.last_tab == 'all':
 			if self.mainframe.all_needs_refresh:
 				if self.search_tree.exists("root"):
 					self.search_tree.delete("root")
@@ -391,21 +395,24 @@ class TagTab(tk.Frame):
 				
 		self.search_tree.bind('<Delete>',deleter)
 	def tree_reset(self):
-		if self.mainframe.tag_needs_refresh:
-			tags = self.searcher.search_tag("")
-			self.search_tree.delete(*self.search_tree.get_children())
-			for tag in tags:
-				try: # because of threading sometimes the index doesnt remove tag right awaay, so we have to account for this if deleting
-					clips = self.searcher.library.get_clips_from_tag(tag)
-					self.search_tree.insert('', 'end',iid=tag, text=tag,open=False,values="tag")
-					for clip in clips:
-						self.search_tree.insert(tag, 'end', text=clip,values="clip")
-				except:
-					pass
-				
-			self.mainframe.tag_needs_refresh = False
+		if self.mainframe.last_tab == 'tags':
+			if self.mainframe.tag_needs_refresh:
+				tags = self.searcher.search_tag("")
+				self.search_tree.delete(*self.search_tree.get_children())
+				for tag in tags:
+					try: # because of threading sometimes the index doesnt remove tag right awaay, so we have to account for this if deleting
+						clips = self.searcher.library.get_clips_from_tag(tag)
+						self.search_tree.insert('', 'end',iid=tag, text=tag,open=False,values="tag")
+						for clip in clips:
+							self.search_tree.insert(tag, 'end', text=clip,values="clip")
+					except:
+						pass
+					
+				self.mainframe.tag_needs_refresh = False
 
 def double_click_on_clip(tab):
+	if not tab.search_tree.selection():
+		return
 	item = tab.search_tree.selection()[0]
 	name = tab.search_tree.item(item,"text")
 	try:
@@ -455,7 +462,6 @@ class CollectionTab(tk.Frame):
 				if self.search_tree.exists("search"):
 					self.search_tree.delete("search")
 				search_res = self.search_tree.insert('', 'end',iid="search", text='Search Results',open=True)
-				
 				for r in res:
 					self.search_tree.insert(search_res, 'end', text=r)#[0],values=r[1])
 
@@ -466,7 +472,7 @@ class CollectionTab(tk.Frame):
 
 		self.search_query.trace('w',search)
 		
-		# self.search_tree.bind('<ButtonPress>',make_tree_clip, add="+")
+		self.search_tree.bind('<ButtonPress>',make_tree_col, add="+")
 
 	def tree_reset(self):
 			if self.search_tree.exists("root"):
