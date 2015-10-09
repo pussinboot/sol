@@ -108,6 +108,8 @@ class ClipContainer:
 		
 	def dnd_commit(self, source, event):
 		#print('source:',source)
+		if not source.clip_name:
+			self.parent.change_to_collection(source.col_name)
 		self.change_clip(source.clip_name) #change_text
 		self.dnd_leave(source, event)
 
@@ -122,7 +124,10 @@ def make_tree_clip(event,tag=False):
 	tv = event.widget
 	if tv.identify_row(event.y) not in tv.selection():
 		tv.selection_set(tv.identify_row(event.y))    
+	if not tv.selection():
+		return
 	item = tv.selection()[0]
+	
 	if tag:
 		if tv.item(item,"values")[0] != 'clip':
 			return
@@ -143,7 +148,34 @@ class TreeClip:
 	def dnd_end(self,target,event):
 		#print('target:',target)
 		pass
-	#def 
+
+def make_tree_col(event):
+	if event.state != 8:
+		return
+	tv = event.widget
+	if tv.identify_row(event.y) not in tv.selection():
+		tv.selection_set(tv.identify_row(event.y))  
+	if not tv.selection():
+		return  
+	item = tv.selection()[0]
+	col_name = tv.item(item,"text")
+	if dnd_start(TreeCol(col_name),event):
+		pass
+		#print(clip_name,"selected")
+
+class TreeCol:
+	"""
+	this is what can be dragged : )
+	needs to be created when you press on a collection in the treeview
+	"""
+	def __init__(self,col_name):
+		# note clip is just name of clip, that is used only once dropped 
+		self.clip_name = None
+		self.col_name = col_name
+
+	def dnd_end(self,target,event):
+		#print('target:',target)
+		pass
 
 
 class ClipPopUp():
@@ -211,8 +243,15 @@ class ClipPopUp():
 		self.name_lab.bind("<Return>",edit_name)
 
 
-	def edit_clip_name(self,newname): # bug here
+	def edit_clip_name(self,newname): 
 		oldname = self.clip.get_name()
+		if self.mainframe.searcher.has_name(newname):
+			tkmessagebox.showwarning(">:(","name is already in use, please try again")
+			self.name_var.set(oldname)
+			self.top.lift()
+			return
+		# error popup
+		# reset to oldname
 		# library 
 		# remove clip and then add new one w/ changed name lol
 		
@@ -225,9 +264,8 @@ class ClipPopUp():
 		self.mainframe.all_needs_refresh = True
 		self.mainframe.refresher(None,self.mainframe.last_tab)
 
-		for clip_cont in self.mainframe.clip_containers:
-			clip_cont.refresh_text()
-
+		self.mainframe.clipview_l.update_names()
+		self.mainframe.clipview_r.update_names()
 class ClipView():
 	"""
 	this is contains the clip containers, if passed a collection @ start
@@ -264,6 +302,12 @@ class ClipView():
 		# put in the clips
 		self.check_next_prev()
 
+	def change_to_collection(self,name):
+		if name in self.mainframe.collections:
+			self.collection = self.instantiate_collection(self.mainframe.collections[name])
+			self.update_containers()
+			self.check_next_prev()
+
 	def instantiate_collection(self,collection=None,prev_collection=None):
 		if not collection:
 			collection = Collection("new collection",prev=prev_collection)
@@ -294,6 +338,10 @@ class ClipView():
 				i = r * 4 + c
 				self.clip_containers[i] = ClipContainer(self.mainframe,self,i+1,i)
 				self.clip_containers[i].grid(row=r,column=c)
+
+	def update_names(self):
+		for clip_cont in self.clip_containers:
+			clip_cont.refresh_text()
 
 	def make_next_and_switch(self):
 		self.collection.next = self.instantiate_collection(None,self.collection)
@@ -356,6 +404,3 @@ class ClipView():
 				self.mainframe.cat_needs_refresh = True
 				self.mainframe.collection_tab.tree_reset()
 			self.check_next_prev()
-			# mayb check that it is unique?
-			# update the collections collection :^)
-		
