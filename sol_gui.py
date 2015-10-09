@@ -2,49 +2,28 @@
 ##
 #
 # the gui for sol
-# 2 classes
-# 	1. main window -
 #
-#	  	clips
-#	    | | |
-#	    v v v
-#	__________________ 
-#	|_|_|_|_|_|_|_/_/_| <-- tabs
-#	|_|_|_|_|_|_|_____| <-- search field
-#	|_|_|_|_|_|_|	  |
-#	|_|_|_|_|_|_|	  | <-- file list
-#	|			|	  |
-#	|___________|_____|
-#		^
-#		|
-#	timeline/spectrogram
+# 	 - main window -
 #
-#	2. clip window - activate by double clicking on a clip
-#
-#	thumb
-#	  |
-#	  v
-#	____________
-#	|	 |	___	| <-- file info
-#	|____|	___	| <--\
-#	| ...	___	| <---- editable params
-#	| ...	___	| <--/
-#	|___________|
-#
-#
-#	# art
-#
-#   _____________
-#   |\---------/|
-#	| \-------/ |
-#	| /-------\ |
-#	|/---------\|
-#	|___________|
-#
-#	     _____             _____             _____             _____        
-#	    /    /            /    /            /    /            /    /        
-#	___/    /__    ______/    /__    ______/    /__    ______/    /__    ___
-#	          /___/             /___/             /___/             /___/   
+#                tabs
+#       clips     | search  clips
+#      |  |  |    v   |    |  |  |
+#      v  v  v        v    v  v  v
+#    _______________________________
+#    |  |  |  |  |_/_/_|  |  |  |  |
+#    |__|__|__|__|_____|__|__|__|__|
+#    |  |  |  |  | ... |  |  |  |  |
+#    |__|__|__|__|file |__|__|__|__|
+#    |  |  |  |  | list|  |  |  |  |
+#    |__|__|__|__| ... |__|__|__|__|
+#    |  |  |  |  | ... |  |  |  |  |
+#    |__|__|__|__|_____|__|__|__|__|
+#    |                             |
+#    |-^-/\-v--^-/\-v--^-/\-v--^-/\|
+#    |_____________________________|
+#                   ^
+#                   |
+#     timeline/spectrogram
 #
 
 
@@ -70,6 +49,8 @@ class MainWin:
 		self.all_needs_refresh=True
 		self.tag_needs_refresh=True
 		self.last_tab = None
+
+		self.collections = {}
 
 		def quitter():
 			self.searcher.quit()
@@ -142,6 +123,22 @@ class MainWin:
 					#print('reseting tags')
 					self.tag_tab.tree_reset()
 				self.last_tab = cur_tab
+
+	def save_state(self,filename,debug=False):
+		"""
+		save current state of the program
+		"""
+		pickle_d = {}
+		pickle_d['collections'] = self.collections
+
+
+	def load_state(self,filename,debug=False):
+		"""
+		load last state of the program 
+		"""
+		if not os.path.exists('saved_state'):
+			if debug: print("making new saved state")
+
 
 class Searcher():
 	def __init__(self):
