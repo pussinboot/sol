@@ -176,7 +176,7 @@ class Collection:
 			split_name = self.prev.name.split("_")
 			if len(split_name) > 1:
 				curnum = int(split_name[-1]) + 1
-				self.name = "".join(split_name[:-1]) + "_" + str(curnum)
+				self.name = "_".join(split_name[:-1]) + "_" + str(curnum)
 			else:
 				self.name = self.prev.name + "_1"
 			

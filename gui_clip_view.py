@@ -5,6 +5,7 @@ from tkdnd import dnd_start
 from tag_list import TagFrame
 from sol import Collection
 import tkinter.simpledialog as tksimpledialog
+import tkinter.messagebox as tkmessagebox
 
 class ClipContainer:
 	"""
@@ -240,9 +241,11 @@ class ClipView():
 		self.clip_containers = [None]*16
 		# at the bottom we want 2 buttons to cycle between collections that are linked together
 		# and a label to say what collection we're on rn, that if double clicked pops up enter new name 4 collection
+		# and a button to delete current collection
 		self.bottom_frame = tk.Frame(self.parent_frame)
 		self.bottom_frame.pack(side=tk.BOTTOM,expand=tk.NO,anchor=tk.E)
 
+		self.del_collection = tk.Button(self.bottom_frame,text="x",pady=0,command=self.delete_collection)
 		self.collection_label = tk.Label(self.bottom_frame,text="__",pady=2)
 		self.collection_label.bind("<Double-1>",self.change_name_dialog)
 		self.prev_collection = tk.Button(self.bottom_frame,text="<",pady=0)
@@ -251,7 +254,9 @@ class ClipView():
 
 		self.next_collection.pack(side=tk.RIGHT,anchor=tk.SE)
 		self.prev_collection.pack(side=tk.RIGHT,anchor=tk.SE)
-		self.collection_label.pack()
+		self.collection_label.pack(side=tk.RIGHT,anchor=tk.SE)
+		self.del_collection.pack()
+
 		if not collection:
 			self.collection = Collection("new collection")
 		self.collection = self.instantiate_collection(collection)
@@ -265,6 +270,24 @@ class ClipView():
 		self.collection_label.configure(text=collection.name)
 		return collection
 
+	def delete_collection(self): # delete current collection (from mainframe), if has prev switch to that, otherwise instantiate, if has next make sure to link old prev to next : )
+		cur_collection = self.collection
+		if cur_collection.has_prev():
+			cur_collection.prev.next = cur_collection.next
+			self.collection = self.instantiate_collection(self.collection.prev)
+		else:
+			self.collection = self.instantiate_collection()
+
+		if cur_collection.has_next():
+			cur_collection.next.prev = cur_collection.prev
+		if cur_collection.name in self.mainframe.collections:
+			del self.mainframe.collections[cur_collection.name]
+
+		self.mainframe.searcher.col_index.remove_word(cur_collection.name)
+		self.mainframe.collection_tab.tree_reset()
+		self.update_containers()
+		self.check_next_prev()
+		
 	def update_containers(self):
 		for r in range(4):
 			for c in range(4):
@@ -297,6 +320,10 @@ class ClipView():
 			# set to make new collection
 			self.next_collection.config(command=self.make_next_and_switch)
 			self.next_collection.config(text="+")
+			if self.collection.name != "new collection":
+				self.next_collection.config(state='normal')
+			else:
+				self.next_collection.config(state='disabled')
 		if self.collection.has_prev():
 			self.prev_collection.config(state='normal')
 		else:
@@ -305,8 +332,30 @@ class ClipView():
 	def change_name_dialog(self,*args):
 		new_name = tksimpledialog.askstring("rename collection",self.collection.name)
 		if new_name:
-			self.collection.name = new_name
-			self.collection_label.configure(text=new_name)
+			# make sure new name isn't already in use/won't interfere with sequence creation
+			split_name = new_name.split("_")
+			if len(split_name) > 1:
+				check_name = "_".join(split_name[:-1])
+			else:
+				check_name = new_name
+			if check_name in self.mainframe.collections:
+				if tkmessagebox.showwarning(">:(","name is already in use, please try again"):
+					self.change_name_dialog()
+			else:
+				# remove old collection
+				old_name = self.collection.name
+				if old_name in self.mainframe.collections:
+					del self.mainframe.collections[old_name]
+					self.mainframe.searcher.col_index.remove_word(old_name)
+				# change name
+				self.collection.name = new_name
+				self.collection_label.configure(text=new_name)
+				# add new collection
+				self.mainframe.collections[new_name] = self.collection
+				self.mainframe.searcher.col_index.add_word(new_name)
+				self.mainframe.cat_needs_refresh = True
+				self.mainframe.collection_tab.tree_reset()
+			self.check_next_prev()
 			# mayb check that it is unique?
 			# update the collections collection :^)
 		
