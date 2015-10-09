@@ -44,16 +44,22 @@ class MainWin:
 	def __init__(self,parent):
 		self.parent = parent
 
-		self.searcher = Searcher()
 
-		self.all_needs_refresh=True
-		self.tag_needs_refresh=True
+		self.all_needs_refresh = True
+		self.tag_needs_refresh = True
 		self.last_tab = None
 
 		self.collections = {}
+		self.last_l_collection = ""
+		self.last_r_collection = ""
+		self.load_state('saved_state',True)
+
+		self.searcher = Searcher(self.collections) # may want to double check order of this and loading state since we load library here
+		# gui layout etc below : )
 
 		def quitter():
 			self.searcher.quit()
+			self.save_state('saved_state',True)
 			self.parent.destroy()
 
 		self.parent.protocol("WM_DELETE_WINDOW", quitter)
@@ -71,8 +77,8 @@ class MainWin:
 		self.clips_container_r = tk.Frame(self.top_container,relief=tk.RIDGE)
 		self.clips_container_r.pack(side=tk.RIGHT)#,fill=tk.X)
 		
-		self.clipview_l = ClipView(self,self.clips_container_l) # 3rd param will be last loaded collection :) after i implement saving state
-		self.clipview_r = ClipView(self,self.clips_container_r)
+		self.clipview_l = ClipView(self,self.clips_container_l,self.get_collection(self.last_l_collection)) 
+		self.clipview_r = ClipView(self,self.clips_container_r,self.get_collection(self.last_r_collection))
 		# tabs (right side)
 		self.tab_container = ttk.Notebook(self.top_container)
 		self.tab_container.pack(side=tk.RIGHT,expand=tk.YES,fill=tk.BOTH)
@@ -80,7 +86,7 @@ class MainWin:
 		self.search_tab = SearchTab(self.tab_container,self)
 		self.tag_tab = TagTab(self.tab_container,self)
 		self.file_tab = tk.Frame(self.tab_container)
-		self.collection_tab = tk.Frame(self.tab_container)
+		self.collection_tab = CollectionTab(self.tab_container,self)
 
 		self.tab_container.add(self.search_tab,text='all')
 		self.tab_container.add(self.tag_tab,text='tags')
@@ -124,24 +130,44 @@ class MainWin:
 					self.tag_tab.tree_reset()
 				self.last_tab = cur_tab
 
+	def get_collection(self,name):
+		if name in self.collections:
+			return self.collections[name]
+		return None
+
+	def load_state(self,filename,debug=False):
+		"""
+		load last state of the program 
+		"""
+		if os.path.exists(filename):
+			with open(filename,'rb') as read:
+				try:
+					pickle_d = pickle.load(read)
+					self.collections = pickle_d['collections']
+					self.last_l_collection = pickle_d['last_l_collection']
+					self.last_r_collection = pickle_d['last_r_collection']
+					print(self.last_l_collection,self.last_r_collection)
+				except:
+					if debug: print('error reading',filename)
+					read.close()
+					os.remove(filename)
+		else:
+			if debug: print("no saved state")
+
 	def save_state(self,filename,debug=False):
 		"""
 		save current state of the program
 		"""
 		pickle_d = {}
 		pickle_d['collections'] = self.collections
-
-
-	def load_state(self,filename,debug=False):
-		"""
-		load last state of the program 
-		"""
-		if not os.path.exists('saved_state'):
-			if debug: print("making new saved state")
-
+		pickle_d['last_l_collection'] = self.clipview_l.collection.name
+		pickle_d['last_r_collection'] = self.clipview_r.collection.name
+		if debug: print("saving state")
+		with open(filename,'wb') as write:
+			pickle.dump(pickle_d,write)
 
 class Searcher():
-	def __init__(self):
+	def __init__(self,collections):
 
 		if not os.path.exists('saved_library'): # will change to be name of the .avc file ok
 			print("making new save data")
@@ -155,6 +181,7 @@ class Searcher():
 		#self.savedata = open('saved_library','wb')	
 		self.index = Index(self.library.get_clip_names())
 		self.tag_index = Index(self.library.get_tags())
+		self.col_index = Index(collections)
 
 	def load_library(self,filename,debug=False):
 		if debug: print("reading old save data")
@@ -164,7 +191,7 @@ class Searcher():
 			except:
 				if debug: print('error reading',filename)
 				read.close()
-				os.remove('filename')
+				os.remove(filename)
 				self.__init__()
 
 	def save_library(self,filename,debug=False):
@@ -180,6 +207,9 @@ class Searcher():
 
 	def search_tag(self,term):
 		return self.tag_index.by_prefix(term)
+
+	def search_col(self,term):
+		return self.col_index.by_prefix(term)
 
 	def add_tag_to_clip(self,tag,clip):
 		clip.add_tag(tag)
@@ -391,6 +421,60 @@ def double_click_on_clip(tab):
 	except:
 		pass
 
+class CollectionTab(tk.Frame):
+	"""
+	tab for searching for collections
+	diff - tree is list of all collections
+	"""
+	def __init__(self,parent,mainframe):
+		tk.Frame.__init__(self,parent)
+
+		self.mainframe = mainframe
+		self.search_query = tk.StringVar()
+		self.search_field = tk.Entry(self,textvariable=self.search_query)
+
+		self.searcher = mainframe.searcher #Searcher()
+		# setup the tree
+		self.search_frame = tk.Frame(self)
+		self.search_tree = ttk.Treeview(self.search_frame,selectmode='extended', show='tree')#, height = 20)
+		# start with all results
+
+		self.tree_reset()
+		self.search_field.pack(side=tk.TOP,anchor=tk.N,fill=tk.X,pady=2)#.grid(row=1,column=1,sticky=tk.N)
+		self.search_tree.pack(side=tk.LEFT,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)#.grid(row=2,column=1,sticky=tk.N) 
+		self.ysb = ttk.Scrollbar(self, orient='vertical', command=self.search_tree.yview)
+		self.search_tree.configure(yscrollcommand=self.ysb.set)
+		self.ysb.pack(side=tk.RIGHT,anchor=tk.N,fill=tk.Y)
+		self.search_frame.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)
+
+		def search(event, *args):
+			search_term = self.search_query.get()
+			if search_term != "":
+				res = self.searcher.search_col(search_term)
+				self.search_tree.item("root",open=False)
+				if self.search_tree.exists("search"):
+					self.search_tree.delete("search")
+				search_res = self.search_tree.insert('', 'end',iid="search", text='Search Results',open=True)
+				
+				for r in res:
+					self.search_tree.insert(search_res, 'end', text=r)#[0],values=r[1])
+
+			else:
+				if self.search_tree.exists("search"):
+					self.search_tree.delete("search")
+				self.search_tree.item("root",open=True)
+
+		self.search_query.trace('w',search)
+		
+		# self.search_tree.bind('<ButtonPress>',make_tree_clip, add="+")
+
+	def tree_reset(self):
+			if self.search_tree.exists("root"):
+				self.search_tree.delete("root")
+			res = self.searcher.search_col("")
+			self.tree_root = self.search_tree.insert('', 'end',iid="root", text='All',open=True)
+			for r in res:
+				self.search_tree.insert(self.tree_root, 'end', text=r)#[0],values=r[1])
 
 # next steps -- 
 # browse by tag CHECK
