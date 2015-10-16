@@ -314,23 +314,24 @@ class ClipView():
 		self.collection_label.configure(text=collection.name)
 		return collection
 
-	def delete_collection(self): # delete current collection (from mainframe), if has prev switch to that, otherwise instantiate, if has next make sure to link old prev to next : )
-		cur_collection = self.collection
-		if cur_collection.has_prev():
-			cur_collection.prev.next = cur_collection.next
-			self.collection = self.instantiate_collection(self.collection.prev)
-		else:
-			self.collection = self.instantiate_collection()
+	def delete_collection(self):  # clear current collection
+	# delete current collection (from mainframe), if has prev switch to that, otherwise instantiate, if has next make sure to link old prev to next : )
+		# cur_collection = self.collection
+		# if cur_collection.has_prev():
+		# 	cur_collection.prev.next = cur_collection.next
+		# 	self.collection = self.instantiate_collection(self.collection.prev)
+		# else:
+		self.collection = self.instantiate_collection()
 
-		if cur_collection.has_next():
-			cur_collection.next.prev = cur_collection.prev
-		if cur_collection.name in self.mainframe.collections:
-			del self.mainframe.collections[cur_collection.name]
+		# if cur_collection.has_next():
+		# 	cur_collection.next.prev = cur_collection.prev
+		# if cur_collection.name in self.mainframe.collections:
+		# 	del self.mainframe.collections[cur_collection.name]
 
-		self.mainframe.searcher.col_index.remove_word(cur_collection.name)
-		self.mainframe.collection_tab.tree_reset()
+		# self.mainframe.searcher.col_index.remove_word(cur_collection.name)
+		# self.mainframe.collection_tab.tree_reset()
 		self.update_containers()
-		self.check_next_prev()
+		# self.check_next_prev()
 		
 	def update_containers(self):
 		for r in range(4):

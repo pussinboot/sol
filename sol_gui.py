@@ -470,6 +470,22 @@ class CollectionTab(tk.Frame):
 					self.search_tree.delete("search")
 				self.search_tree.item("root",open=True)
 
+		def deleter(event,*args):
+			if self.search_tree.selection():
+				for item in self.search_tree.selection():
+					col = self.search_tree.item(item,"text")
+
+					if col in self.mainframe.collections:
+						del self.mainframe.collections[col]
+						self.mainframe.searcher.col_index.remove_word(col)
+						if self.mainframe.clipview_l.collection.name == col:
+							self.mainframe.clipview_l.delete_collection()
+						if self.mainframe.clipview_r.collection.name == col:
+							self.mainframe.clipview_r.delete_collection()
+
+				self.tree_reset()
+				
+		self.search_tree.bind('<Delete>',deleter)
 		self.search_query.trace('w',search)
 		
 		self.search_tree.bind('<ButtonPress>',make_tree_col, add="+")
