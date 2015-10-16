@@ -20,7 +20,7 @@ class ClipContainer:
 		self.searcher = mainwin.searcher
 		self.starting_text = starting_text
 		self.default_img = self.img = ImageTk.PhotoImage(Image.open('sample_clip.png'))
-		self.label = tk.Label(self.parent_frame,image=self.img,text=starting_text,compound='top')
+		self.label = tk.Label(self.parent_frame,image=self.img,text=starting_text,compound='top',width=105) # width of clip preview
 		self.label.image = self.img
 		self.label.dnd_accept = self.dnd_accept
 		self.grid = self.label.grid
@@ -45,6 +45,9 @@ class ClipContainer:
 		self.label.image = self.img
 
 	def change_text(self,new_text):
+		new_text = str(new_text)
+		if len(new_text) > 18:
+			new_text = new_text[:17] + ".."
 		self.label.config(text=new_text)
 
 	def refresh_text(self):
