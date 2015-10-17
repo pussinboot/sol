@@ -22,9 +22,12 @@
 # and play around w/ points of regression 2 make it nice n smooth 4 playback >:)
 
 # cool idea man
+import time
 
 import tkinter as tk
 from tkinter import ttk
+import queue, threading
+from midi_control import MidiControl
 
 class Timeline:
 	def __init__(self,parent,width=1200,height=400):
@@ -48,6 +51,12 @@ class Timeline:
 		self.draw_grid()
 		self.canvas.bind( "<B1-Motion>", self.integrate_click )
 		self.canvas.bind("<ButtonPress-3>",self.reset)
+		self.count = 0
+		self.canvas.bind("<MouseWheel>", self.mouse_wheel)
+		self.canvas.bind("<Button-4>", self.mouse_wheel)
+		self.canvas.bind("<Button-5>", self.mouse_wheel)
+		
+		#self.parent.after(25,self.process_queue)
 		#self.canvas.bind( "<B1-Motion>", self.paint )
 		#self.canvas.bind( "<ButtonPress-1>", self.add_point )
 	def reset(self,event):
@@ -119,9 +128,67 @@ class Timeline:
 		self.last_point = new_point
 		if new_point[0] > self.width: self.update_layout()
 
+	def mouse_wheel(self,event):
+		self.canvas.xview('scroll',-1*int(event.delta//120),'units')
+		# respond to Linux or Windows wheel event
+		# if event.delta <= -120: # or event.num == 5 # linux support
+			# self.canvas.xview('scroll', 1, 'units')
+		# if  event.delta >= 120: # or event.num == 4 # linux support
+			# self.canvas.xview('scroll', -1, 'units')
+		# print(event.delta)
+
+class MidiThread(threading.Thread):
+	def __init__(self):
+		super().__init__()
+		self.stopped = False
+		self.MC = MidiControl()
+
+	def run(self):
+		print('running')
+		while not self.isStopped():
+			res = self.MC.test_inp()
+			if res:
+				print(res)
+		print('stopped')
+		
+	def isStopped(self):
+		return self.stopped
+
+	def stop(self):
+		self.stopped = True
+		self.MC.quit()
+
+class threadedOp(object):
+	def __init__(self,timeline):
+		self.thread = None
+		self.timeline = timeline
+
+	def run(self):
+		if self.thread == None:
+			self.thread = MidiThread()
+			print('starting')
+			self.thread.start()
+		else:
+			print('Thread already running')
+
+
+	def stop(self):
+		if self.thread != None:
+			print('stopping')
+			self.thread.stop()
+			self.thread.join()
+			print('Join complete')
+			self.thread = None
+		else:
+			print('No thread to stop')
+
+
 if __name__ == '__main__':
 	
 	root = tk.Tk()
 	root.title("timeline_test")
 	timeline = Timeline(root)
+	op = threadedOp(timeline)
+	op.run()
 	root.mainloop()
+	op.stop()
