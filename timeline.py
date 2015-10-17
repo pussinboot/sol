@@ -22,6 +22,9 @@
 # and play around w/ points of regression 2 make it nice n smooth 4 playback >:)
 
 # cool idea man
+
+# http://stackoverflow.com/questions/12147945/python-tkinter-threading-help-required
+# thanks 4 threading
 import time
 
 import tkinter as tk
