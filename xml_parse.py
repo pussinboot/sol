@@ -10,8 +10,9 @@ from bs4 import BeautifulSoup
 #				Width, Height
 #		will use position values to determine step size of scratcher l8r
 
-def parse_clip(video_clip):
-
+def parse_clip(clip):
+	l, c = int(clip['layerIndex'])+1, int(clip['trackIndex'])+1
+	video_clip = clip.videoClip
 	filename = video_clip.source['name']
 	name = video_clip.source['shortName']
 	
@@ -42,13 +43,14 @@ def parse_clip(video_clip):
 		if check_name(ps[2],'Height'):
 			height = ps[2].values['curValue']
 
-	dic_tor = {'filename': filename, 'name':name, 'range': [start_pos, stop_pos], 'speedup': speedup, 'dims' : [width, height], 'poi':poi}
+	dic_tor = {'filename': filename, 'name':name,'deck_loc':[l,c], 'range': [start_pos, stop_pos], 'speedup': speedup, 'dims' : [width, height], 'poi':poi}
 
 	return dic_tor
 
 def print_clip(parsed_clip):
 	print("fname: " + parsed_clip['filename'])
 	print("shortname: " + parsed_clip['name'])
+	print("layer: {0} track: {1}".format(*parsed_clip['deck_loc']))
 	print("start: {0} end: {1}".format(*parsed_clip['range']))
 	print("speedup factor: "+ parsed_clip['speedup'])
 	print("width: {0} height: {1}".format(*parsed_clip['dims']))
@@ -60,7 +62,7 @@ def print_clip(parsed_clip):
 
 def parse_all(xmlfile):
 	xml_soup = BeautifulSoup(open(xmlfile),"xml")
-	vidclips = xml_soup.find_all('videoClip')
+	vidclips = xml_soup.find_all('clip')
 	tor = [None] * len(vidclips)
 	for i, clip in enumerate(vidclips):
 		tor[i] = parse_clip(clip)
@@ -68,13 +70,13 @@ def parse_all(xmlfile):
 
 if __name__ == '__main__':
 
-	animeme = BeautifulSoup(open("animeme.avc"),"xml")
+	# animeme = BeautifulSoup(open("animeme.avc"),"xml")
 
-	test = parse_clip(animeme.videoClip)
+	# test = parse_clip(animeme.videoClip)
 	
-	print_clip(test)
+	# print_clip(test)
 
-	all_clips = parse_all("animeme.avc")
+	all_clips = parse_all("test.avc")
 	#print(len(all_clips)) # 583
 	print_clip(all_clips[0])
 

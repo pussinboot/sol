@@ -20,9 +20,11 @@ if __name__ == "__main__":
 
   client = udp_client.UDPClient(args.ip, args.port)
 
-  for x in range(10):
-    msg = osc_message_builder.OscMessageBuilder(address = "/activeclip/video/position/values")
-    msg.add_arg(x/10)
-    msg = msg.build()
-    client.send(msg)
-    time.sleep(.1)
+  for l in range(4):
+    for c in range(8):
+      buildup = "/layer{0}/clip{1}/connect".format(l+1,c+1)
+      msg = osc_message_builder.OscMessageBuilder(address = buildup)
+      msg.add_arg(1)
+      msg = msg.build()
+      client.send(msg)
+      time.sleep(.1)
