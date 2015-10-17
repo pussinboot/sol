@@ -56,7 +56,6 @@ class Timeline:
 		self.canvas.bind("<Button-4>", self.mouse_wheel)
 		self.canvas.bind("<Button-5>", self.mouse_wheel)
 		
-		#self.parent.after(25,self.process_queue)
 		#self.canvas.bind( "<B1-Motion>", self.paint )
 		#self.canvas.bind( "<ButtonPress-1>", self.add_point )
 	def reset(self,event):
@@ -70,6 +69,8 @@ class Timeline:
 			self.canvas.configure(scrollregion=self.canvas.bbox('all'))
 			self.canvas.xview('moveto','1.0')
 			self.extend_grid()
+			self.parent.update_idletasks()
+
 
 	def draw_grid(self,numberX=24,numberY=20):
 		self.grid = []
@@ -128,6 +129,12 @@ class Timeline:
 		self.last_point = new_point
 		if new_point[0] > self.width: self.update_layout()
 
+	def integrate_midi(self,n):
+		new_point = (self.last_point[0]+self.dx, self.last_point[1]+n)
+		self.canvas.create_line(self.last_point[0],self.last_point[1],new_point[0],new_point[1],fill='white')
+		self.last_point = new_point
+		if new_point[0] > self.width: self.update_layout()
+
 	def mouse_wheel(self,event):
 		self.canvas.xview('scroll',-1*int(event.delta//120),'units')
 		# respond to Linux or Windows wheel event
@@ -138,17 +145,25 @@ class Timeline:
 		# print(event.delta)
 
 class MidiThread(threading.Thread):
-	def __init__(self):
+	def __init__(self,timeline):
 		super().__init__()
 		self.stopped = False
 		self.MC = MidiControl()
+		self.timeline = timeline
 
 	def run(self):
 		print('running')
 		while not self.isStopped():
 			res = self.MC.test_inp()
 			if res:
-				print(res)
+				#print(res)
+				n = res[1]
+				if n > 120:
+					n = n - 128
+				if n < 10:
+					timeline.integrate_midi(n)
+				#print(n)
+
 		print('stopped')
 		
 	def isStopped(self):
@@ -165,7 +180,7 @@ class threadedOp(object):
 
 	def run(self):
 		if self.thread == None:
-			self.thread = MidiThread()
+			self.thread = MidiThread(self.timeline)
 			print('starting')
 			self.thread.start()
 		else:
