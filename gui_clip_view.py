@@ -31,7 +31,7 @@ class ClipContainer:
 		else:
 			self.clip_name = None
 		self.toggle_dnd()
-		self.label.bind('<Double-1>',self.doubleclick) # for now it'll open 2 edit, will want 2 activate l8r tho
+		self.label.bind('<Double-3>',self.doubleclick) # 
 		
 
 	def change_img_from_file(self,new_img):
@@ -67,13 +67,15 @@ class ClipContainer:
 		if not self.clip:
 			self.change_text(self.starting_text)
 			self.change_img_from_img(self.default_img)
-			self.label.unbind('<ButtonPress-1>') # this disables dragging around
-			self.label.unbind('<ButtonPress-3>') 
+			self.label.unbind('<ButtonPress-1>') # this disables selecting clip
+			self.label.unbind('<ButtonPress-3>') # this disables drag around
+			self.label.unbind('<ButtonRelease-1>')
 		else:
 			self.change_text(self.clip_name)
 			# change image, if clip_name is empty / our clip is none, set the img to default img -.-
-			self.label.bind("<ButtonPress-1>", self.press,add="+") # now we can drag it around
-			self.label.bind('<ButtonPress-3>',self.remove_clip) # rightclick 2 remove clip
+			self.label.bind("<ButtonPress-3>", self.press,add="+") # now we can drag it around
+			self.label.bind('<ButtonPress-2>',self.remove_clip) # rightclick 2 remove clip
+			self.label.bind("<ButtonPress-1>",self.select_clip) # release to select clip # testing
 	
 	def remove_clip(self,*args):
 		self.change_clip("")
@@ -120,6 +122,11 @@ class ClipContainer:
 		#print('target:',target)
 		if target is not None and target != self:
 			self.remove_clip()
+	###
+	# backend stuff
+	def select_clip(self,event):
+		#print(self.clip.params['deck_loc'])
+		self.mainwin.backend.client.select_clip(*self.clip.params['deck_loc'])
 
 def make_tree_clip(event,tag=False):
 	if event.state != 8:
