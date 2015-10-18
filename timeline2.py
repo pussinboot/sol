@@ -31,9 +31,13 @@ import tkinter as tk
 from tkinter import ttk
 import queue, threading, multiprocessing
 from midi_control import MidiControl
+import pygame.midi
 
-class Timeline:
-	def __init__(self,parent,width=1200,height=400):
+class Timeline(multiprocessing.Process):
+	def __init__(self,parent,queue,width=1200,height=400):
+		multiprocessing.Process.__init__(self)
+		self.q = queue
+		self.refresh_int = 1
 		# main elements
 		self.parent = parent
 		self.frame = tk.Frame(parent,width=width,height=height+10)
@@ -61,6 +65,9 @@ class Timeline:
 		
 		#self.canvas.bind( "<B1-Motion>", self.paint )
 		#self.canvas.bind( "<ButtonPress-1>", self.add_point )
+
+		self.parent.after(self.refresh_int, self.check_queue)
+
 	def reset(self,event):
 		self.canvas.delete("all")
 		self.last_point = (10,self.height/2)
@@ -146,67 +153,61 @@ class Timeline:
 		# if  event.delta >= 120: # or event.num == 4 # linux support
 			# self.canvas.xview('scroll', -1, 'units')
 		# print(event.delta)
-
-class MidiThread(threading.Thread):
-	def __init__(self,timeline):
-		super().__init__()
-		self.stopped = False
-		self.MC = MidiControl()
-		self.timeline = timeline
-
-	def run(self):
-		print('running')
-		while not self.isStopped():
-			res = self.MC.test_inp()
-			if res:
-				#print(res)
-				n = res[1]
+	def check_queue(self):
+			
+		try:
+			t = self.q.get(0)
+			while t:
+				#print(t[1])
+				n = t[1]
 				if n > 120:
 					n = n - 128
 				if n < 10:
-					timeline.integrate_midi(n)
-				#print(n)
+					self.integrate_midi(n)
+				#self.integrate_midi(t[1])
+				t = self.q.get(0)
+			self.parent.after(self.refresh_int,self.check_queue)
+		except queue.Empty:
+			#print("queue empty")
 
-		print('stopped')
+			self.parent.after(self.refresh_int,self.check_queue)
+
+class threaded_midi(multiprocessing.Process):
+	def __init__(self):
+		multiprocessing.Process.__init__(self)
+		self.q = multiprocessing.Queue()
 		
-	def isStopped(self):
-		return self.stopped
 
-	def stop(self):
-		self.stopped = True
-		self.MC.quit()
+	def quit(self):
+		# self.out.close()
+		self.inp.close()
+		pygame.midi.quit()
 
-class threadedOp(object):
-	def __init__(self,timeline):
-		self.thread = None
-		self.timeline = timeline
+	def put_in_queue(self,b, value):
+		"""Put a named argument in the queue to be able to use a single queue."""
+		self.q.put([b, value])
 
 	def run(self):
-		if self.thread == None:
-			self.thread = MidiThread(self.timeline)
-			print('starting')
-			self.thread.start()
-		else:
-			print('Thread already running')
-
-
-	def stop(self):
-		if self.thread != None:
-			print('stopping')
-			self.thread.stop()
-			self.thread.join()
-			print('Join complete')
-			self.thread = None
-		else:
-			print('No thread to stop')
-
+		pygame.midi.init()
+		self.inp = pygame.midi.Input(pygame.midi.get_default_input_id())
+		while True:
+			if self.inp.poll():
+				midi_events = self.inp.read(10)
+				the_key = str([midi_events[0][0][0],midi_events[0][0][1]])
+				n = int(midi_events[0][0][2])
+				#print(the_key,n)
+				self.put_in_queue(the_key,n)
 
 if __name__ == '__main__':
 	
 	root = tk.Tk()
-	root.title("timeline_test")
-	timeline = Timeline(root)
-	op = threadedOp(timeline)
-	op.run()
+	root.title("timeline_test_2")
+
+
+	MC = threaded_midi()
+	MC.daemon = True
+	timeline = Timeline(root,MC.q)
+	midi_thread = threading.Thread(target=MC.run)
+	midi_thread.start()
 	root.mainloop()
-	op.stop()
+	MC.quit()
