@@ -34,7 +34,7 @@ from PIL import ImageTk,Image
 from index import Index
 from sol import Library
 from gui_clip_view import *
-
+from sol_backend import Backend
 
 import pickle
 import os
@@ -43,7 +43,7 @@ class MainWin:
 
 	def __init__(self,parent):
 		self.parent = parent
-
+		self.backend = Backend()
 
 		self.all_needs_refresh = True
 		self.tag_needs_refresh = True
@@ -173,7 +173,7 @@ class Searcher():
 			print("making new save data")
 			self.library = Library()
 			# for now
-			self.library.init_from_xml("animeme.avc")
+			self.library.init_from_xml("test.avc")
 
 		else:
 			self.load_library('saved_library',True)
