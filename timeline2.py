@@ -205,7 +205,7 @@ if __name__ == '__main__':
 
 
 	MC = threaded_midi()
-	MC.daemon = True
+	#MC.daemon = True
 	timeline = Timeline(root,MC.q)
 	midi_thread = threading.Thread(target=MC.run)
 	midi_thread.start()
