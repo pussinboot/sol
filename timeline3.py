@@ -18,12 +18,13 @@ import threading
 import random
 import queue
 
-from midi_control import MidiControl
+from midi_control import MidiControl, MidiClient
 
 class GuiPart:
-    def __init__(self, master, queue, endCommand,width=1200,height=400):#command=endCommand
+    def __init__(self, master,width=1200,height=400):#command=endCommand
         self.queue = queue
         self.parent = master
+        self.master = master
         self.frame = tk.Frame(self.parent,width=width,height=height+10)
         self.canvas = tk.Canvas(self.frame,width=width,height=height,bg="black",scrollregion=(0,0,width,height))
         self.hbar = tk.Scrollbar(self.frame,orient=tk.HORIZONTAL)
@@ -46,7 +47,14 @@ class GuiPart:
         self.canvas.bind("<MouseWheel>", self.mouse_wheel)
         self.canvas.bind("<Button-4>", self.mouse_wheel)
         self.canvas.bind("<Button-5>", self.mouse_wheel)
-        self.parent.protocol("WM_DELETE_WINDOW",endCommand)
+        self.parent.protocol("WM_DELETE_WINDOW",self.quit)
+
+    def set_queue(self,queue):
+        self.queue = queue
+
+    def quit(self):
+        #self.parent.destroy()
+        pass
 
     def reset(self,event):
         self.canvas.delete("all")
@@ -152,68 +160,11 @@ class GuiPart:
             except queue.Empty:
                 pass
 
-class ThreadedClient:
-    """
-    Launch the main part of the GUI and the worker thread. periodicCall and
-    endApplication could reside in the GUI part, but putting them here
-    means that you have all the thread controls in a single place.
-    """
-    def __init__(self, master):
-        """
-        Start the GUI and the asynchronous threads. We are in the main
-        (original) thread of the application, which will later be used by
-        the GUI. We spawn a new thread for the worker.
-        """
-        self.master = master
-        self.MC = MidiControl()
-        # Create the queue
-        self.queue = queue.Queue()
-
-        # Set up the GUI part
-        self.gui = GuiPart(master, self.queue, self.endApplication)
-
-        # Set up the thread to do asynchronous I/O
-        # More can be made if necessary
-        self.running = 1
-        self.thread1 = threading.Thread(target=self.workerThread1)
-        self.thread1.start()
-
-        # Start the periodic call in the GUI to check if the queue contains
-        # anything
-        self.periodicCall()
-
-    def periodicCall(self):
-        """
-        Check every 100 ms if there is something new in the queue.
-        """
-        self.gui.processIncoming()
-        if not self.running:
-            # This is the brutal stop of the system. You may want to do
-            # some cleanup before actually shutting it down.
-            import sys
-            sys.exit(1)
-        self.master.after(25, self.periodicCall)
-
-    def workerThread1(self):
-        """
-        This is where we handle the asynchronous I/O. For example, it may be
-        a 'select()'.
-        One important thing to remember is that the thread has to yield
-        control.
-        """
-        while self.running:
-            # To simulate asynchronous I/O, we create a random number at
-            # random intervals. Replace the following 2 lines with the real
-            # thing.
-            
-            msg = self.MC.test_inp()
-            if msg:
-                self.queue.put(msg)
-
-    def endApplication(self):
-        self.running = 0
-
-root = tk.Tk()
-
-client = ThreadedClient(root)
-root.mainloop()
+if __name__ == '__main__':
+    
+    root = tk.Tk()
+    # client = ThreadedClient(root)
+    test_gui = GuiPart(root)
+    MC = MidiClient(test_gui)
+    MC.start()
+    root.mainloop()
