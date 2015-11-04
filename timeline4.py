@@ -100,7 +100,7 @@ class GuiPart:
         # nX = int((self.width - 10) / numberX)
         # print(new_w % nX)
         # if ((new_w - 10)% nX) == 2: # this doesn't work the way i want it to -.-
-        if new_w - self.last_vert > nX:
+        while new_w - self.last_vert > nX:
             line = self.canvas.create_line(self.last_vert + nX,0,self.last_vert + nX,self.height,fill='gray')
             self.grid.append(line)
             self.last_vert = self.last_vert + nX
@@ -121,6 +121,15 @@ class GuiPart:
         self.canvas.create_line(self.last_point[0],self.last_point[1],new_point[0],new_point[1],fill='white')
         self.last_point = new_point
 
+    def add_alot_of_midi(self,ns):
+        #print(len(ns))
+        points = [self.last_point[0], self.last_point[1]]
+        for i in range(len(ns)):
+            points.append(points[2*i]+self.dx)
+            points.append(points[2*i+1]+ns[i])
+        self.canvas.create_line(*points,fill='white')
+        self.last_point = points[-2:]
+
     def integrate_click(self,event):
         new_point = (self.last_point[0]+self.dx, event.y)
         self.canvas.create_line(self.last_point[0],self.last_point[1],new_point[0],new_point[1],fill='white')
@@ -131,7 +140,7 @@ class GuiPart:
         new_point = (self.last_point[0]+self.dx, self.last_point[1]+n)
         self.canvas.create_line(self.last_point[0],self.last_point[1],new_point[0],new_point[1],fill='white')
         self.last_point = new_point
-        if new_point[0] > self.width: self.update_layout()
+       
 
     def mouse_wheel(self,event):
         self.canvas.xview('scroll',-1*int(event.delta//120),'units')
@@ -146,25 +155,32 @@ class GuiPart:
         """
         Handle all the messages currently in the queue (if any).
         """
+        to_integrate = []
         while self.queue.qsize():
             try:
                 res = self.queue.get(0)
                 # Check contents of message and do what it says
                 # As a test, we simply print it
-                print( res)
+                #print( res)
                 n = res[1]
                 if n > 120:
                     n = n - 128
                 if n < 10:
-                    self.integrate_midi(n)
+                    to_integrate.append(n)
             except queue.Empty:
                 pass
+        if to_integrate != []:
+            #for n in to_integrate:
+            #    self.integrate_midi(n)
+            self.add_alot_of_midi(to_integrate)
+            if self.last_point[0] > self.width: self.update_layout()
 
 if __name__ == '__main__':
     
     root = tk.Tk()
     # client = ThreadedClient(root)
     test_gui = GuiPart(root)
-    MC = MidiClient(test_gui)
+    MC = MidiClient(test_gui,refresh_int=25)
+    MC.MC.set_inp()
     MC.start()
     root.mainloop()
