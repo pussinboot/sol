@@ -127,3 +127,5 @@ __pycache__
 
 # my own
 *.ipynb????????
+urwid/
+pythonosc/
