@@ -30,7 +30,16 @@ class Record:
 		
 	def log(self,*args):
 		if self.debug:
-			print(*args)
+			print(args)
+
+	def listen(self,address,*args):
+		if not self.recording:
+			return
+		new_osc = osc_message_builder.OscMessageBuilder(address=address)
+		for arg in args:
+			new_osc.add_arg(arg)
+		new_osc = new_osc.build()
+		self.add_msg(new_osc)
 
 	def add_msg(self,osc_msg):
 		if self.recording:
@@ -39,6 +48,7 @@ class Record:
 			# logline
 			new_line = LogLine(time_elapsed,osc_msg)
 			self.messages.append(new_line)
+			if debug: print(new_line)
 
 	def start_recording(self):
 		self.start_time = time.time()
