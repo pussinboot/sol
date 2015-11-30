@@ -13,4 +13,5 @@ def add_alot_of_midi(ns):
 	print(*points)
 	last_point = points[-2:]
 
-add_alot_of_midi([1,2,3,4,5])
+#add_alot_of_midi([1,2,3,4,5])
+print(6//4)
