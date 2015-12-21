@@ -3,6 +3,8 @@ import pyaudio, wave, time, sys, os
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
 
+import struct
+import numpy as np
 # ffmpeg -i song.mp3 song.wav
 
 # to convert from data to np array
@@ -21,6 +23,7 @@ class PyaudioPlayer:
 		self.tot = -1
 		self.wf = None
 		self.stream = None
+		self.levels = None
 
 	def open(self,filename):
 		try:
@@ -30,12 +33,14 @@ class PyaudioPlayer:
 				return
 			else:
 				wf = wave.open(filename, 'rb')
+				framerate = wf.getframerate()
 				def callback(in_data, frame_count, time_info, status):
 					data = wf.readframes(frame_count)
+					self.levels = calculate_levels(data,frame_count,framerate)
 					return (data, pyaudio.paContinue)
 				# print("n chans: ",wf.getnchannels(),"rate: ",wf.getframerate()) # 2 channels, 44100, frame count is 1024
 				self.stream = self.pyaud.open(format=self.pyaud.get_format_from_width(wf.getsampwidth()),
-											channels = wf.getnchannels(), rate = wf.getframerate(),
+											channels = wf.getnchannels(), rate = framerate,
 											output = True, stream_callback = callback)
 				self.pause()
 				self.wf = wf
@@ -77,7 +82,32 @@ class PyaudioPlayer:
 	def playing(self):
 		return self.stream.is_active()
 
+def calculate_levels(data,chunk,samplerate,no_levels=6):
+	fmt = "%dH"%(len(data)/2)
+	data2 = struct.unpack(fmt, data)
+	data2 = np.array(data2, dtype='h')
+
+	# Apply FFT
+	fourier = np.fft.fft(data2)
+	ffty = np.abs(fourier[0:len(fourier)/2])/1000
+	ffty1=ffty[:len(ffty)/2]
+	ffty2=ffty[len(ffty)/2::]+2
+	ffty2=ffty2[::-1]
+	ffty=ffty1+ffty2
+	ffty=np.log(ffty)-2
 	
+	fourier = list(ffty)[4:-4]
+	fourier = fourier[:len(fourier)//2]
+	
+	size = len(fourier)
+
+	levels = [sum(fourier[i:(i+size//no_levels)]) 
+			  for i in range(0, size, size//no_levels)][:no_levels]
+	
+	return levels
+
+# to-do: scale the fft binned values so that they are individually from 0.0-1.0
+# by keeping track of max and min.. aka doing weighted scaling
 
 if __name__ == '__main__':
 	if len(sys.argv) < 2:
@@ -87,9 +117,14 @@ if __name__ == '__main__':
 	pp.open(sys.argv[1])
 
 	pp.play()
-
-	while pp.playing:
-		#print(" | ",pp.time)
-		time.sleep(0.25)
-
-	pp.quit()
+	try:
+		while pp.playing:
+			#print(" | ",pp.time)
+			print("%d:%02d >>\t" % 
+				 (pp.time_sec // 60.0 , pp.time_sec % 60.0), pp.levels)
+			time.sleep(0.25)
+	except KeyboardInterrupt:
+		pass
+	finally:
+		print('bye')
+		pp.quit()
