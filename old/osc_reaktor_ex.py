@@ -5,6 +5,7 @@ import multiprocessing
 import queue
 import logging
 import threading
+import time
 
 from pygame.locals import *
 
@@ -35,15 +36,19 @@ class ReaktorDisplay(multiprocessing.Process):
   def run(self):
     pygame.init()
     font = pygame.font.SysFont("monospace", 15)
-    screen = pygame.display.set_mode((640, 480))  # FULLSCREEN
+    screen = pygame.display.set_mode((400, 120))  # FULLSCREEN
     running = True
     dirty = True
     # OSC controlled parameters.
     self._parameters = {
-        'beating': 0.0,
-        'blocks': 0.0,
-        'basic_Model': 0.0,
-        'Do!': 0.0,
+        'block1': 0.0,
+        'block2': 0.0,
+        'block3': 0.0,
+        'block4': 0.0,
+        'block5': 0.0,
+        'block6': 0.0,
+        'block7': 0.0,
+        'block8': 0.0,
     }
     while running:
       for event in pygame.event.get():
@@ -53,23 +58,17 @@ class ReaktorDisplay(multiprocessing.Process):
         screen.fill(_BLACK)
         # Draw a gauge using rectangles.
         # Left, top, width, height.
-        pygame.draw.rect(
-            screen, _WHITE, [10, 10, 50, 100], 2)
-        pygame.draw.rect(
-            screen, _WHITE, [10, 110, 50, -int(self._parameters['beating'] * 100)])
-
-        # Draw a button-like square for on/off display.
-        pygame.draw.rect(
-            screen, _WHITE, [10, 200, 50, 50], 2)
-        pygame.draw.rect(
-            screen, _WHITE, [10, 200, 50, 50 if self._parameters['blocks'] >= 0.5 else 0])
-
-        # Show actual values.
-        for index, [key, val] in enumerate(self._parameters.items()):
-          label = font.render("{0}: {1}".format(key, val), 1, _WHITE)
-          screen.blit(label, (200, index * 15))
-        pygame.display.flip()
-        dirty = False
+        for i in range(1,9):
+          paramname = 'block{}'.format(i)
+          try:
+            n = -int(self._parameters[paramname]*100)
+          except:
+            n = 0
+          pygame.draw.rect(
+              screen, _WHITE, [50*i-45, 10, 40, 100], 2)
+          pygame.draw.rect(
+              screen, _WHITE, [50*i-45, 110, 40, n])
+      pygame.display.update()
       try:
         what, value = self._bq.get(True)
         self.last_val = self._parameters[what]
@@ -78,7 +77,8 @@ class ReaktorDisplay(multiprocessing.Process):
         logging.debug('Received new value {0} = {1}'.format(what, value))
         self.send_val(self.last_val)
       except queue.Empty:
-        running = False
+        pass
+        # running = False
     pygame.quit()
 
 
@@ -106,10 +106,12 @@ if __name__ == "__main__":
     bq.put([b[0], value])
 
   dispatcher = dispatcher.Dispatcher()
-  dispatcher.map("/debug", logging.debug)
+  #dispatcher.map("/debug", logging.debug)
   #dispatcher.map("/activeclip/video/position/values", print)
-  #dispatcher.map("/activeclip/video/position/values", put_in_queue, "beating")
-  dispatcher.map("/midi",print)
+  for i in range(1,9):
+    st_1 = "/layer{}/clip1/video/height/values".format(i)
+    st_2 = "block{}".format(i)
+    dispatcher.map(st_1, put_in_queue, st_2)
   #dispatcher.map("/activeclip/video/position/direction", put_in_queue, "blocks")
   #dispatcher.map("/activeclip/video/position/speed", put_in_queue, "basic_Model")
   #dispatcher.map("/Do!", put_in_queue, "Do!")
@@ -124,4 +126,4 @@ if __name__ == "__main__":
   server = osc_server.ThreadingOSCUDPServer((args.server_ip, args.server_port), dispatcher)
   server_thread = threading.Thread(target=server.serve_forever)
   server_thread.start()
-  
+  #time.sleep(5)

@@ -31,7 +31,7 @@ class PyaudioPlayer:
 		self.levels = [0] * NO_LEVELS
 		self.maxlevels = [1] * NO_LEVELS
 		self.minlevels = [0] * NO_LEVELS
-		self.movinwin = [[1]*WINDOW_SIZE] * NO_LEVELS
+		self.movinwin = np.zeros((WINDOW_SIZE,NO_LEVELS))
 
 	def open(self,filename):
 		try:
@@ -92,15 +92,16 @@ class PyaudioPlayer:
 
 	def update_levels(self,levels):
 		self.levels = levels
-		for i in range(NO_LEVELS): #len(self.movinwin) 
-			self.movinwin[i][:-1] = self.movinwin[i][1:]
-			self.movinwin[i][-1] = levels[i]
-		self.maxlevels = list(map(lambda pair: max(pair),zip(self.maxlevels,levels)))
-		self.minlevels = list(map(lambda pair: min(pair),zip(self.minlevels,levels)))
+		self.movinwin[:-1] = self.movinwin[1:]
+		self.movinwin[-1] = levels
+		self.maxlevels = np.amax(self.movinwin,0)
+		#list(map(lambda pair: max(pair),self.movinwin))
+		self.minlevels = np.amin(self.movinwin,0)
 
 	def get_scaled_levels(self):
+
 		return [(self.levels[i] - self.minlevels[i])/(self.maxlevels[i] - self.minlevels[i]) 
-				for i in range(NO_LEVELS) ]
+				for i in range(NO_LEVELS)]
 
 
 def calculate_levels(data,chunk,samplerate,no_levels=8):
@@ -122,7 +123,7 @@ def calculate_levels(data,chunk,samplerate,no_levels=8):
 	
 	size = len(fourier)
 
-	levels = [sum(fourier[i:(i+size//no_levels//5)]) 
+	levels = [sum(fourier[i:(i+size//no_levels)]) 
 			  for i in range(0, size, size//no_levels)][:no_levels]
 	
 	return levels
@@ -157,7 +158,7 @@ if __name__ == '__main__':
 	count = 0
 	pp.play()
 	try:
-		while pp.playing:
+		while pp.playing:# and count < 100:
 			#print("%d:%02d >>\t" % 
 			#	 (pp.time_sec // 60.0 , pp.time_sec % 60.0), pp.levels)
 			#print(pp.get_scaled_levels())
@@ -169,7 +170,7 @@ if __name__ == '__main__':
 			for i in range(len(lvls)):
 				buildup = "/layer{}/clip1/video/height/values".format(i+1)
 				msg = osc_message_builder.OscMessageBuilder(address = buildup)
-				msg.add_arg(float(lvls[i]*500/16384))
+				msg.add_arg(float(lvls[i])) #*500/16384
 				msg = msg.build()
 				pp.osc_client.send(msg)
 	except KeyboardInterrupt:
