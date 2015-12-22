@@ -15,17 +15,8 @@
 #
 ##add_alot_of_midi([1,2,3,4,5])
 #print(6//4)
-from pythonosc import osc_message_builder
-from pythonosc import udp_client
 
-import time
-
-osc_client = udp_client.UDPClient("127.0.0.1", 7000)
-
-buildup = "/activeclip/video/width/values"
-for i in range(10):
-	msg = osc_message_builder.OscMessageBuilder(address = buildup)
-	msg.add_arg(.01*i)
-	msg = msg.build()
-	osc_client.send(msg)
-	time.sleep(0.25)
+a = [1,2,3,4,5]
+a[:-1] = a[1:]
+a[-1] = 6
+print(a)

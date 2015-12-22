@@ -9,7 +9,7 @@ import numpy as np
 
 # CONSTANTS
 NO_LEVELS = 8
-
+WINDOW_SIZE = 25
 # to convert from data to np array
 # import numpy
 # stream = p.open(format=FORMAT,channels=1,rate=SAMPLEFREQ,input=True,frames_per_buffer=FRAMESIZE)
@@ -29,8 +29,9 @@ class PyaudioPlayer:
 		self.wf = None
 		self.stream = None
 		self.levels = [0] * NO_LEVELS
-		self.minlevels = [0] * NO_LEVELS
 		self.maxlevels = [1] * NO_LEVELS
+		self.minlevels = [0] * NO_LEVELS
+		self.movinwin = [[1]*WINDOW_SIZE] * NO_LEVELS
 
 	def open(self,filename):
 		try:
@@ -91,12 +92,15 @@ class PyaudioPlayer:
 
 	def update_levels(self,levels):
 		self.levels = levels
-		self.minlevels = list(map(lambda pair: min(pair),zip(self.minlevels,levels)))
+		for i in range(NO_LEVELS): #len(self.movinwin) 
+			self.movinwin[i][:-1] = self.movinwin[i][1:]
+			self.movinwin[i][-1] = levels[i]
 		self.maxlevels = list(map(lambda pair: max(pair),zip(self.maxlevels,levels)))
+		self.minlevels = list(map(lambda pair: min(pair),zip(self.minlevels,levels)))
 
 	def get_scaled_levels(self):
-		return [(self.levels[i] )/(self.maxlevels[i] ) 
-				for i in range(len(self.levels)) ]
+		return [(self.levels[i] - self.minlevels[i])/(self.maxlevels[i] - self.minlevels[i]) 
+				for i in range(NO_LEVELS) ]
 
 
 def calculate_levels(data,chunk,samplerate,no_levels=8):
@@ -118,7 +122,7 @@ def calculate_levels(data,chunk,samplerate,no_levels=8):
 	
 	size = len(fourier)
 
-	levels = [sum(fourier[i:(i+size//no_levels)]) 
+	levels = [sum(fourier[i:(i+size//no_levels//5)]) 
 			  for i in range(0, size, size//no_levels)][:no_levels]
 	
 	return levels
@@ -161,6 +165,7 @@ if __name__ == '__main__':
 			lvls = pp.get_scaled_levels()
 			count += 1
 			time.sleep(0.06)
+			#print(lvls)
 			for i in range(len(lvls)):
 				buildup = "/layer{}/clip1/video/height/values".format(i+1)
 				msg = osc_message_builder.OscMessageBuilder(address = buildup)
