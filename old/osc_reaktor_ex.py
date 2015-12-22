@@ -88,7 +88,7 @@ if __name__ == "__main__":
       "--server_ip", default="127.0.0.1",
       help="The ip to listen to for reaktor OSC messages")
   parser.add_argument(
-      "--server_port", type=int, default=7001,
+      "--server_port", type=int, default=7000,
       help="The port to listen on for reaktor OSC messages")
   parser.add_argument("--client_ip",
       default="127.0.0.1", help="The ip to listen on")
@@ -108,7 +108,8 @@ if __name__ == "__main__":
   dispatcher = dispatcher.Dispatcher()
   dispatcher.map("/debug", logging.debug)
   #dispatcher.map("/activeclip/video/position/values", print)
-  dispatcher.map("/activeclip/video/position/values", put_in_queue, "beating")
+  #dispatcher.map("/activeclip/video/position/values", put_in_queue, "beating")
+  dispatcher.map("/midi",print)
   #dispatcher.map("/activeclip/video/position/direction", put_in_queue, "blocks")
   #dispatcher.map("/activeclip/video/position/speed", put_in_queue, "basic_Model")
   #dispatcher.map("/Do!", put_in_queue, "Do!")
