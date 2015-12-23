@@ -14,14 +14,16 @@ osc mapping is as follows
 			sec/ - seek to second
 			float/ - seek to position (0.0 - 1.0)
 			frame/ - seek to frame no (int?)
+/pyaud/connect/ [string, bool] - dis/connect certain outputs
 
 -- outputs (port 7008) --
 
-//pyaud/out/[1-8] - outputs from frequency buckets 1-8
-//pyaud/pos/
+/pyaud/out/[0-7] - outputs from frequency buckets 0-7
+/pyaud/pos/
 			sec/ - position in seconds
 			float/ - (0.0 - 1.0)
-//pyaud/status/ - various status messages, ie file loaded, playing, paused
+			frame/ - position in frames
+/pyaud/status/ - various status messages, ie file loaded, playing, paused
 
 """
 import pyaudio, wave, time, sys, os, threading, struct
@@ -44,8 +46,6 @@ class PyaudioPlayer:
 	def __init__(self,ip="127.0.0.1",client_port=7008,debug=False):
 
 		self.debug = debug
-		# setup osc client
-		self.osc_client = udp_client.UDPClient(ip, client_port)
 		# setup audio things to keep track of
 		self.pyaud = pyaudio.PyAudio()
 		self.tot = -1
@@ -57,7 +57,13 @@ class PyaudioPlayer:
 		self.movinwin = np.zeros((WINDOW_SIZE,NO_LEVELS))
 
 		#osc stuff
-		self.osc_server = None
+		self.osc_server = None # holds osc server (runs in separate thread)
+		self.osc_to_send = { 'freq' : [], # which frequencies to send empty list means none
+			'pos_sec' : True, 'pos_float' : False, 'pos_frame' : False, # whether or not to send various positions
+			'status' : True # send server status
+		}
+		# setup osc client
+		self.osc_client = udp_client.UDPClient(ip, client_port)
 
 	def open(self,filename):
 		try:
@@ -71,6 +77,7 @@ class PyaudioPlayer:
 				def callback(in_data, frame_count, time_info, status):
 					data = wf.readframes(frame_count)
 					self.update_levels(calculate_levels(data,frame_count,framerate,len(self.levels)))
+					self.send_osc()
 					return (data, pyaudio.paContinue)
 				# print("n chans: ",wf.getnchannels(),"rate: ",wf.getframerate()) # 2 channels, 44100, frame count is 1024
 				self.stream = self.pyaud.open(format=self.pyaud.get_format_from_width(wf.getsampwidth()),
@@ -79,14 +86,22 @@ class PyaudioPlayer:
 				self.pause()
 				self.wf = wf
 				self.tot = wf.getnframes()
+				if self.osc_to_send['status']:
+					self.osc_client.send(build_msg('/pyaud/status','loaded'))
 		except:
 			return
 
 	def play(self):
-		if self.stream: self.stream.start_stream()
+		if self.stream: 
+			self.stream.start_stream()
+			if self.osc_to_send['status']:
+				self.osc_client.send(build_msg('/pyaud/status','playing'))
 
 	def pause(self):
-		if self.stream: self.stream.stop_stream()
+		if self.stream: 
+			self.stream.stop_stream()
+			if self.osc_to_send['status']:
+				self.osc_client.send(build_msg('/pyaud/status','paused'))
 
 	def seek_sec(self, seconds = 0.0):
 		if self.wf:
@@ -103,8 +118,12 @@ class PyaudioPlayer:
 			self.wf.close()
 			self.stream = None
 			self.wf = None
+			if self.osc_to_send['status']:
+				self.osc_client.send(build_msg('/pyaud/status','stopped'))
 
 	def quit(self):
+		if self.osc_to_send['status']:
+			self.osc_client.send(build_msg('/pyaud/status','quit'))
 		self.stop()
 		self.pyaud.terminate()
 		if self.osc_server:
@@ -115,9 +134,13 @@ class PyaudioPlayer:
 		return float(self.wf.tell())/self.wf.getframerate()
 
 	@property
-	def time_perc(self): # gets time as proportion 
-	    return self.wf.tell()/self.tot
+	def time_float(self): # gets time as proportion 
+		return self.wf.tell()/self.tot
 	
+	@property
+	def time_frame(self): # gets time as proportion 
+		return self.wf.tell()
+
 	@property
 	def playing(self):
 		return self.stream.is_active()
@@ -134,6 +157,22 @@ class PyaudioPlayer:
 
 		return [(self.levels[i] - self.minlevels[i])/(self.maxlevels[i] - self.minlevels[i]) 
 				for i in range(NO_LEVELS)]
+
+	def send_osc(self):
+		# send levels?
+		if self.osc_to_send['freq']:
+			lvls = self.get_scaled_levels()
+		for i in self.osc_to_send['freq']:
+			msg = build_msg('/pyaud/out/{}'.format(i),str(lvls[i]))
+			self.osc_client.send(msg)
+		pos_types = ['pos_sec','pos_float','pos_frame']
+		pos_funcs = [self.time_sec,self.time_float,self.time_frame]
+		pos_addr = []
+		for i in range(len(pos_types)):
+			if self.osc_to_send[pos_types[i]]:
+				msg = build_msg('/pyaud/pos/{}'.format(pos_types[i][4:]),pos_funcs[i])
+				if self.debug: print(msg.address, ', '.join(map(str,msg.params)))
+				self.osc_client.send(msg)
 
 	def setup_osc_server(self,gui=None,server_ip="127.0.0.1",server_port=7007):
 		self.osc_server = OscServer(server_ip,server_port)
@@ -193,6 +232,18 @@ class PyaudioPlayer:
 				print("seek_pos failed ",osc_msg)
 				pass
 		self.osc_server.dispatcher.map("/pyaud/seek/pos",osc_seek_pos)
+
+		def osc_connect(_,osc_msg):
+			if self.debug: print("osc_connect", osc_msg)
+			try:
+				msg_list = eval(osc_msg)
+				if msg_list[0] in self.osc_to_send:
+					self.osc_to_send[msg_list[0]] = msg_list[1]
+			except:
+				print("osc_connect failed ", osc_msg)
+				pass
+		self.osc_server.dispatcher.map("/pyaud/connect",osc_connect)
+
 		# self.osc_server.dispatcher.map()
 		self.osc_server.start()
 		if self.debug: print("osc started on {0}:{1}".format(server_ip,server_port))
@@ -210,6 +261,8 @@ class OscServer:
 	def stop(self):
 		self.server.shutdown()
 		self.server_thread.join()
+
+# helper fxns
 
 def calculate_levels(data,chunk,samplerate,no_levels=8):
 	fmt = "%dH"%(len(data)/2)
@@ -234,6 +287,12 @@ def calculate_levels(data,chunk,samplerate,no_levels=8):
 			  for i in range(0, size, size//no_levels)][:no_levels]
 	
 	return levels
+
+def build_msg(addr,arg):
+    msg = osc_message_builder.OscMessageBuilder(address = addr)
+    msg.add_arg(arg)
+    msg = msg.build()
+    return msg
 
 def main():
 	if len(sys.argv) < 2:
@@ -271,7 +330,7 @@ def osc_send_test():
 			time.sleep(0.06)
 			#print(lvls)
 			for i in range(len(lvls)):
-				buildup = "/pyaud/out/{}".format(i+1)
+				buildup = "/pyaud/out/{}".format(i)
 				msg = osc_message_builder.OscMessageBuilder(address = buildup)
 				msg.add_arg(float(lvls[i])) #*500/16384
 				msg = msg.build()

@@ -25,6 +25,8 @@ for lvl in lvls:
 	# print(list(map(lambda pair: max(pair),movinwin))) # this gets maximum of each of the wins
 	# what i want though is max for each of the levels
 	#print(movinwin) # ok movinwin works
-	print(np.amax(movinwin,0))
+#	print(np.amax(movinwin,0))
 
+st = 'pos_sec'
+print(st[4:])
 
