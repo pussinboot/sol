@@ -1,10 +1,33 @@
-# pyaudio wrapper with osc bindings (both send & receiving)
-import pyaudio, wave, time, sys, os
-from pythonosc import osc_message_builder
-from pythonosc import udp_client
+"""
+pyaudio wrapper with osc bindings
 
-import struct
+osc mapping is as follows
+
+-- inputs --
+
+/pyaud/open/ path-to-file (string)
+/pyaud/pp/
+			0 - pause
+			1 - play
+/pyaud/stop/
+			1 - stop
+/pyaud/seek/
+			sec/ - seek to second
+			float/ - seek to position (0.0 - 1.0)
+			frame/ - seek to frame no (int?)
+
+-- outputs --
+
+//pyaud/out/[1-8] - outputs from frequency buckets 1-8
+//pyaud/pos/
+			sec/ - position in seconds
+			float/ - (0.0 - 1.0)
+
+"""
+import pyaudio, wave, time, sys, os, threading, struct
+from pythonosc import osc_message_builder, udp_client, dispatcher, osc_server
 import numpy as np
+
 # ffmpeg -i song.mp3 song.wav
 
 # CONSTANTS
@@ -32,6 +55,9 @@ class PyaudioPlayer:
 		self.maxlevels = [1] * NO_LEVELS
 		self.minlevels = [0] * NO_LEVELS
 		self.movinwin = np.zeros((WINDOW_SIZE,NO_LEVELS))
+
+		#osc stuff
+		self.osc_server = None
 
 	def open(self,filename):
 		try:
@@ -65,6 +91,10 @@ class PyaudioPlayer:
 	def seek_sec(self, seconds = 0.0):
 		if self.wf:
 			self.wf.setpos(int(seconds * self.wf.getframerate()))
+
+	def seek_float(self, pos = 0.0):
+		if self.wf:
+			self.wf.setpos(int(pos*self.tot))
 
 	def stop(self):
 		if self.stream:
@@ -103,6 +133,63 @@ class PyaudioPlayer:
 		return [(self.levels[i] - self.minlevels[i])/(self.maxlevels[i] - self.minlevels[i]) 
 				for i in range(NO_LEVELS)]
 
+	def setup_osc_server(self,gui=None,server_ip="127.0.0.1",server_port=7000):
+		self.osc_server = OscControl(gui)
+		# map funcs to osc
+		def osc_open(_,osc_msg):
+			try:
+				filename = str(osc_msg)
+				self.open(filename)
+			except:
+				print("open failed ",osc_msg)
+				pass
+		self.osc_server.dispatcher.map("/pyaud/open",osc_open)
+
+		def osc_pps(_,osc_msg):
+			try:
+				p_or_p = int(osc_msg)
+				if p_or_p == 0:
+					self.pause()
+				elif p_or_p == 1:
+					self.play()
+				elif p_or_p == -1:
+					self.stop()
+			except:
+				print("pps failed ",osc_msg)
+				pass
+		self.osc_server.dispatcher.map("/pyaud/pps",osc_pps)
+
+		def osc_seek_sec(_,osc_msg):
+			try:
+				pos = float(osc_msg)
+				self.seek_sec(pos)
+			except:
+				print("seek_sec failed ",osc_msg)
+				pass
+		self.osc_server.dispatcher.map("/pyaud/seek/sec",osc_seek_sec)
+
+		def osc_seek_float(_,osc_msg):
+			try:
+				pos = float(osc_msg)
+				self.seek_float(pos)
+			except:
+				print("seek_float failed ",osc_msg)
+				pass
+		self.osc_server.dispatcher.map("/pyaud/seek/float",osc_seek_float)
+
+		def osc_seek_pos(_,osc_msg):
+			try:
+				pos = int(osc_msg)
+				if self.wf:
+					self.wf.setpos(pos)
+			except:
+				print("seek_pos failed ",osc_msg)
+				pass
+		self.osc_server.dispatcher.map("/pyaud/seek/pos",osc_seek_pos)
+		# self.osc_server.dispatcher.map()
+		# self.osc_server.start()
+
+
 
 def calculate_levels(data,chunk,samplerate,no_levels=8):
 	fmt = "%dH"%(len(data)/2)
@@ -127,6 +214,48 @@ def calculate_levels(data,chunk,samplerate,no_levels=8):
 			  for i in range(0, size, size//no_levels)][:no_levels]
 	
 	return levels
+
+class OscControl:
+	def __init__(self,gui,server_ip,server_port):
+		self.gui = gui
+		self.running = 0
+		self.refresh_int = 25
+		self.server_ip, self.server_port = server_ip,server_port
+		self.dispatcher = dispatcher.Dispatcher()
+		
+		#self.server_thread.start()
+
+	def put_in_queue(self,_,value):
+		arr = eval(value)
+		tor = (arr[:2],arr[2])
+		#print(tor)
+		self.queue.put(value)
+	
+	def start(self):
+		self.running = 1
+		self.gui.master.protocol("WM_DELETE_WINDOW",self.stop)
+		self.server = osc_server.ThreadingOSCUDPServer((self.server_ip, self.server_port), self.dispatcher)
+		self.server_thread = threading.Thread(target=self.server.serve_forever)
+		self.server_thread.start()
+		self.run_periodic = self.gui.master.after(self.refresh_int,self.periodicCall)
+
+	def stop(self):
+		self.running = 0
+		self.server.shutdown()
+		self.server_thread.join()
+
+# thread to update gui
+
+	def periodicCall(self):
+		self.gui.processIncoming()
+		if not self.running:
+			if self.run_periodic:
+				self.gui.master.after_cancel(self.run_periodic)
+				self.gui.quit()
+				self.gui.master.destroy()
+
+		self.run_periodic = self.gui.master.after(self.refresh_int,self.periodicCall)
+
 
 # to-do: scale the fft binned values so that they are individually from 0.0-1.0
 # by keeping track of max and min.. aka doing weighted scaling
@@ -158,7 +287,7 @@ if __name__ == '__main__':
 	count = 0
 	pp.play()
 	try:
-		while pp.playing:# and count < 100:
+		while pp.playing and count < 100:
 			#print("%d:%02d >>\t" % 
 			#	 (pp.time_sec // 60.0 , pp.time_sec % 60.0), pp.levels)
 			#print(pp.get_scaled_levels())
@@ -168,7 +297,7 @@ if __name__ == '__main__':
 			time.sleep(0.06)
 			#print(lvls)
 			for i in range(len(lvls)):
-				buildup = "/layer{}/clip1/video/height/values".format(i+1)
+				buildup = "/pyaud/out/{}".format(i+1)
 				msg = osc_message_builder.OscMessageBuilder(address = buildup)
 				msg.add_arg(float(lvls[i])) #*500/16384
 				msg = msg.build()
