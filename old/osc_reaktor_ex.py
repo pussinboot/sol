@@ -61,7 +61,7 @@ class ReaktorDisplay(multiprocessing.Process):
         for i in range(1,9):
           paramname = 'block{}'.format(i)
           try:
-            n = -int(self._parameters[paramname]*100)
+            n = -int(float(self._parameters[paramname])*100)
           except:
             n = 0
           pygame.draw.rect(
@@ -88,7 +88,7 @@ if __name__ == "__main__":
       "--server_ip", default="127.0.0.1",
       help="The ip to listen to for reaktor OSC messages")
   parser.add_argument(
-      "--server_port", type=int, default=7000,
+      "--server_port", type=int, default=7008,
       help="The port to listen on for reaktor OSC messages")
   parser.add_argument("--client_ip",
       default="127.0.0.1", help="The ip to listen on")
@@ -108,9 +108,9 @@ if __name__ == "__main__":
   dispatcher = dispatcher.Dispatcher()
   #dispatcher.map("/debug", logging.debug)
   #dispatcher.map("/activeclip/video/position/values", print)
-  for i in range(1,9):
-    st_1 = "/layer{}/clip1/video/height/values".format(i)
-    st_2 = "block{}".format(i)
+  for i in range(8):
+    st_1 = "/pyaud/out/{}".format(i)
+    st_2 = "block{}".format(i+1)
     dispatcher.map(st_1, put_in_queue, st_2)
   #dispatcher.map("/activeclip/video/position/direction", put_in_queue, "blocks")
   #dispatcher.map("/activeclip/video/position/speed", put_in_queue, "basic_Model")
