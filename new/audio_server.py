@@ -3,25 +3,25 @@ pyaudio wrapper with osc bindings
 
 osc mapping is as follows
 
--- inputs --
+-- inputs (port 7007) --
 
 /pyaud/open/ path-to-file (string)
-/pyaud/pp/
+/pyaud/pps/
 			0 - pause
 			1 - play
-/pyaud/stop/
-			1 - stop
+			-1 - stop
 /pyaud/seek/
 			sec/ - seek to second
 			float/ - seek to position (0.0 - 1.0)
 			frame/ - seek to frame no (int?)
 
--- outputs --
+-- outputs (port 7008) --
 
 //pyaud/out/[1-8] - outputs from frequency buckets 1-8
 //pyaud/pos/
 			sec/ - position in seconds
 			float/ - (0.0 - 1.0)
+//pyaud/status/ - various status messages, ie file loaded, playing, paused
 
 """
 import pyaudio, wave, time, sys, os, threading, struct
@@ -41,11 +41,11 @@ WINDOW_SIZE = 25
 
 class PyaudioPlayer:
 
-	def __init__(self,ip="127.0.0.1",port=7000,debug=False):
+	def __init__(self,ip="127.0.0.1",client_port=7008,debug=False):
 
 		self.debug = debug
 		# setup osc client
-		self.osc_client = udp_client.UDPClient(ip, port)
+		self.osc_client = udp_client.UDPClient(ip, client_port)
 		# setup audio things to keep track of
 		self.pyaud = pyaudio.PyAudio()
 		self.tot = -1
@@ -107,6 +107,8 @@ class PyaudioPlayer:
 	def quit(self):
 		self.stop()
 		self.pyaud.terminate()
+		if self.osc_server:
+			self.osc_server.stop()
 
 	@property
 	def time_sec(self): # gets time in seconds
@@ -133,10 +135,11 @@ class PyaudioPlayer:
 		return [(self.levels[i] - self.minlevels[i])/(self.maxlevels[i] - self.minlevels[i]) 
 				for i in range(NO_LEVELS)]
 
-	def setup_osc_server(self,gui=None,server_ip="127.0.0.1",server_port=7000):
-		self.osc_server = OscControl(gui)
+	def setup_osc_server(self,gui=None,server_ip="127.0.0.1",server_port=7007):
+		self.osc_server = OscServer(server_ip,server_port)
 		# map funcs to osc
 		def osc_open(_,osc_msg):
+			if self.debug: print("osc_open",osc_msg)
 			try:
 				filename = str(osc_msg)
 				self.open(filename)
@@ -146,6 +149,7 @@ class PyaudioPlayer:
 		self.osc_server.dispatcher.map("/pyaud/open",osc_open)
 
 		def osc_pps(_,osc_msg):
+			if self.debug: print("osc_pps",osc_msg)
 			try:
 				p_or_p = int(osc_msg)
 				if p_or_p == 0:
@@ -160,6 +164,7 @@ class PyaudioPlayer:
 		self.osc_server.dispatcher.map("/pyaud/pps",osc_pps)
 
 		def osc_seek_sec(_,osc_msg):
+			if self.debug: print("osc_seek_sec",osc_msg)
 			try:
 				pos = float(osc_msg)
 				self.seek_sec(pos)
@@ -169,6 +174,7 @@ class PyaudioPlayer:
 		self.osc_server.dispatcher.map("/pyaud/seek/sec",osc_seek_sec)
 
 		def osc_seek_float(_,osc_msg):
+			if self.debug: print("osc_seek_float",osc_msg)
 			try:
 				pos = float(osc_msg)
 				self.seek_float(pos)
@@ -178,6 +184,7 @@ class PyaudioPlayer:
 		self.osc_server.dispatcher.map("/pyaud/seek/float",osc_seek_float)
 
 		def osc_seek_pos(_,osc_msg):
+			if self.debug: print("osc_seek_pos",osc_msg)
 			try:
 				pos = int(osc_msg)
 				if self.wf:
@@ -187,9 +194,22 @@ class PyaudioPlayer:
 				pass
 		self.osc_server.dispatcher.map("/pyaud/seek/pos",osc_seek_pos)
 		# self.osc_server.dispatcher.map()
-		# self.osc_server.start()
+		self.osc_server.start()
+		if self.debug: print("osc started on {0}:{1}".format(server_ip,server_port))
 
+class OscServer:
+	def __init__(self,server_ip="127.0.0.1",server_port=6666):
+		self.server_ip, self.server_port = server_ip,server_port
+		self.dispatcher = dispatcher.Dispatcher()
 
+	def start(self):
+		self.server = osc_server.ThreadingOSCUDPServer((self.server_ip, self.server_port), self.dispatcher)
+		self.server_thread = threading.Thread(target=self.server.serve_forever)
+		self.server_thread.start()
+
+	def stop(self):
+		self.server.shutdown()
+		self.server_thread.join()
 
 def calculate_levels(data,chunk,samplerate,no_levels=8):
 	fmt = "%dH"%(len(data)/2)
@@ -215,51 +235,6 @@ def calculate_levels(data,chunk,samplerate,no_levels=8):
 	
 	return levels
 
-class OscControl:
-	def __init__(self,gui,server_ip,server_port):
-		self.gui = gui
-		self.running = 0
-		self.refresh_int = 25
-		self.server_ip, self.server_port = server_ip,server_port
-		self.dispatcher = dispatcher.Dispatcher()
-		
-		#self.server_thread.start()
-
-	def put_in_queue(self,_,value):
-		arr = eval(value)
-		tor = (arr[:2],arr[2])
-		#print(tor)
-		self.queue.put(value)
-	
-	def start(self):
-		self.running = 1
-		self.gui.master.protocol("WM_DELETE_WINDOW",self.stop)
-		self.server = osc_server.ThreadingOSCUDPServer((self.server_ip, self.server_port), self.dispatcher)
-		self.server_thread = threading.Thread(target=self.server.serve_forever)
-		self.server_thread.start()
-		self.run_periodic = self.gui.master.after(self.refresh_int,self.periodicCall)
-
-	def stop(self):
-		self.running = 0
-		self.server.shutdown()
-		self.server_thread.join()
-
-# thread to update gui
-
-	def periodicCall(self):
-		self.gui.processIncoming()
-		if not self.running:
-			if self.run_periodic:
-				self.gui.master.after_cancel(self.run_periodic)
-				self.gui.quit()
-				self.gui.master.destroy()
-
-		self.run_periodic = self.gui.master.after(self.refresh_int,self.periodicCall)
-
-
-# to-do: scale the fft binned values so that they are individually from 0.0-1.0
-# by keeping track of max and min.. aka doing weighted scaling
-
 def main():
 	if len(sys.argv) < 2:
 		print("pls supply a wav file")
@@ -280,8 +255,7 @@ def main():
 		print('bye')
 		pp.quit()
 
-
-if __name__ == '__main__':
+def osc_send_test():
 	pp = PyaudioPlayer()
 	pp.open('./test.wav')
 	count = 0
@@ -307,3 +281,21 @@ if __name__ == '__main__':
 	finally:
 		print('bye')
 		pp.quit()
+
+def osc_server_test():
+	pp = PyaudioPlayer(debug=True)
+	pp.setup_osc_server()
+	#pp.quit()
+	try:
+		while True:
+			time.sleep(.1)
+	except KeyboardInterrupt:
+		pass
+	finally:
+		print('bye')
+		pp.quit()
+
+
+if __name__ == '__main__':
+	osc_server_test()
+	#osc_send_test()
