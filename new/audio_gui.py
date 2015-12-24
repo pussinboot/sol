@@ -44,6 +44,7 @@ class MainGui:
 		# osc
 		self.osc_server = OscControl(self)
 		self.osc_client = udp_client.UDPClient("127.0.0.1", 7007)
+		self.osc_to_send = None
 
 		self.setup_menu()
 		self.progress_bar = ProgressBar(self)
@@ -106,12 +107,16 @@ class MainGui:
 			self.pausebut.config(state='disabled')
 
 	def setup_menu(self):
+
+		def change_connect():
+			set_connect = ConnectionSelect(self)
+
 		self.menubar = tk.Menu(self.root)
 		self.filemenu = tk.Menu(self.menubar,tearoff=0)
 		self.filemenu.add_command(label="open",command=self.open_file)
+		self.filemenu.add_command(label="set connections",command=change_connect)
 		self.filemenu.add_command(label="quit",command=self.osc_server.stop)
 		self.menubar.add_cascade(label='file',menu=self.filemenu)
-
 		self.root.config(menu=self.menubar)
 
 	def open_file(self):
@@ -153,7 +158,38 @@ class ProgressBar:
 	def move_bar(self,new_x):
 		self.canvas.coords(self.pbar,new_x,0,new_x,self.height)
 
+class ConnectionSelect:
+	# to-do: 
+	# add checkbuttons + corresponding tk.IntVar()s for each of the thing that can be configured
+	def __init__(self,parent):
+		self.parent = parent
+		self.top = tk.Toplevel()
+		self.frame = tk.Frame(self.top)
+		self.frame.pack()
+		if not self.parent.osc_to_send:
+			self.parent.osc_to_send = { 'freq' : [], # which frequencies to send empty list means none
+			'pos_sec' : True, 'pos_float' : True, 'pos_frame' : False, # whether or not to send various positions
+			'status' : True # send server status
+			}
 
+		self.settings_frame = tk.Frame(self.frame)
+		self.buttons_frame = tk.Frame(self.frame)
+		self.settings_frame.pack()
+		self.buttons_frame.pack(side=tk.BOTTOM,fill=tk.X)
+
+
+
+		sendbut =  tk.Button(self.buttons_frame,text="OK",padx=8,pady=4,
+								command = self.pack_n_send)
+		sendbut.pack(side=tk.BOTTOM)
+
+	def pack_n_send(self):
+		# create the /pyaud/connect osc message and send it off
+		# 
+		for k, v in self.parent.osc_to_send.items():
+			msg = build_msg('/pyaud/connect',str([k,v]))
+			self.parent.osc_client.send(msg)
+		self.top.destroy()
 
 class OscControl:
 	def __init__(self,gui=None,server_ip="127.0.0.1",server_port=7008):

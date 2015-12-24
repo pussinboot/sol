@@ -14,7 +14,7 @@ osc mapping is as follows
 			sec/ - seek to second
 			float/ - seek to position (0.0 - 1.0)
 			frame/ - seek to frame no (int?)
-/pyaud/connect/ [string, bool] - dis/connect certain outputs
+/pyaud/connect [string, bool] - dis/connect certain outputs
 
 -- outputs (port 7008) --
 
