@@ -59,7 +59,7 @@ class PyaudioPlayer:
 		#osc stuff
 		self.osc_server = None # holds osc server (runs in separate thread)
 		self.osc_to_send = { 'freq' : [], # which frequencies to send empty list means none
-			'pos_sec' : True, 'pos_float' : False, 'pos_frame' : False, # whether or not to send various positions
+			'pos_sec' : True, 'pos_float' : True, 'pos_frame' : False, # whether or not to send various positions
 			'status' : True # send server status
 		}
 		# setup osc client
@@ -171,7 +171,7 @@ class PyaudioPlayer:
 		for i in range(len(pos_types)):
 			if self.osc_to_send[pos_types[i]]:
 				msg = build_msg('/pyaud/pos/{}'.format(pos_types[i][4:]),pos_funcs[i])
-				if self.debug: print(msg.address, ', '.join(map(str,msg.params)))
+				# if self.debug: print(msg.address, ', '.join(map(str,msg.params))) # getting annoying lol
 				self.osc_client.send(msg)
 
 	def setup_osc_server(self,gui=None,server_ip="127.0.0.1",server_port=7007):
@@ -347,7 +347,7 @@ def osc_server_test():
 	#pp.quit()
 	try:
 		while True:
-			time.sleep(.1)
+			time.sleep(.5)
 	except KeyboardInterrupt:
 		pass
 	finally:
