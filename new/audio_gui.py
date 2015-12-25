@@ -168,24 +168,51 @@ class ConnectionSelect:
 		self.frame.pack()
 		if not self.parent.osc_to_send:
 			self.parent.osc_to_send = { 'freq' : [], # which frequencies to send empty list means none
-			'pos_sec' : True, 'pos_float' : True, 'pos_frame' : False, # whether or not to send various positions
-			'status' : True # send server status
+			'pos_sec' : True, 'pos_float' : True, 'pos_frame' : False # whether or not to send various positions
 			}
 
 		self.settings_frame = tk.Frame(self.frame)
+		self.settings_label = tk.Label(self.settings_frame,text='configure what values to send\nfrom the osc server.')
+		self.settings_label.pack()
+		self.freq_frame = tk.LabelFrame(self.settings_frame,text='freq buckets')
+		self.freq_frame.pack(side=tk.TOP,fill=tk.X)
+		self.freq_vars = []
+		for i in range(8):
+			freq_var = tk.IntVar()
+			self.freq_vars.append(freq_var)
+			check_freq = tk.Checkbutton(self.freq_frame,variable = freq_var,text=str(i))
+			check_freq.grid(row=(i//4),column=(i%4))
+		self.pos_frame = tk.LabelFrame(self.settings_frame,text='freq buckets')
+		self.pos_frame.pack(side=tk.TOP,fill=tk.X)
+		self.pos_vars = {}
+		for pos in ['pos_sec','pos_float','pos_frame']:
+			pos_var = tk.IntVar()
+			self.pos_vars[pos] = pos_var
+			check_freq = tk.Checkbutton(self.pos_frame,variable = pos_var,text=pos[4:])
+			check_freq.pack(side=tk.LEFT)
 		self.buttons_frame = tk.Frame(self.frame)
 		self.settings_frame.pack()
 		self.buttons_frame.pack(side=tk.BOTTOM,fill=tk.X)
 
-
-
 		sendbut =  tk.Button(self.buttons_frame,text="OK",padx=8,pady=4,
 								command = self.pack_n_send)
 		sendbut.pack(side=tk.BOTTOM)
+		self.unpack_to_send()
+
+	def unpack_to_send(self):
+		freqs = self.parent.osc_to_send['freq']
+		for i in range(len(freqs)):
+			self.freq_vars[i].set(int(freqs[i]))
+		for pos in self.pos_vars:
+			self.pos_vars[pos].set(int(self.parent.osc_to_send[pos]))
+
 
 	def pack_n_send(self):
 		# create the /pyaud/connect osc message and send it off
-		# 
+		freq_list = [bool(x.get()) for x in self.freq_vars]
+		self.parent.osc_to_send['freq'] = freq_list
+		for pos in self.pos_vars:
+			self.parent.osc_to_send[pos] = bool(self.pos_vars[pos].get())
 		for k, v in self.parent.osc_to_send.items():
 			msg = build_msg('/pyaud/connect',str([k,v]))
 			self.parent.osc_client.send(msg)
