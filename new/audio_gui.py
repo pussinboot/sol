@@ -1,11 +1,12 @@
-from pythonosc import osc_message_builder, udp_client, dispatcher, osc_server
 
 import tkinter as tk
 import tkinter.filedialog as tkfd
 import tkinter.messagebox as tkmb
 from tkinter import ttk
 
-import threading,os
+import os
+
+from sol_backend import ControlR, ServeR
 
 # gui should be like
 # file -> open
@@ -31,7 +32,6 @@ class MainGui:
 		self.control_frame = tk.Frame(self.frame)
 		self.progress_frame = tk.Frame(self.frame)
 
-		self.setup_buttons()
 
 		self.progress_var = tk.StringVar()
 		self.progress_var.set("--:--")
@@ -42,10 +42,11 @@ class MainGui:
 		self.progress_frame.pack()
 		self.frame.pack(expand=True,fill=tk.BOTH)
 		# osc
-		self.osc_server = OscControl(self)
-		self.osc_client = udp_client.UDPClient("127.0.0.1", 7007)
+		self.osc_server = ServeR(self,port=7008)
+		self.osc_client = ControlR(port=7007)
 		self.osc_to_send = None
 
+		self.setup_buttons()
 		self.setup_menu()
 		self.progress_bar = ProgressBar(self)
 		self.osc_start()
@@ -64,17 +65,17 @@ class MainGui:
 				self.progress_bar.move_bar(float_perc*self.progress_bar.width)
 			except:
 				self.progress_bar.move_bar(0)
-		self.osc_server.dispatcher.map("/pyaud/pos/sec",sec_to_str)
-		self.osc_server.dispatcher.map("/pyaud/pos/float",float_to_prog)
-		self.osc_server.dispatcher.map("/pyaud/status",self.buttons_enabler)
+		self.osc_server.map("/pyaud/pos/sec",sec_to_str)
+		self.osc_server.map("/pyaud/pos/float",float_to_prog)
+		self.osc_server.map("/pyaud/status",self.buttons_enabler)
 		self.osc_server.start()
 
 	def setup_buttons(self):
 		# osc msgs
 
-		play = build_msg('/pyaud/pps',1)
-		pause = build_msg('/pyaud/pps',0)
-		stop = build_msg('/pyaud/pps',-1)
+		play = self.osc_client.build_msg('/pyaud/pps',1)
+		pause = self.osc_client.build_msg('/pyaud/pps',0)
+		stop = self.osc_client.build_msg('/pyaud/pps',-1)
 
 		def gen_osc_send(msg):
 			def sender():
@@ -123,7 +124,7 @@ class MainGui:
 		filename = tkfd.askopenfilename(parent=root,title='Choose your WAV file')
 		splitname = os.path.splitext(filename)
 		if splitname[1] == '.wav' or splitname[1] == '.WAV':
-			self.osc_client.send(build_msg('/pyaud/open',filename))
+			self.osc_client.build_n_send('/pyaud/open',filename)
 		else:
 			tkmb.showerror("Bad file","please choose a proper .wav file")
 
@@ -152,8 +153,7 @@ class ProgressBar:
 	def find_mouse(self,event):
 		#print(event.x, event.y)
 		self.move_bar(event.x)
-		msg = build_msg('/pyaud/seek/float',event.x/self.width)
-		self.parent.osc_client.send(msg)
+		self.parent.osc_client.build_n_send('/pyaud/seek/float',event.x/self.width)
 
 	def move_bar(self,new_x):
 		self.canvas.coords(self.pbar,new_x,0,new_x,self.height)
@@ -206,7 +206,6 @@ class ConnectionSelect:
 		for pos in self.pos_vars:
 			self.pos_vars[pos].set(int(self.parent.osc_to_send[pos]))
 
-
 	def pack_n_send(self):
 		# create the /pyaud/connect osc message and send it off
 		freq_list = [bool(x.get()) for x in self.freq_vars]
@@ -214,30 +213,8 @@ class ConnectionSelect:
 		for pos in self.pos_vars:
 			self.parent.osc_to_send[pos] = bool(self.pos_vars[pos].get())
 		for k, v in self.parent.osc_to_send.items():
-			msg = build_msg('/pyaud/connect',str([k,v]))
-			self.parent.osc_client.send(msg)
+			self.parent.osc_client.build_n_send('/pyaud/connect',str([k,v]))
 		self.top.destroy()
-
-class OscControl:
-	def __init__(self,gui=None,server_ip="127.0.0.1",server_port=7008):
-		self.gui = gui
-		self.running = 0
-		self.refresh_int = 25
-		self.server_ip, self.server_port = server_ip,server_port
-		self.dispatcher = dispatcher.Dispatcher()
-
-	def start(self):
-		self.running = 1
-		self.gui.root.protocol("WM_DELETE_WINDOW",self.stop)
-		self.server = osc_server.ThreadingOSCUDPServer((self.server_ip, self.server_port), self.dispatcher)
-		self.server_thread = threading.Thread(target=self.server.serve_forever)
-		self.server_thread.start()
-
-	def stop(self):
-		self.running = 0
-		self.server.shutdown()
-		self.server_thread.join()
-		self.gui.root.destroy()
 
 if __name__ == '__main__':
 	root = tk.Tk()

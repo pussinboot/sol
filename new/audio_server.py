@@ -59,7 +59,7 @@ class PyaudioPlayer:
 		#osc stuff
 		self.osc_server = None # holds osc server (runs in separate thread)
 		self.osc_to_send = { 'freq' : [], # which frequencies to send empty list means none
-			'pos_sec' : True, 'pos_float' : True, 'pos_frame' : False, # whether or not to send various positions
+			'pos_sec' : True, 'pos_float' : True, 'pos_frame' : True, # whether or not to send various positions
 			'status' : True # send server status
 		}
 		# setup osc client
