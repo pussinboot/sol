@@ -98,6 +98,38 @@ class Playback:
 				except:
 					print("failed to parse line\n-\t",line)
 
+####
+
+class NewRecord:
+	"""
+	saves time from current position in song
+	along with a to-do action
+	for example
+		1024	connect_clip	'fname'
+		2048	go_to_cue	2
+	so, if action is w/o clip it does it to current_clip
+	each line looks like
+	[time, function, [parameters]]
+	"""
+	def __init__(self,time_ref):
+		self.messages = []
+		self.time_ref = time_ref
+
+	def add_line(self,fxn,*args):
+		self.messages.append([self.time_ref.value(),fxn,[args]])
+	# just make sure that whatever fxn is added can be looked up in ControlR 
+	# so that the reverse operation is possible
+
+
+
+
+
+
+
+
+
+
+
 if __name__ == '__main__':
 	#test_record = Record()
 
