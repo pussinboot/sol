@@ -2,6 +2,27 @@ from file_io import SavedXMLParse
 from pythonosc import dispatcher, osc_server, osc_message_builder, udp_client
 import threading, os
 
+class Backend:
+	"""
+	entire backend for sol
+	"""
+	def __init__(self,xmlfile=None,gui=None):
+		self.library = Library(xmlfile)
+		self.osc_client = ControlR(port=7007)
+		self.osc_server = ServeR(gui,port=7008)
+
+		self.cur_time = None # needs to have .value field so that can save value at diff times not just pass around same reference
+		def update_time(_,msg): # this is the driving force behind the backend :o)
+			try:				# add going through log file and redoing it in playback mode
+								# plus making of the log file in record mode
+				self.cur_time = int(msg)
+				print(self.cur_time)
+			except:
+				pass
+		self.osc_server.map("/pyaud/pos/frame",update_time)
+		# add midi control here
+		self.osc_server.start()
+
 class Library:
 	"""
 	collection of many clips, organized by unique identifier (filename) and tag
@@ -49,7 +70,8 @@ class ControlR:
 	an interface to control resolume 
 	"""
 
-	def __init__(self,ip="127.0.0.1",port=7000):
+	def __init__(self,backend,ip="127.0.0.1",port=7000):
+		self.backend = backend
 		self.osc_client = udp_client.UDPClient(ip, port)
 		self.current_clip = None
 		self.send = self.osc_client.send
@@ -67,6 +89,28 @@ class ControlR:
 		addr = "/layer{0}/clip{1}/connect".format(*clip.loc)
 		self.osc_client.build_n_send(addr,1)
 		self.current_clip = clip
+
+	### CUE POINTS ###
+
+	def set_q(self,clip,i):
+		clip.qp[i] = self.backend.cur_time # no, needs to be ref to curr clip's position..
+		# self.backend.cur_pos[clip_layer]
+
+	def get_q(self,clip,i):
+		print(clip.qp[i])
+		# self.out_command(clip.qp[i])
+
+	def clear_q(self,clip,i):
+		clip.qp[i] = None
+
+	def activate(self,clip,i):
+		if clip.qp[i]:
+			self.get_q(clip,i)
+		else:
+			self.set_q(clip,i)
+
+	### looping behavior
+	# select any 2 cue points, once reach one of them jump to the other
 
 class ServeR:
 	"""
@@ -98,6 +142,16 @@ class ServeR:
 
 
 if __name__ == '__main__':
-	test_lib = Library('../old/test.avc')
-	print(test_lib.clip_names)
-	#print(test_lib.clips['D:\\Downloads\\DJ\\vj\\vids\\organized\\gundam\\dxv\\Cca Amuro Vs Cute Gril.mov'].params)
+	# test_lib = Library('../old/test.avc')
+	# print(test_lib.clip_names)
+	# print(test_lib.clips['D:\\Downloads\\DJ\\vj\\vids\\organized\\gundam\\dxv\\Cca Amuro Vs Cute Gril.mov'].params)
+	import time
+	bb = Backend('../old/test.avc')
+	bb.osc_client.build_n_send('/pyaud/open','./test.wav')
+	time.sleep(.5)
+	bb.osc_client.build_n_send('/pyaud/pps',1)
+	time.sleep(2)
+	bb.osc_client.build_n_send('/pyaud/pps',-1)
+	time.sleep(.1)
+	bb.osc_server.stop()
+
