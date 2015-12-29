@@ -1,27 +1,56 @@
+"""
+sol backend
+for now concentrating on controlling a single clip
+allows for recording osc actions to a soundtrack
+"""
+
 from file_io import SavedXMLParse
 from pythonosc import dispatcher, osc_server, osc_message_builder, udp_client
-import threading, os
+import threading, os, random
 
 class Backend:
 	"""
 	entire backend for sol
 	"""
-	def __init__(self,xmlfile=None,gui=None):
+	def __init__(self,xmlfile=None,gui=None,ports=(7007,7008)):
 		self.library = Library(xmlfile)
-		self.osc_client = ControlR(port=7007)
-		self.osc_server = ServeR(gui,port=7008)
+		self.osc_client = ControlR(self,port=ports[0]) 
+		self.osc_server = ServeR(gui,port=ports[1])
 
-		self.cur_time = None # needs to have .value field so that can save value at diff times not just pass around same reference
+		self.cur_time = RefObj("cur_time")
+		self.cur_clip_pos = RefObj("cur_clip_pos")
+
 		def update_time(_,msg): # this is the driving force behind the backend :o)
 			try:				# add going through log file and redoing it in playback mode
 								# plus making of the log file in record mode
-				self.cur_time = int(msg)
+				self.cur_time.value = int(msg)
 				print(self.cur_time)
 			except:
 				pass
-		self.osc_server.map("/pyaud/pos/frame",update_time)
+		#self.osc_server.map("/pyaud/pos/frame",update_time)
+		self.osc_server.map("/activeclip/video/position/values",self.cur_clip_pos.update_generator('float'))
 		# add midi control here
-		self.osc_server.start()
+		#self.osc_server.start()
+
+class RefObj:
+	"""
+	special object that can be used to refer to an osc value
+	"""
+	def __init__(self,name,value=None):
+		self.name = name
+		self.value = value
+	def __str__(self):
+		return "{0}:\t{1}".format(self.name,self.value.__str__())
+	def update_generator(self,type="int"):
+		lookup = {'int':int,'float':float,'str':str}
+		def fun_tor(_,msg):
+			try:
+				self.value = lookup[type](msg)
+				print(self) # for debugging
+			except:
+				pass
+		return fun_tor
+
 
 class Library:
 	"""
@@ -64,6 +93,12 @@ class Library:
 				clip.remove_tag(tag)
 			del self.tags[tag]
 
+	def random_clip(self):
+		lame_list = list(self.clips)
+		return self.clips[random.choice(lame_list)]
+
+
+
 class ControlR:
 	"""
 	osc client with special bindings used as
@@ -87,18 +122,16 @@ class ControlR:
 
 	def select_clip(self,clip):
 		addr = "/layer{0}/clip{1}/connect".format(*clip.loc)
-		self.osc_client.build_n_send(addr,1)
+		self.build_n_send(addr,1)
 		self.current_clip = clip
 
 	### CUE POINTS ###
 
 	def set_q(self,clip,i):
-		clip.qp[i] = self.backend.cur_time # no, needs to be ref to curr clip's position..
-		# self.backend.cur_pos[clip_layer]
+		clip.qp[i] = self.backend.cur_clip_pos.value 
 
 	def get_q(self,clip,i):
-		print(clip.qp[i])
-		# self.out_command(clip.qp[i])
+		self.build_n_send("/activeclip/video/position/values",clip.qp[i])
 
 	def clear_q(self,clip,i):
 		clip.qp[i] = None
@@ -150,7 +183,7 @@ if __name__ == '__main__':
 	bb.osc_client.build_n_send('/pyaud/open','./test.wav')
 	time.sleep(.5)
 	bb.osc_client.build_n_send('/pyaud/pps',1)
-	time.sleep(2)
+	time.sleep(10)
 	bb.osc_client.build_n_send('/pyaud/pps',-1)
 	time.sleep(.1)
 	bb.osc_server.stop()

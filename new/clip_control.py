@@ -1,23 +1,15 @@
-# basic gui for cue points
-
-# will look like:
-
-# --1--6-3----
-# [-][1][-][3]
-# [-][-][6][-]
-
+# basic clip control module
+# set / activate cue points
+# play/pause/reverse
+# seek
 import tkinter as tk
-from q_points import *
-class ClipCue:
-	# a little window for all the cues associated with a clip
-	def __init__(self,root,clip,cur_position,out_command):
-		
-		def out_wrapper(x):
-			out_command(x)
-			return True
+from sol_backend import Backend
 
-		self.qp = QPoints(cur_position, out_wrapper) # no_q can be changed if for example have only 4 pads or st
+class ClipControl:
+	def __init__(self,root,clip,backend):
+		# sol stuff
 		self.clip = clip
+		self.backend = backend
 
 		### tk stuff
 		self.root = root
@@ -31,7 +23,7 @@ class ClipCue:
 		self.frame.pack()
 
 	def setup_buttons(self):
-		n_buts = len(self.qp.qs)
+		n_buts = len(self.clip.qp)
 		n_rows = 1
 		if n_buts > 4:
 			n_rows = n_buts // 4
@@ -39,19 +31,22 @@ class ClipCue:
 
 		def gen_activate(i):
 			def tor():
-				#print(i)
-				self.qp.activate(i)
+				self.backend.osc_client.activate(self.clip,i)
+				self.buttons[i].config(relief='groove')
 			return tor
 
 		def gen_deactivate(i):
 			def tor(*args):
-				print(i)
-				self.qp.clear_q(i)
+				self.backend.osc_client.clear_q(self.clip,i)
+				self.buttons[i].config(relief='flat')
 			return tor
 
 		for r in range(n_rows):
 			for c in range(4):
-				but = tk.Button(self.button_frame,text=str(r*4+c),padx=10,pady=10,relief=tk.GROOVE)
+				but = tk.Button(self.button_frame,text=str(r*4+c),padx=10,pady=10,relief='flat') 
+				if self.clip.qp[r*4+c]:
+					but.config(relief='groove')
+				# make it so button is grooved if has cue
 				but.grid(row=r,column=c)
 				# tie it to fxn of q_points
 				if len(self.buttons) + 1 <= n_buts:
@@ -64,9 +59,14 @@ class ClipCue:
 				self.buttons.append(but)
 
 if __name__ == '__main__':
+	# testing
+	bb = Backend('../old/test.avc',ports=(7000,7001))
 	root = tk.Tk()
 	root.title('q_test')
-	dumvar = Baka(0.5)
-	out_command = lambda x: print(x)
-	test_cc = ClipCue(root,None,dumvar,out_command)
+	test_cc = ClipControl(root,bb.library.random_clip(),bb)
+	bb.osc_server.gui = test_cc
+	bb.osc_server.start()
+	# auto choose clip
+	bb.osc_client.select_clip(test_cc.clip)
 	root.mainloop()
+	bb.osc_client.build_n_send("/activelayer/clear",1)
