@@ -128,10 +128,14 @@ class ControlR:
 	### CUE POINTS ###
 
 	def set_q(self,clip,i):
-		clip.qp[i] = self.backend.cur_clip_pos.value 
+		qp = self.backend.cur_clip_pos.value 
+		clip.qp[i] = qp
+		return qp
 
 	def get_q(self,clip,i):
-		self.build_n_send("/activeclip/video/position/values",clip.qp[i])
+		qp = clip.qp[i]
+		self.build_n_send("/activeclip/video/position/values",qp)
+		return qp
 
 	def clear_q(self,clip,i):
 		clip.qp[i] = None
@@ -140,7 +144,7 @@ class ControlR:
 		if clip.qp[i]:
 			self.get_q(clip,i)
 		else:
-			self.set_q(clip,i)
+			return self.set_q(clip,i)
 
 	### looping behavior
 	# select any 2 cue points, once reach one of them jump to the other

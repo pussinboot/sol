@@ -1,6 +1,5 @@
 import os
-
-NO_Q = 8
+import CONSTANTS as C
 
 class Clip:
 	"""
@@ -18,7 +17,7 @@ class Clip:
 			self.name = name
 		# sol fields
 		self.tags = [] # for organizing library
-		self.qp = [None] * NO_Q # for better cue points
+		self.qp = [None] * C.NO_Q # for better cue points
 		self.control_addr = None # where to send osc 
 		self.speedup_factor = 1.0 # for better timeline control
 		
