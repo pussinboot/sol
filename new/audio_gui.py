@@ -5,6 +5,7 @@ import tkinter.messagebox as tkmb
 from tkinter import ttk
 
 import os
+import CONSTANTS as C
 
 from sol_backend import ControlR, ServeR
 
@@ -48,7 +49,7 @@ class MainGui:
 
 		self.setup_buttons()
 		self.setup_menu()
-		self.progress_bar = ProgressBar(self)
+		self.progress_bar = ProgressBar(self,'/pyaud/seek/float')
 		self.osc_start()
 
 	def osc_start(self):
@@ -62,7 +63,7 @@ class MainGui:
 		def float_to_prog(_,osc_msg):
 			try:
 				float_perc = float(osc_msg)
-				self.progress_bar.move_bar(float_perc*self.progress_bar.width)
+				#self.progress_bar.move_bar(float_perc*self.progress_bar.width)
 			except:
 				self.progress_bar.move_bar(0)
 		self.osc_server.map("/pyaud/pos/sec",sec_to_str)
@@ -129,13 +130,16 @@ class MainGui:
 			tkmb.showerror("Bad file","please choose a proper .wav file")
 
 class ProgressBar:
-	def __init__(self,parent,width=200,height=50):
+	def __init__(self,parent,sendaddr,width=200,height=50):
 
 		self.width, self.height = width, height
+		self.send_addr = sendaddr
+
+		self.lines = [None]*C.NO_Q
 
 		self.parent = parent
 		self.root = parent.root
-		self.frame = tk.Frame(root)
+		self.frame = tk.Frame(self.root)
 		self.canvas = tk.Canvas(self.frame,width=width,height=height,bg="black",scrollregion=(0,0,width,height))
 
 		self.hbar = tk.Scrollbar(self.frame,orient=tk.HORIZONTAL)
@@ -153,10 +157,29 @@ class ProgressBar:
 	def find_mouse(self,event):
 		#print(event.x, event.y)
 		self.move_bar(event.x)
-		self.parent.osc_client.build_n_send('/pyaud/seek/float',event.x/self.width)
+		self.parent.osc_client.build_n_send(self.send_addr,event.x/self.width)
 
 	def move_bar(self,new_x):
 		self.canvas.coords(self.pbar,new_x,0,new_x,self.height)
+
+	def add_line(self,x_float,i):
+		x_coord = x_float*self.width
+		self.lines[i] = self.canvas.create_line(x_coord,0,x_coord,self.height,
+			activefill='white',fill='#aaa',width=3,dash=(4,),tags='line')
+
+	def remove_line(self,i):
+		self.canvas.delete(self.lines[i])
+		self.lines[i] = None
+
+
+	def map_osc(self,addr):
+		def mapfun(_,msg):
+			try:
+				float_perc = float(msg)
+				self.move_bar(float_perc*self.width)
+			except:
+				self.move_bar(0)
+		self.parent.osc_server.map(addr,mapfun)
 
 class ConnectionSelect:
 	# to-do: 
