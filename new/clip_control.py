@@ -12,25 +12,34 @@ class ClipControl:
 	def __init__(self,root,clip,backend):
 		# sol stuff
 		self.clip = clip
+		self.clip.control_addr = '/activeclip/video/position/values' # temp for activeclip only
 		self.backend = backend
 		self.osc_client = self.backend.osc_client
 		self.osc_server = self.backend.osc_server
 
 		### tk stuff
 		self.root = root
+
 		self.frame = tk.Frame(root)
 		self.progress_frame = tk.Frame(self.frame)
 		self.cue_button_frame = tk.Frame(self.frame)
 		self.control_button_frame = tk.Frame(self.frame)
+		self.loop_frame = tk.Frame(self.frame)
+
 		self.progress_frame.pack(side=tk.TOP)
 		self.control_button_frame.pack(side=tk.TOP)
 		self.cue_button_frame.pack(side=tk.TOP)
+		self.loop_frame.pack(side=tk.TOP)
+
+		self.looping_controls = []
+		self.looping_vars = {}
+		self.setup_looping()
 		self.cue_buttons = []
 		self.setup_cue_buttons()
 		self.control_buttons = []
 		self.setup_control_buttons()
-		self.progress_bar = ProgressBar(self,'/activeclip/video/position/values')
-		self.progress_bar.map_osc('/activeclip/video/position/values')
+		self.progress_bar = ProgressBar(self,self.clip.control_addr)
+		self.progress_bar.map_osc(self.clip.control_addr)
 		def move_cue(i,x):
 			self.osc_client.set_q(self.clip,i,x)
 		self.progress_bar.drag_release_action = move_cue
@@ -91,15 +100,39 @@ class ClipControl:
 		rndbut = tk.Button(self.control_button_frame,text="*",padx=8,pady=8,
 			command=self.gen_osc_sender('/activeclip/video/position/direction',3))
 		clearbut = tk.Button(self.control_button_frame,text="X",padx=8,pady=8,
-			command=self.gen_osc_sender('/activelayer/clear',1))
+			command=self.gen_osc_sender('/layer{}/clear'.format(self.clip.loc[0]),1)) # depends 
+										# if activating clip activates on own layer or on activelayer..
+										# '/activelayer/clear'
 
 		for but in [playbut, pausebut, rvrsbut, rndbut, clearbut]:
 			but.pack(side=tk.LEFT)
 
+	def setup_looping(self):
+		"""
+		control panel for looping between any two cue points 
+		also can control playback speed, 
+		and the (eventual) controller -> timeshift transpose rate
+
+		for now has 2 dropdowns.. and 2 spinboxes
+		"""
+		speed_var = tk.StringVar()
+		self.looping_vars['speed'] = speed_var
+		speed_var.set(str(self.clip.speedup_factor))
+		speed_box = tk.Spinbox(self.loop_frame,from_=0.0,to=10.0,increment=0.1,format="%.2f",textvariable=speed_var)
+		def send_speed():
+			speed = float(self.looping_vars['speed'].get())/10.0
+			self.osc_client.build_n_send('/activeclip/video/position/speed',speed)
+		speed_box.config(command=send_speed) # temporary, will need to also
+		# update the speedup factor in the clip itself.. and go to correct address
+		self.looping_controls.append(speed_box)
+
+		for control in self.looping_controls:
+			control.pack(side=tk.LEFT)
+
 
 if __name__ == '__main__':
 	# testing
-	bb = Backend('../old/test.avc',ports=(7000,7001))
+	bb = Backend('./test_ex.avc',ports=(7000,7001)) # '../old/test.avc'
 	root = tk.Tk()
 	root.title('controlR_test')
 	test_cc = ClipControl(root,bb.library.random_clip(),bb)
