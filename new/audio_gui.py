@@ -134,6 +134,8 @@ class ProgressBar:
 
 		self.width, self.height = width, height
 		self.send_addr = sendaddr
+		self._drag_data = {"x": 0, "y": 0, "item": None}
+		self.drag_release_action = print
 
 		self.lines = [None]*C.NO_Q
 
@@ -151,12 +153,21 @@ class ProgressBar:
 
 		self.canvas.bind("<B1-Motion>",self.find_mouse)
 		self.canvas.bind("<ButtonRelease-1>",self.find_mouse)
+		self.canvas.tag_bind("line","<ButtonPress-2>",self.drag_begin)
+		self.canvas.tag_bind("line","<ButtonRelease-2>",self.drag_end)
+		self.canvas.tag_bind("line","<B2-Motion>",self.drag)
+		self.canvas.tag_bind("line","<ButtonPress-1>",self.find_nearest)
+
 		self.canvas.pack()
 		self.frame.pack()
 
 	def find_mouse(self,event):
 		#print(event.x, event.y)
 		self.move_bar(event.x)
+		self.parent.osc_client.build_n_send(self.send_addr,event.x/self.width)
+
+	def find_nearest(self,event):
+		item = self.canvas.find_closest(event.x, event.y)[0]
 		self.parent.osc_client.build_n_send(self.send_addr,event.x/self.width)
 
 	def move_bar(self,new_x):
@@ -171,6 +182,31 @@ class ProgressBar:
 		self.canvas.delete(self.lines[i])
 		self.lines[i] = None
 
+	def drag_begin(self, event):
+		# record the item and its location
+		item = self.canvas.find_closest(event.x, event.y)[0]
+		self._drag_data["item"] = item
+		self._drag_data["x"] = event.x
+		self._drag_data["y"] = event.y
+
+	def drag_end(self, event):
+		if self.drag_release_action:
+			i = self.lines.index(self._drag_data["item"])
+			self.drag_release_action(i,event.x/self.width)
+		# reset the drag information
+		self._drag_data["item"] = None
+		self._drag_data["x"] = 0
+		#self._drag_data["y"] = 0
+
+	def drag(self, event):
+		# compute how much this object has moved
+		delta_x = event.x - self._drag_data["x"]
+		#delta_y = event.y - self._drag_data["y"]
+		# move the object the appropriate amount
+		self.canvas.move(self._drag_data["item"], delta_x, 0)# delta_y)
+		# record the new position
+		self._drag_data["x"] = event.x
+		#self._drag_data["y"] = event.y	
 
 	def map_osc(self,addr):
 		def mapfun(_,msg):

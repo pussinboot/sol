@@ -127,8 +127,9 @@ class ControlR:
 
 	### CUE POINTS ###
 
-	def set_q(self,clip,i):
-		qp = self.backend.cur_clip_pos.value 
+	def set_q(self,clip,i,qp=None):
+		if not qp:
+			qp = self.backend.cur_clip_pos.value 
 		clip.qp[i] = qp
 		return qp
 

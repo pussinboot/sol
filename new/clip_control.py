@@ -1,6 +1,6 @@
 # basic clip control module
 # to-do
-# cue-lines - middle click to move?
+# add little numbers under cue spots : )
 # looping
 # speedup
 # then.. everything to save this per clip ;D
@@ -31,6 +31,9 @@ class ClipControl:
 		self.setup_control_buttons()
 		self.progress_bar = ProgressBar(self,'/activeclip/video/position/values')
 		self.progress_bar.map_osc('/activeclip/video/position/values')
+		def move_cue(i,x):
+			self.osc_client.set_q(self.clip,i,x)
+		self.progress_bar.drag_release_action = move_cue
 		self.frame.pack()
 
 	def setup_cue_buttons(self):
