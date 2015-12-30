@@ -2,6 +2,9 @@
 sol backend
 for now concentrating on controlling a single clip
 allows for recording osc actions to a soundtrack
+
+resolume notes - 
+timeline needs to be transport
 """
 
 from file_io import SavedXMLParse
