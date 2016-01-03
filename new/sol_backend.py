@@ -187,9 +187,9 @@ class ControlR:
 				return
 			elif clip.playdir == 0 or clip.playdir == -2:
 				return
-			if clip.playdir == -1 and check_within(time,clip.qp[clip.lp[0]]):
+			if clip.playdir == -1 and time - clip.qp[clip.lp[0]] < 0:
 				self.activate(clip,clip.lp[1])
-			elif clip.playdir == 1 and check_within(time,clip.qp[clip.lp[1]]):
+			elif clip.playdir == 1 and time - clip.qp[clip.lp[1]] > 0:
 				self.activate(clip,clip.lp[0])
 
 		playfun = [lambda: None,self.play,self.reverse] # 1 goes to play, -1 goes to reverse, 0 does nothing
@@ -198,10 +198,12 @@ class ControlR:
 				return
 			if clip.playdir == 0 or clip.playdir == -2:
 				return
-			if clip.playdir == -1 and check_within(time,clip.qp[clip.lp[0]]):
+			if clip.playdir == -1 and time - clip.qp[clip.lp[0]] < 0:
 				playfun[-1*clip.playdir](clip)
-			elif clip.playdir == 1 and check_within(time,clip.qp[clip.lp[1]]):
+				self.activate(clip,clip.lp[0])
+			elif clip.playdir == 1 and time - clip.qp[clip.lp[1]] > 0:
 				playfun[-1*clip.playdir](clip)
+				self.activate(clip,clip.lp[1])
 		loop_type_to_fun = {'default':default_loop,'bounce':bounce_loop}
 		def map_fun(toss,msg):
 			keep_pos_fun(toss,msg)	# keep default behavior
@@ -249,8 +251,8 @@ if __name__ == '__main__':
 	bb.osc_client.build_n_send('/pyaud/open','./test.wav')
 	time.sleep(.5)
 	bb.osc_client.build_n_send('/pyaud/pps',1)
-	time.sleep(10)
+	time.sleep(1)
 	bb.osc_client.build_n_send('/pyaud/pps',-1)
 	time.sleep(.1)
-	bb.osc_server.stop()
+	#bb.osc_server.stop()
 
