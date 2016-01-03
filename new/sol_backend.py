@@ -113,6 +113,7 @@ class ControlR:
 		self.osc_client = udp_client.UDPClient(ip, port)
 		self.current_clip = None
 		self.send = self.osc_client.send
+		self.setup_control()
 
 	def build_msg(self,addr,arg):
 		msg = osc_message_builder.OscMessageBuilder(address = addr)
@@ -150,8 +151,65 @@ class ControlR:
 		else:
 			return self.set_q(clip,i)
 
+	### playback control
+
+	def setup_control(self):
+		def gen_control_sender(addr,msg,direction):
+			osc_msg = self.build_msg(addr,msg)
+			def fun_tor(clip=None):
+				self.send(osc_msg)
+				if clip:
+					clip.playdir = direction
+			return fun_tor
+		self.play = gen_control_sender('/activeclip/video/position/direction',1,1)
+		self.reverse = gen_control_sender('/activeclip/video/position/direction',0,-1)
+		self.pause = gen_control_sender('/activeclip/video/position/direction',2,0)
+		self.random_play = gen_control_sender('/activeclip/video/position/direction',3,-2)
+
 	### looping behavior
 	# select any 2 cue points, once reach one of them jump to the other
+
+	def map_loop(self,clip):
+		"""
+		maps a function to osc_server that looks at curr pos 
+		and flips it to perform next correct action
+		if default looping - hit cue a go to b
+		if bounce - hit cue a, reverse direction, hit cue b, reverse direction
+		"""
+		keep_pos_fun = self.backend.cur_clip_pos.update_generator('float')
+		single_frame = clip.single_frame_float()
+		def check_within(time,compare,factor=10):
+			dt = abs(time - compare)
+			return dt <= factor*single_frame
+
+		def default_loop(time):
+			if not clip.loopon:
+				return
+			elif clip.playdir == 0 or clip.playdir == -2:
+				return
+			if clip.playdir == -1 and check_within(time,clip.qp[clip.lp[0]]):
+				self.activate(clip,clip.lp[1])
+			elif clip.playdir == 1 and check_within(time,clip.qp[clip.lp[1]]):
+				self.activate(clip,clip.lp[0])
+
+		playfun = [lambda: None,self.play,self.reverse] # 1 goes to play, -1 goes to reverse, 0 does nothing
+		def bounce_loop(time):
+			if not clip.loopon:
+				return
+			if clip.playdir == 0 or clip.playdir == -2:
+				return
+			if clip.playdir == -1 and check_within(time,clip.qp[clip.lp[0]]):
+				playfun[-1*clip.playdir](clip)
+			elif clip.playdir == 1 and check_within(time,clip.qp[clip.lp[1]]):
+				playfun[-1*clip.playdir](clip)
+		loop_type_to_fun = {'default':default_loop,'bounce':bounce_loop}
+		def map_fun(toss,msg):
+			keep_pos_fun(toss,msg)	# keep default behavior
+			curval = float(msg)
+			loop_type_to_fun[clip.looptype](curval)
+
+		self.backend.osc_server.map("/activeclip/video/position/values",map_fun)
+
 
 class ServeR:
 	"""

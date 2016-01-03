@@ -153,9 +153,9 @@ class ProgressBar:
 
 		self.canvas.bind("<B1-Motion>",self.find_mouse)
 		self.canvas.bind("<ButtonRelease-1>",self.find_mouse)
-		self.canvas.tag_bind("line","<ButtonPress-2>",self.drag_begin)
-		self.canvas.tag_bind("line","<ButtonRelease-2>",self.drag_end)
-		self.canvas.tag_bind("line","<B2-Motion>",self.drag)
+		self.canvas.tag_bind("line","<ButtonPress-3>",self.drag_begin)
+		self.canvas.tag_bind("line","<ButtonRelease-3>",self.drag_end)
+		self.canvas.tag_bind("line","<B3-Motion>",self.drag)
 		self.canvas.tag_bind("line","<ButtonPress-1>",self.find_nearest)
 
 		self.canvas.pack()
