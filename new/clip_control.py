@@ -117,25 +117,31 @@ class ClipControl:
 		for now has 2 dropdowns.. and 2 spinboxes
 		"""
 		speed_var, loop_a, loop_b, loop_type = tk.StringVar(), tk.StringVar(), tk.StringVar(), tk.StringVar()
-		def update_callback(var_to_update,var_from_which,type='int'):
-			lookup = {'int':int,'float':float,'str':str}
-			convert = lookup[type]
-			def tkvar_to_reasonable(*args):
-				var_to_update = convert(var_from_which.get())
-			return tkvar_to_reasonable
-		loop_a.trace('w',update_callback(self.clip.lp[0],loop_a))
-		loop_b.trace('w',update_callback(self.clip.lp[1],loop_b))
-		loop_type.set(self.clip.looptype)
-		loop_type.trace('w',update_callback(self.clip.looptype,loop_type,'str'))
-		# temp for testing
-		loop_a.set('0')
-		loop_b.set('1')
 		self.looping_vars['speed'] = speed_var
 		self.looping_vars['loop_a'] = loop_a
 		self.looping_vars['loop_b'] = loop_b
-		self.looping_vars['enabled'] = False
+		self.looping_vars['enabled'] = self.clip.loopon
 		self.looping_vars['type'] = loop_type
 		loop_poss = [str(i) for i in range(C.NO_Q)]
+		
+		# the way i was doing a generator fxn here didnt work.. sry
+		def update_lp(which_one):
+			loops = ['loop_a','loop_b']
+			self.clip.lp[which_one] = int(self.looping_vars[loops[which_one]].get())
+
+		loop_a.trace('w',lambda *pargs : update_lp(0))
+		loop_b.trace('w',lambda *pargs : update_lp(1))
+
+		# temp for testing
+		loop_a.set('0')
+		loop_b.set('1')
+
+		loop_type.set(self.clip.looptype)
+
+		def update_loop_type():
+			self.clip.looptype = self.looping_vars['type'].get()
+
+		loop_type.trace('w',lambda *pargs : update_loop_type())
 
 		# speedup (of playback)
 		speed_var.set(str(self.clip.speedup_factor))
@@ -159,10 +165,10 @@ class ClipControl:
 			self.looping_vars['enabled'] = not cur
 			if not cur: # looping is now on
 				self.looping_controls[3].config(text='of')
-				#self.clip.loopon = True
+				self.clip.loopon = True
 			else: # turn it off
 				self.looping_controls[3].config(text='on')
-				#self.clip.loopon = False
+				self.clip.loopon = False
 		loop_on = tk.Button(self.loop_frame,text='on',command=loop_on_off)
 		self.looping_controls.append(loop_on)
 		loop_select_type = tk.OptionMenu(self.loop_frame,loop_type,'default','bounce')
