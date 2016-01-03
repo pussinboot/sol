@@ -18,9 +18,12 @@ class Clip:
 		# sol fields
 		self.tags = [] # for organizing library
 		self.qp = [None] * C.NO_Q # for better cue points
+		self.lp = [0,-1] # loop points >:)
+		self.looptype = 'default' # 'default' or 'bounce'
+		self.loopon = False
 		self.control_addr = None # where to send osc 
 		self.speedup_factor = 1.0 # for better timeline control
-		
+		self.playdir = 1 # 1 forward, 0 paused, -1 back, -2 random
 		for tag in tags:
 			self.add_tag(tag)
 		
@@ -42,6 +45,12 @@ class Clip:
 	def set_param(self, param, value):
 		if param in self.params:
 			self.params[param] = value
+
+	def single_frame_float(self):
+		if 'range' in self.params:
+			return 1.0/float(self.params['range'][1])
+		else:
+			return 0.0
 
 # better cue points
 # resolume doesnt let you set more than 6 cue points OR clear them with a midi controller
