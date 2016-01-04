@@ -149,41 +149,61 @@ class ClipControl:
 		
 		loop_poss = [str(i) for i in range(C.NO_Q)]
 		
-		self.loop_to_clip_var = {'loop_a':'self.clip.lp[0]','loop_b':'self.clip.lp[1]',
-								 'enabled': 'self.clip.loopon', 'loop_type' : 'self.clip.looptype',
-								 'speed':'self.clip.playback_speed'}
+		self.loop_to_clip_var = {'loop_a':['lp',0],'loop_b':['lp',1],
+								 'enabled': ['loopon'], 'loop_type' : ['looptype'],
+								 'speed':['playback_speed']}
 
 		for key in self.loop_to_clip_var:
 			self.looping_vars[key] = tk.StringVar()
 
 		# set all variables to their current values
 
-		self.looping_vars['loop_a'].set('0')
-		self.looping_vars['loop_b'].set('1')
-		self.looping_vars['loop_type'].set(self.clip.vars['looptype'])
+		#self.looping_vars['loop_a'].set('0')
+		#self.looping_vars['loop_b'].set('1')
+		#self.looping_vars['loop_type'].set(self.clip.vars['looptype'])
+
+		def update_loop_var(which_one): # reverse of below fxn
+			try:
+				lookup = self.loop_to_clip_var[which_one]
+				if len(lookup) > 1:
+					self.looping_vars[which_one].set(str(self.clip.vars[lookup[0]][lookup[1]]))
+				else:
+					self.looping_vars[which_one].set(str(self.clip.vars[lookup[0]]))
+				#print(which_one,lookup,self.looping_vars[which_one].get())
+			except:
+				print('{} failed to update'.format(which_one))
+
+		for key in self.looping_vars:
+			update_loop_var(key)
 
 		def update_clip_var(which_one): # depends on the clipvar to be set to proper type ahead of time :)
 			try:
-				newtype = type(eval(self.loop_to_clip_var[which_one])) # incredibly hacky but gets around stupid inability to easily pass references
-				exec('{0}=newtype({1})'.format(self.loop_to_clip_var[which_one],self.looping_vars[which_one].get()))
+				lookup = self.loop_to_clip_var[which_one]
+				if len(lookup) > 1:
+					newtype = type(self.clip.vars[lookup[0]][lookup[1]])
+					self.clip.vars[lookup[0]][lookup[1]] = newtype(self.looping_vars[which_one].get())
+					#print(which_one,lookup,self.clip.vars[lookup[0]][lookup[1]])
+				else:
+					newtype = type(self.clip.vars[lookup[0]])		
+					self.clip.vars[lookup[0]] = newtype(self.looping_vars[which_one].get())			 
+				# exec('{0}=newtype({1})'.format(self.loop_to_clip_var[which_one],self.looping_vars[which_one].get()))
 				#print(eval(self.loop_to_clip_var[which_one])) 
-				print(newtype)
+				#print(self.clip.vars[lookup[0]])
 			except:
 				print('{} failed to update'.format(which_one))
-				pass
 
 		for key in self.loop_to_clip_var:
 			self.looping_vars[key].trace('w', lambda *pargs: update_clip_var(key))
 		
 		# speedup (of playback)
 		#speed_var.set(str(self.clip.speedup_factor)) # wrong
-		#speed_box = tk.Spinbox(self.param_frame,from_=0.0,to=10.0,increment=0.1,format="%.2f",textvariable=speed_var)
-		#def send_speed():
-		#	speed = float(self.looping_vars['speed'].get())/10.0
-		#	self.osc_client.build_n_send('/activeclip/video/position/speed',speed)
-		#speed_box.config(command=send_speed) # temporary, will need to also
+		speed_box = tk.Spinbox(self.param_frame,from_=0.0,to=10.0,increment=0.1,format="%.2f",textvariable=self.looping_vars['speed'])
+		def send_speed():
+			speed = float(self.looping_vars['speed'].get())/10.0
+			self.osc_client.build_n_send('/activeclip/video/position/speed',speed)
+		speed_box.config(command=send_speed) # temporary, will need to also
 		# #update the speedup factor in the clip itself.. and go to correct address
-		#self.looping_controls.append(speed_box)
+		self.looping_controls.append(speed_box)
 
 		# speedup of control?
 
@@ -201,10 +221,11 @@ class ClipControl:
 			# else: # turn it off
 				# self.looping_controls[3].config(text='on')
 				# self.clip.loopon = False
-		# loop_on = tk.Button(self.loop_ctrl_frame,text='on',command=loop_on_off)
-		# self.looping_controls.append(loop_on)
-		# loop_select_type = tk.OptionMenu(self.loop_param_frame,loop_type,'default','bounce')
-		# self.looping_controls.append(loop_select_type)
+		loop_on_off = tk.Checkbutton(self.loop_ctrl_frame,text='loop',variable=self.looping_vars['enabled'],
+									 onvalue='True',offvalue='False')
+		self.looping_controls.append(loop_on_off)
+		loop_select_type = tk.OptionMenu(self.loop_param_frame,self.looping_vars['loop_type'],'default','bounce')
+		self.looping_controls.append(loop_select_type)
 		for control in self.looping_controls:
 			control.pack(side=tk.LEFT)
 

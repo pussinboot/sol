@@ -135,19 +135,19 @@ class ControlR:
 	def set_q(self,clip,i,qp=None):
 		if not qp:
 			qp = self.backend.cur_clip_pos.value 
-		clip.qp[i] = qp
+		clip.vars['qp'][i] = qp
 		return qp
 
 	def get_q(self,clip,i):
-		qp = clip.qp[i]
+		qp = clip.vars['qp'][i]
 		self.build_n_send("/activeclip/video/position/values",qp)
 		return qp
 
 	def clear_q(self,clip,i):
-		clip.qp[i] = None
+		clip.vars['qp'][i] = None
 
 	def activate(self,clip,i):
-		if clip.qp[i]:
+		if clip.vars['qp'][i]:
 			self.get_q(clip,i)
 		else:
 			return self.set_q(clip,i)
@@ -160,7 +160,7 @@ class ControlR:
 			def fun_tor(clip=None):
 				self.send(osc_msg)
 				if clip:
-					clip.playdir = direction
+					clip.vars['playdir'] = direction
 			return fun_tor
 		self.play = gen_control_sender('/activeclip/video/position/direction',1,1)
 		self.reverse = gen_control_sender('/activeclip/video/position/direction',0,-1)
@@ -194,7 +194,7 @@ class ControlR:
 				new_val = float(msg) * speedup
 				if new_val > 1.0:
 					new_val = 1.0
-				if clip.loopon:	qp0,qp1 = clip.qp[clip.lp[0]],clip.qp[clip.lp[1]] # if looping
+				if clip.vars['loopon']:	qp0,qp1 = clip.vars['qp'][clip.vars['lp'][0]],clip.vars['qp'][clip.vars['lp'][1]] # if looping
 				# linear scale
 				new_val = (qp1 - qp0)*new_val + qp0
 				if new_val == qp1: # if reached end
@@ -234,30 +234,36 @@ class ControlR:
 		def default_loop(time):
 			if not clip.loopon:
 				return
-			elif clip.playdir == 0 or clip.playdir == -2:
+			playdir = clip.vars['playdir']
+			if playdir == 0 or playdir == -2:
 				return
-			if clip.playdir == -1 and time - clip.qp[clip.lp[0]] < 0:
-				self.activate(clip,clip.lp[1])
-			elif clip.playdir == 1 and time - clip.qp[clip.lp[1]] > 0:
-				self.activate(clip,clip.lp[0])
+			if playdir == -1 and time - clip.vars['qp'][clip.vars['lp'][0]] < 0:
+				self.activate(clip,clip.vars['lp'][1])
+			elif playdir == 1 and time - clip.vars['qp'][clip.vars['lp'][1]] > 0:
+				self.activate(clip,clip.vars['lp'][0])
 
 		playfun = [lambda: None,self.play,self.reverse] # 1 goes to play, -1 goes to reverse, 0 does nothing
 		def bounce_loop(time):
-			if not clip.loopon:
+			if not clip.vars['loopon']:
 				return
-			if clip.playdir == 0 or clip.playdir == -2:
+			playdir = clip.vars['playdir']
+			if playdir == 0 or playdir == -2:
 				return
-			if clip.playdir == -1 and time - clip.qp[clip.lp[0]] < 0:
-				playfun[-1*clip.playdir](clip)
-				self.activate(clip,clip.lp[0])
-			elif clip.playdir == 1 and time - clip.qp[clip.lp[1]] > 0:
-				playfun[-1*clip.playdir](clip)
-				self.activate(clip,clip.lp[1])
+			if playdir == -1 and time - clip.vars['qp'][clip.vars['lp'][0]] < 0:
+				playfun[-1*playdir](clip)
+				self.activate(clip,clip.vars['lp'][0])
+			elif playdir == 1 and time - clip.vars['qp'][clip.vars['lp'][1]] > 0:
+				playfun[-1*playdir](clip)
+				self.activate(clip,clip.vars['lp'][1])
 		loop_type_to_fun = {'default':default_loop,'bounce':bounce_loop}
 		def map_fun(toss,msg):
 			keep_pos_fun(toss,msg)	# keep default behavior
 			curval = float(msg)
-			loop_type_to_fun[clip.looptype](curval)
+			try:
+				loop_type_to_fun[clip.vars['looptype']](curval)
+			except:
+				#clip.vars['looptype'] = 'default'
+				pass
 
 		self.backend.osc_server.map("/activeclip/video/position/values",map_fun)
 
