@@ -8,6 +8,8 @@
 #     	print (e)
 
 import numpy as np
+from tqdm import tqdm
+import time
 
 movinwin = np.zeros((3,5))
 maxlvls = [1]*5
@@ -32,3 +34,8 @@ print(st[4:])
 
 print(int(True))
 
+# fun
+items = [i for i in range(10)]
+for item in tqdm(items):
+	#print(item)
+	time.sleep(.1)

@@ -3,10 +3,22 @@
 # add little numbers under cue spots : )
 # make prettier gui for looping
 # then.. everything to save this per clip ;D
+"""
+______________________________
+| [    lil #s       (canvas)]|
+| [    timeline w/ lines    ]| top half - progress frame
+|____________________________|
+| [0, 1, 2, 3]|   play ctrl  |
+| [cue points]|    params    | bottom half - control frame
+|  loop ctrl  |  loop params |
+|_____________|______________|
+ left half - cue frame, right half - param frame
+"""
 import tkinter as tk
 from sol_backend import Backend
 from audio_gui import ProgressBar
 import CONSTANTS as C
+import file_io as IO
 
 class ClipControl:
 	def __init__(self,root,clip,backend):
@@ -19,30 +31,49 @@ class ClipControl:
 
 		### tk stuff
 		self.root = root
-
+		# top lvl
 		self.frame = tk.Frame(root)
 		self.progress_frame = tk.Frame(self.frame)
-		self.cue_button_frame = tk.Frame(self.frame)
-		self.control_button_frame = tk.Frame(self.frame)
-		self.loop_frame = tk.Frame(self.frame)
-
+		self.control_frame = tk.Frame(self.frame)
+		# bottom half
+		self.left_half = tk.Frame(self.control_frame)
+		self.right_half = tk.Frame(self.control_frame)
+		# bottom left
+		self.cue_button_frame = tk.Frame(self.left_half)
+		self.loop_ctrl_frame = tk.Frame(self.left_half)
+		# bottom right
+		self.control_button_frame = tk.Frame(self.right_half)
+		self.param_frame = tk.Frame(self.right_half)
+		self.loop_param_frame = tk.Frame(self.right_half)
+		# pack it
 		self.progress_frame.pack(side=tk.TOP)
-		self.control_button_frame.pack(side=tk.TOP)
+		self.control_frame.pack(side=tk.TOP)
+		self.left_half.pack(side=tk.LEFT)
+		self.right_half.pack(side=tk.LEFT)
+		# l
 		self.cue_button_frame.pack(side=tk.TOP)
-		self.loop_frame.pack(side=tk.TOP)
+		self.loop_ctrl_frame.pack(side=tk.TOP)
+		# r
+		self.control_button_frame.pack(side=tk.TOP)
+		self.param_frame.pack(side=tk.TOP)
+		self.loop_param_frame.pack(side=tk.TOP)
 
 		self.looping_controls = []
 		self.looping_vars = {}
 		self.setup_looping()
+
 		self.cue_buttons = []
 		self.setup_cue_buttons()
+
 		self.control_buttons = []
 		self.setup_control_buttons()
+
 		self.progress_bar = ProgressBar(self,self.clip.control_addr,width=300)
 		self.progress_bar.map_osc(self.clip.control_addr)
 		def move_cue(i,x):
 			self.osc_client.set_q(self.clip,i,x)
 		self.progress_bar.drag_release_action = move_cue
+
 		self.frame.pack()
 
 	def setup_cue_buttons(self):
@@ -144,7 +175,7 @@ class ClipControl:
 
 		# speedup (of playback)
 		speed_var.set(str(self.clip.speedup_factor))
-		speed_box = tk.Spinbox(self.loop_frame,from_=0.0,to=10.0,increment=0.1,format="%.2f",textvariable=speed_var)
+		speed_box = tk.Spinbox(self.param_frame,from_=0.0,to=10.0,increment=0.1,format="%.2f",textvariable=speed_var)
 		def send_speed():
 			speed = float(self.looping_vars['speed'].get())/10.0
 			self.osc_client.build_n_send('/activeclip/video/position/speed',speed)
@@ -155,8 +186,8 @@ class ClipControl:
 		# speedup of control?
 
 		# loop selection
-		loop_select_a = tk.OptionMenu(self.loop_frame,loop_a,*loop_poss)
-		loop_select_b = tk.OptionMenu(self.loop_frame,loop_b,*loop_poss)
+		loop_select_a = tk.OptionMenu(self.loop_ctrl_frame,loop_a,*loop_poss)
+		loop_select_b = tk.OptionMenu(self.loop_ctrl_frame,loop_b,*loop_poss)
 		self.looping_controls.append(loop_select_a)
 		self.looping_controls.append(loop_select_b)
 		def loop_on_off(*args):
@@ -168,9 +199,9 @@ class ClipControl:
 			else: # turn it off
 				self.looping_controls[3].config(text='on')
 				self.clip.loopon = False
-		loop_on = tk.Button(self.loop_frame,text='on',command=loop_on_off)
+		loop_on = tk.Button(self.loop_ctrl_frame,text='on',command=loop_on_off)
 		self.looping_controls.append(loop_on)
-		loop_select_type = tk.OptionMenu(self.loop_frame,loop_type,'default','bounce')
+		loop_select_type = tk.OptionMenu(self.loop_param_frame,loop_type,'default','bounce')
 		self.looping_controls.append(loop_select_type)
 		for control in self.looping_controls:
 			control.pack(side=tk.LEFT)
@@ -181,7 +212,8 @@ if __name__ == '__main__':
 	bb = Backend('./test_ex.avc',ports=(7000,7001)) # './test_ex.avc' '../old/test.avc'
 	root = tk.Tk()
 	root.title('controlR_test')
-	test_cc = ClipControl(root,bb.library.random_clip(),bb)
+	test_clip = IO.load_clip('./DW_L1_C2.mov.saved_clip') # bb.library.random_clip()
+	test_cc = ClipControl(root,test_clip,bb)
 	bb.osc_server.gui = test_cc
 	bb.osc_server.start()
 	# auto choose clip
@@ -190,3 +222,4 @@ if __name__ == '__main__':
 	bb.osc_client.map_timeline(test_cc.clip)
 	root.mainloop()
 	bb.osc_client.build_n_send("/activelayer/clear",1)
+	IO.save_clip(test_cc.clip)

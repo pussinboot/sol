@@ -9,7 +9,8 @@ to-do:
 
 from bs4 import BeautifulSoup
 from clip import Clip
-
+#import dill
+import pickle as dill
 class SavedXMLParse:
 	"""
 	class to deal with resolume save-data (fake xml file)
@@ -67,6 +68,20 @@ class SavedXMLParse:
 		# print("points of interest --")
 		# for point_of_int in parsed_clip['poi']:
 		# 	print(point_of_int)	
+
+def save_clip(clip,fname=None):
+	if not fname:
+		fname = "./{}.saved_clip".format(clip.name)
+	with open(fname,'wb') as f:
+		dill.dump(clip,f)
+		return fname # success
+
+
+def load_clip(fname):
+	with open(fname,'rb') as f:
+		tor = dill.load(f)
+		return tor
+
 
 if __name__ == '__main__':
 	testparser = SavedXMLParse("../old/test.avc")
