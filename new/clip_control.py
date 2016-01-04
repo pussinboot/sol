@@ -178,7 +178,7 @@ class ClipControl:
 
 if __name__ == '__main__':
 	# testing
-	bb = Backend('../old/test.avc',ports=(7000,7001)) # './test_ex.avc'
+	bb = Backend('./test_ex.avc',ports=(7000,7001)) # './test_ex.avc' '../old/test.avc'
 	root = tk.Tk()
 	root.title('controlR_test')
 	test_cc = ClipControl(root,bb.library.random_clip(),bb)
