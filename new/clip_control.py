@@ -1,8 +1,7 @@
 # basic clip control module
 # to-do
 # add little numbers under cue spots : )
-# looping
-# speedup
+# make prettier gui for looping
 # then.. everything to save this per clip ;D
 import tkinter as tk
 from sol_backend import Backend
@@ -188,5 +187,6 @@ if __name__ == '__main__':
 	# auto choose clip
 	bb.osc_client.select_clip(test_cc.clip)
 	bb.osc_client.map_loop(test_cc.clip)
+	bb.osc_client.map_timeline(test_cc.clip)
 	root.mainloop()
 	bb.osc_client.build_n_send("/activelayer/clear",1)

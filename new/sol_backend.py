@@ -166,6 +166,43 @@ class ControlR:
 		self.pause = gen_control_sender('/activeclip/video/position/direction',2,0)
 		self.random_play = gen_control_sender('/activeclip/video/position/direction',3,-2)
 
+	### REAL CONTROL HAX
+	# change effect1 to bypass
+	# then set opacity to timeline and map midi to its value
+	# 
+	# now can use resolume midi behavior for own purposes >:)
+	
+	def map_timeline(self,clip):
+		"""
+		maps a function to osc_server that looks at current useless midi controlled param
+		and uses it to drive timeline control
+		note: this will allow for individual clip speedup factors so that short clips
+		and long clips can be controlled the same way, PLUS can limit control to just be 
+		between two cue points with appropriate scaling >:)
+		"""
+		# for now let's just get it working tho
+		recv_addr = '/composition/video/effect1/opacity/values'
+		send_addr = '/activeclip/video/position/values'
+		def gen_osc_route(addr):
+			def fun_tor(_,msg):
+				new_val = float(msg) * 1.5 # clip.speedup_factor
+				if new_val > 1.0:
+					new_val = 1.0
+				if clip.loopon:
+					# linear scale
+					qp0,qp1 = clip.qp[clip.lp[0]],clip.qp[clip.lp[1]]
+					new_val = (qp1 - qp0)*new_val + qp0
+				self.build_n_send(addr,new_val)
+			return fun_tor
+		self.backend.osc_server.map(recv_addr,gen_osc_route(send_addr))
+		# do i need to update the opacity value as well? let's test n see
+		# then will also have to do reverse op if im choosing to scale in order
+		# to limit active range of control
+		# self.backend.osc_server.map(send_addr,gen_osc_route(recv_addr))
+		# holy moley that doesnt work but is funny
+
+
+
 	### looping behavior
 	# select any 2 cue points, once reach one of them jump to the other
 
