@@ -41,6 +41,7 @@ class Clip:
 		
 	def __str__(self):
 		return "clip @ " + str(self.fname) + \
+		 "\n\tspd: " + str(self.vars['playback_speed']) + \
 		 "\n\tqps: " + str(self.vars['qp']) + \
 		 "\n\tlps: " + str(self.vars['lp']) + \
 		 "\n\tlooptype: " + self.vars['looptype'] + "\t loopon: " + str(self.vars['loopon']) + \
