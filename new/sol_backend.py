@@ -113,6 +113,7 @@ class ControlR:
 		self.osc_client = udp_client.UDPClient(ip, port)
 		self.current_clip = None
 		self.send = self.osc_client.send
+		self.ignore_last = False
 		self.setup_control()
 
 	def build_msg(self,addr,arg):
@@ -183,18 +184,29 @@ class ControlR:
 		# for now let's just get it working tho
 		recv_addr = '/composition/video/effect1/opacity/values'
 		send_addr = '/activeclip/video/position/values'
-		def gen_osc_route(addr):
+		def gen_osc_route():
 			def fun_tor(_,msg):
-				new_val = float(msg) * 1.5 # clip.speedup_factor
+				if self.ignore_last:
+					self.ignore_last = False
+					return
+				qp0, qp1 = 0.0,1.0
+				speedup = 1.5 # clip.speedup_factor
+				new_val = float(msg) * speedup
 				if new_val > 1.0:
 					new_val = 1.0
-				if clip.loopon:
-					# linear scale
-					qp0,qp1 = clip.qp[clip.lp[0]],clip.qp[clip.lp[1]]
-					new_val = (qp1 - qp0)*new_val + qp0
-				self.build_n_send(addr,new_val)
+				if clip.loopon:	qp0,qp1 = clip.qp[clip.lp[0]],clip.qp[clip.lp[1]] # if looping
+				# linear scale
+				new_val = (qp1 - qp0)*new_val + qp0
+				if new_val == qp1: # if reached end
+					self.ignore_last = True
+					self.build_n_send(recv_addr,1.0/speedup)
+				elif new_val == qp0: # if reached beginning
+					self.ignore_last = True
+					self.build_n_send(recv_addr,0.0 + qp0)
+				self.build_n_send(send_addr,new_val)
+
 			return fun_tor
-		self.backend.osc_server.map(recv_addr,gen_osc_route(send_addr))
+		self.backend.osc_server.map(recv_addr,gen_osc_route())
 		# do i need to update the opacity value as well? let's test n see
 		# then will also have to do reverse op if im choosing to scale in order
 		# to limit active range of control
