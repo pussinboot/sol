@@ -49,7 +49,7 @@ class RefObj:
 		def fun_tor(_,msg):
 			try:
 				self.value = lookup[type](msg)
-				print(self) # for debugging
+				#print(self) # for debugging
 			except:
 				pass
 		return fun_tor

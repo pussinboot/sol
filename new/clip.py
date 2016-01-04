@@ -17,18 +17,34 @@ class Clip:
 			self.name = name
 		# sol fields
 		self.tags = [] # for organizing library
+		self.vars = {'qp':[None] * C.NO_Q, # for better cuepoints
+					'lp':[0,-1], 'loopon':False, # loop points
+					'looptype':'default',# 'default' or 'bounce'
+					'speedup_factor':1.0, 'playback_speed':1.0, # speedup factor is how fast control is
+					'playdir': 1 # 1 forward, 0 paused, -1 back, -2 random
+		}
+		if 'speed' in self.params:
+			self.vars['playback_speed'] = self.params['speed']
+		# get rid of all this shit
+
 		self.qp = [None] * C.NO_Q # for better cue points
 		self.lp = [0,-1] # loop points >:)
-		self.looptype = 'default' # 'default' or 'bounce'
+		self.looptype = 'default' 
 		self.loopon = False
-		self.control_addr = None # where to send osc 
+		self.control_addr = '/activeclip/video/position/values' # where to send osc 
 		self.speedup_factor = 1.0 # for better timeline control
+		self.playback_speed = 1.0
 		self.playdir = 1 # 1 forward, 0 paused, -1 back, -2 random
+		
 		for tag in tags:
 			self.add_tag(tag)
 		
 	def __str__(self):
-		return "clip @ " + str(self.fname) + "\n\ttags: " + ", ".join(self.tags)
+		return "clip @ " + str(self.fname) + \
+		 "\n\tqps: " + str(self.vars['qp']) + \
+		 "\n\tlps: " + str(self.vars['lp']) + \
+		 "\n\tlooptype: " + self.vars['looptype'] + "\t loopon: " + str(self.vars['loopon']) + \
+		 "\n\ttags: " + ", ".join(self.tags)
 
 	def add_tag(self,tag):
 		if not tag in self.tags:

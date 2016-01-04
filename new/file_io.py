@@ -34,13 +34,13 @@ class SavedXMLParse:
 		def check_name(param,name):
 			return param.nameGiven['value'] == name
 	
-		start_pos, stop_pos, speedup = None, None, None
+		start_pos, stop_pos, speed = None, None, None
 		# no more points of interest, will implement own cue points from now on
 		# poi = []
 		if check_name(ps[0],'Position'):
 			start_pos = ps[0].values['startValue']
 			stop_pos = ps[0].values['stopValue']
-			speedup = ps[0].speedFactor['curValue']
+			speed = ps[0].speedFactor['curValue']
 	
 			# if ps[0].pointsOfInterest['value'] != "0":
 			# 	for choice in ps[0].pointsOfInterest.choices.find_all("choice"):
@@ -54,7 +54,7 @@ class SavedXMLParse:
 			if check_name(ps[2],'Height'):
 				height = ps[2].values['curValue']
 	
-		tor = [filename, (l,c), name, {'range': [start_pos, stop_pos], 'speedup': speedup, 'dims' : [width, height]}]#, 'poi':poi}
+		tor = [filename, (l,c), name, {'range': [start_pos, stop_pos], 'speed': speed, 'dims' : [width, height]}]#, 'poi':poi}
 	
 		return tor
 	
@@ -63,7 +63,7 @@ class SavedXMLParse:
 		print("shortname: " + parsed_clip['name'])
 		print("layer: {0} track: {1}".format(*parsed_clip['deck_loc']))
 		print("start: {0} end: {1}".format(*parsed_clip['range']))
-		print("speedup factor: "+ parsed_clip['speedup'])
+		print("playback speed: "+ parsed_clip['speed'])
 		print("width: {0} height: {1}".format(*parsed_clip['dims']))
 		# print("points of interest --")
 		# for point_of_int in parsed_clip['poi']:
@@ -84,6 +84,10 @@ def load_clip(fname):
 
 
 if __name__ == '__main__':
-	testparser = SavedXMLParse("../old/test.avc")
-	print(len(testparser.clips)) # 32
+	#testparser = SavedXMLParse("../old/test.avc")
+	#print(len(testparser.clips)) # 32
 	#testparser.print_clip(testparser.clips[0])
+
+	# test load
+	test_clip = load_clip('./DW_L1_C2.mov.saved_clip')
+	print(test_clip)
