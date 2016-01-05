@@ -34,8 +34,21 @@ print(st[4:])
 
 print(int(True))
 
-# fun
-items = [i for i in range(10)]
-for item in tqdm(items):
-	#print(item)
-	time.sleep(.1)
+# # fun
+# items = [i for i in range(10)]
+# for item in tqdm(items):
+# 	#print(item)
+# 	time.sleep(.1)
+a = ['line','current']
+b = ['line','label']
+print(any(x in a for x in b))
+
+import tkinter as tk
+
+root = tk.Tk()
+root.geometry('200x200+200+200')
+
+tk.Label(root, text='Label', bg='green').pack(expand=False, fill=tk.Y)
+tk.Label(root, text='Label2', bg='red').pack(expand=True,fill=tk.X)
+
+root.mainloop()
