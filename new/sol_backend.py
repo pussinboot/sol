@@ -232,7 +232,7 @@ class ControlR:
 			return dt <= factor*single_frame
 
 		def default_loop(time):
-			if not clip.loopon:
+			if not clip.vars['loopon']:
 				return
 			playdir = clip.vars['playdir']
 			if playdir == 0 or playdir == -2:
