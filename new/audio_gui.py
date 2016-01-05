@@ -147,6 +147,8 @@ class ProgressBar:
 	def __init__(self,parent,cliporsong,width=330,height=50):
 
 		self.width, self.height = width, height
+		self.oldwidth, self.oldheight = width, height
+		self.og_width = width
 		self.send_addr = cliporsong.control_addr
 		self._drag_data = {"x": 0, "y": 0, "item": None,"label":None}
 		self.drag_release_action = None
@@ -182,26 +184,76 @@ class ProgressBar:
 		self.canvas.tag_bind("line","<ButtonPress-1>",self.find_nearest)
 		self.canvas.tag_bind("label","<ButtonPress-1>",self.find_nearest)
 
-		self.zoominbut = tk.Button(self.control_frame,text="+",width=2)
-		self.zoomoutbut = tk.Button(self.control_frame,text="-",width=2)
+		self.zoominbut = tk.Button(self.control_frame,text="+",width=2,
+			command = lambda *pargs: self.zoom(1.25))
+		self.zoomoutbut = tk.Button(self.control_frame,text="-",width=2,
+			command = lambda *pargs: self.zoom(0.8),state='disabled')
+		self.zoomresetbut = tk.Button(self.control_frame,text="o",width=2,
+			command = lambda *pargs: self.zoom_reset())
 
 		self.zoominbut.pack()
 		self.zoomoutbut.pack()
+		self.zoomresetbut.pack()
 		self.canvas.pack(anchor=tk.W)
 		self.canvas_frame.pack(anchor=tk.W,side=tk.LEFT,expand=tk.YES,fill=tk.BOTH)
 		self.control_frame.pack(side=tk.LEFT,anchor=tk.E)
 		self.frame.pack(anchor=tk.W,side=tk.TOP,expand=tk.YES,fill=tk.BOTH)
 		#self.canvas.bind("<Configure>", self.on_resize)
 
-
-	def on_resize(self,event):
-		wscale = float(event.width)/self.width
-		self.canvas.config(width=event.width)
-
+	# progress bar follow mouse
 	def find_mouse(self,event):
-		#print(event.x, event.y)
-		self.move_bar(event.x)
-		self.parent.osc_client.build_n_send(self.send_addr,event.x/self.width)
+		newx = self.canvas.canvasx(event.x)
+		if newx > self.width:
+			newx = self.width
+		elif newx < 0:
+			newx = 0
+		self.move_bar(newx)
+		self.parent.osc_client.build_n_send(self.send_addr,newx/self.width)
+
+	def move_bar(self,new_x):
+		self.canvas.coords(self.pbar,new_x,0,new_x,self.height)
+
+	# drag n drop
+	def drag_begin(self, event):
+		# record the item and its location
+		item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y),halo=5)[0]
+		if 'line' not in self.canvas.gettags(item):
+			return
+		self._drag_data["item"] = item
+		self._drag_data["label"] = self.labels[self.lines.index(item)]
+		self._drag_data["x"] = event.x
+
+	def drag_end(self, event):
+		if self.drag_release_action:
+			newx = self.canvas.canvasx(event.x)
+			if newx < 0:
+				newx = 0
+			elif newx > self.width:
+				newx = self.width
+			i = self.lines.index(self._drag_data["item"])
+			self.drag_release_action(i,newx/self.width)
+		# reset the drag information
+		self._drag_data["item"] = None
+		self._drag_data["label"] = None
+		self._drag_data["x"] = 0
+
+	def drag(self, event):
+		# compute how much this object has moved
+		delta_x = event.x - self._drag_data["x"]
+		# move the object the appropriate amount
+		if self._drag_data["item"]:
+			curx = self.canvas.coords(self._drag_data["item"])[0]
+			if curx + delta_x < 0:
+				delta_x = -curx
+			elif curx + delta_x > self.width:
+				delta_x = self.width - curx
+
+			self.canvas.move(self._drag_data["item"], delta_x, 0)# delta_y)
+			for label_item in self._drag_data["label"]: 
+				self.canvas.move(label_item, delta_x, 0)
+			self.loop_update()
+		# record the new position
+		self._drag_data["x"] = event.x
 
 	def find_nearest(self,event):
 		item = self.canvas.find_closest(event.x, event.y,halo=5)[0]
@@ -209,9 +261,7 @@ class ProgressBar:
 			x_to_send = self.canvas.coords(item)[0]
 			self.parent.osc_client.build_n_send(self.send_addr,x_to_send/self.width)
 
-	def move_bar(self,new_x):
-		self.canvas.coords(self.pbar,new_x,0,new_x,self.height)
-
+	# draw lines for cue points
 	def add_line(self,x_float,i):
 		x_coord = x_float*self.width
 		self.lines[i] = self.canvas.create_line(x_coord,0,x_coord,self.height,
@@ -224,40 +274,10 @@ class ProgressBar:
 	def remove_line(self,i):
 		self.canvas.delete(self.lines[i])
 		self.lines[i] = None
-		for label_item in self.labels[i]:
-			self.canvas.delete(label_item)
-		self.labels[i] = None
-
-	def drag_begin(self, event):
-		# record the item and its location
-		item = self.canvas.find_closest(event.x, event.y,halo=5)[0]
-		if 'line' not in self.canvas.gettags(item):
-			return
-		self._drag_data["item"] = item
-		self._drag_data["label"] = self.labels[self.lines.index(item)]
-		self._drag_data["x"] = event.x
-
-	def drag_end(self, event):
-		if self.drag_release_action:
-			i = self.lines.index(self._drag_data["item"])
-			self.drag_release_action(i,event.x/self.width)
-		# reset the drag information
-		self._drag_data["item"] = None
-		self._drag_data["label"] = None
-		self._drag_data["x"] = 0
-
-	def drag(self, event):
-		# compute how much this object has moved
-		delta_x = event.x - self._drag_data["x"]
-		#delta_y = event.y - self._drag_data["y"]
-		# move the object the appropriate amount
-		if self._drag_data["item"]:
-			self.canvas.move(self._drag_data["item"], delta_x, 0)# delta_y)
-			for label_item in self._drag_data["label"]: 
-				self.canvas.move(label_item, delta_x, 0)
-				self.loop_update()
-		# record the new position
-		self._drag_data["x"] = event.x
+		if self.labels[i]:
+			for label_item in self.labels[i]:
+				self.canvas.delete(label_item)
+			self.labels[i] = None
 
 	def map_osc(self,addr):
 		def mapfun(_,msg):
@@ -283,6 +303,46 @@ class ProgressBar:
 		for line in lelines:
 			self.canvas.dtag(line,'temploop')
 
+	# zoom funs
+	def rescale(self):
+		wscale = float(self.width)/self.oldwidth
+		# resize background
+		coordz = self.canvas.coords(self.canvasbg)
+		self.canvas.coords(self.canvasbg,coordz[0],coordz[1],coordz[2]*wscale,coordz[3])
+		# move lines
+		for i in range(len(self.lines)):
+			line = self.lines[i]
+			if line:
+				ll = [line]
+				if self.labels[i]:
+					[labeltext, labelbox] = self.labels[i]
+					ll = [line, labeltext, labelbox]
+				line_coords = self.canvas.coords(line)
+				oldx = line_coords[0]
+				newx = oldx*wscale
+				deltax = newx - oldx
+				for lineorlabel in ll:
+					self.canvas.move(lineorlabel,deltax,0)
+		# move progressbar but dont send update
+		coordz = self.canvas.coords(self.pbar)
+		self.canvas.coords(self.pbar,coordz[0]*wscale,coordz[1],coordz[2]*wscale,coordz[3])
+		# resize loopz
+		self.loop_update()
+		# at end
+		self.oldwidth = self.width
+		self.canvas.config(scrollregion=(0,0,self.width,self.height))
+
+	def zoom(self,factor=1.00):
+		self.width = self.width * factor
+		if self.width <= self.og_width:
+			self.width = self.og_width
+			self.zoomoutbut.config(state='disabled')
+		else:
+			self.zoomoutbut.config(state='active')
+		self.rescale()
+
+	def zoom_reset(self):
+		self.zoom(self.og_width/self.width)
 
 class ConnectionSelect:
 	# to-do: 
