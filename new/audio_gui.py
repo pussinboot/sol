@@ -25,6 +25,17 @@ def build_msg(addr,arg):
 	msg = msg.build()
 	return msg
 
+class Song:
+	"""
+	hold a song file
+	"""
+	def __init__(self,fname):
+		self.fname = fname
+		self.vars = {'qp':[None] * C.NO_Q, # for better cuepoints
+					'lp':[0,-1], 'loopon':False, # loop points
+		}
+		self.control_addr = '/pyaud/seek/float'
+
 class MainGui:
 	def __init__(self,root):
 		# gui
@@ -33,23 +44,25 @@ class MainGui:
 		self.control_frame = tk.Frame(self.frame)
 		self.progress_frame = tk.Frame(self.frame)
 
-
 		self.progress_var = tk.StringVar()
 		self.progress_var.set("--:--")
 		self.progress_time = tk.Label(self.progress_frame,textvariable=self.progress_var)
 		self.progress_time.pack()
 
-		self.control_frame.pack(side=tk.LEFT,anchor=tk.W,expand=True,fill=tk.X)
-		self.progress_frame.pack()
-		self.frame.pack(expand=True,fill=tk.BOTH)
+		self.control_frame.pack(side=tk.LEFT,anchor=tk.W,expand=False)
+		self.progress_frame.pack(anchor=tk.E,expand=False)
+		self.frame.pack(fill=tk.X)
 		# osc
 		self.osc_server = ServeR(self,port=7008)
-		self.osc_client = ControlR(port=7007)
+		self.osc_client = ControlR(None,port=7007)
 		self.osc_to_send = None
 
 		self.setup_buttons()
 		self.setup_menu()
-		self.progress_bar = ProgressBar(self,'/pyaud/seek/float')
+		self.current_song = Song('')
+		self.progress_bar = ProgressBar(self,self.current_song)
+		self.progress_bar.map_osc('/pyaud/pos/float')
+
 		self.osc_start()
 
 	def osc_start(self):
@@ -126,40 +139,64 @@ class MainGui:
 		splitname = os.path.splitext(filename)
 		if splitname[1] == '.wav' or splitname[1] == '.WAV':
 			self.osc_client.build_n_send('/pyaud/open',filename)
+			self.current_song.fname = filename
 		else:
 			tkmb.showerror("Bad file","please choose a proper .wav file")
 
 class ProgressBar:
-	def __init__(self,parent,sendaddr,width=200,height=50):
+	def __init__(self,parent,cliporsong,width=330,height=50):
 
 		self.width, self.height = width, height
-		self.send_addr = sendaddr
-		self._drag_data = {"x": 0, "y": 0, "item": None}
-		self.drag_release_action = print
+		self.send_addr = cliporsong.control_addr
+		self._drag_data = {"x": 0, "y": 0, "item": None,"label":None}
+		self.drag_release_action = None
 
 		self.lines = [None]*C.NO_Q
+		self.labels = [None]*C.NO_Q
 
 		self.parent = parent
 		self.root = parent.root
-		self.frame = tk.Frame(self.root)
-		self.canvas = tk.Canvas(self.frame,width=width,height=height,bg="black",scrollregion=(0,0,width,height))
+		self.cliporsong = cliporsong # song or clip
 
-		self.hbar = tk.Scrollbar(self.frame,orient=tk.HORIZONTAL)
+		self.frame = tk.Frame(self.root)
+		self.canvas_frame = tk.Frame(self.frame)
+		self.control_frame = tk.Frame(self.frame)
+		self.canvas = tk.Canvas(self.canvas_frame,width=width,height=height+15,bg="#aaa",scrollregion=(0,0,width,height))
+		self.canvasbg = self.canvas.create_rectangle(0,0,width,height,fill='black',tag='bg')
+
+		self.hbar = tk.Scrollbar(self.canvas_frame,orient=tk.HORIZONTAL)
 		self.hbar.config(command=self.canvas.xview)
 		self.canvas.config(xscrollcommand=self.hbar.set)
 		self.hbar.pack(side=tk.BOTTOM,fill=tk.X)
 
 		self.pbar = self.canvas.create_line(0,0,0,height,fill='gray',width=3)
+		self.looprect = self.canvas.create_rectangle(0,0,0,0,fill='gray',stipple='gray12',tag='bg')
 
-		self.canvas.bind("<B1-Motion>",self.find_mouse)
-		self.canvas.bind("<ButtonRelease-1>",self.find_mouse)
+
+		self.canvas.tag_bind("bg","<B1-Motion>",self.find_mouse)
+		self.canvas.tag_bind("bg","<ButtonRelease-1>",self.find_mouse)
+		self.canvas.tag_bind("line","<B1-Motion>",self.find_mouse)
 		self.canvas.tag_bind("line","<ButtonPress-3>",self.drag_begin)
 		self.canvas.tag_bind("line","<ButtonRelease-3>",self.drag_end)
 		self.canvas.tag_bind("line","<B3-Motion>",self.drag)
 		self.canvas.tag_bind("line","<ButtonPress-1>",self.find_nearest)
+		self.canvas.tag_bind("label","<ButtonPress-1>",self.find_nearest)
 
-		self.canvas.pack()
-		self.frame.pack()
+		self.zoominbut = tk.Button(self.control_frame,text="+",width=2)
+		self.zoomoutbut = tk.Button(self.control_frame,text="-",width=2)
+
+		self.zoominbut.pack()
+		self.zoomoutbut.pack()
+		self.canvas.pack(anchor=tk.W)
+		self.canvas_frame.pack(anchor=tk.W,side=tk.LEFT,expand=tk.YES,fill=tk.BOTH)
+		self.control_frame.pack(side=tk.LEFT,anchor=tk.E)
+		self.frame.pack(anchor=tk.W,side=tk.TOP,expand=tk.YES,fill=tk.BOTH)
+		#self.canvas.bind("<Configure>", self.on_resize)
+
+
+	def on_resize(self,event):
+		wscale = float(event.width)/self.width
+		self.canvas.config(width=event.width)
 
 	def find_mouse(self,event):
 		#print(event.x, event.y)
@@ -167,8 +204,10 @@ class ProgressBar:
 		self.parent.osc_client.build_n_send(self.send_addr,event.x/self.width)
 
 	def find_nearest(self,event):
-		item = self.canvas.find_closest(event.x, event.y)[0]
-		self.parent.osc_client.build_n_send(self.send_addr,event.x/self.width)
+		item = self.canvas.find_closest(event.x, event.y,halo=5)[0]
+		if any(tag in ['line','label'] for tag in self.canvas.gettags(item)):
+			x_to_send = self.canvas.coords(item)[0]
+			self.parent.osc_client.build_n_send(self.send_addr,x_to_send/self.width)
 
 	def move_bar(self,new_x):
 		self.canvas.coords(self.pbar,new_x,0,new_x,self.height)
@@ -176,18 +215,27 @@ class ProgressBar:
 	def add_line(self,x_float,i):
 		x_coord = x_float*self.width
 		self.lines[i] = self.canvas.create_line(x_coord,0,x_coord,self.height,
-			activefill='white',fill='#aaa',width=3,dash=(4,),tags='line')
+			activefill='white',fill='#ccc',width=3,dash=(4,),tags='line')
+		labeltext = self.canvas.create_text(x_coord,self.height+14,anchor=tk.SW,text=" {}".format(i),
+						  fill='black',activefill='white',justify='center',tags='label')
+		labelbox = self.canvas.create_rectangle(x_coord,self.height,x_coord+12,self.height+15,tags='label')
+		self.labels[i] = [labelbox,labeltext]
 
 	def remove_line(self,i):
 		self.canvas.delete(self.lines[i])
 		self.lines[i] = None
+		for label_item in self.labels[i]:
+			self.canvas.delete(label_item)
+		self.labels[i] = None
 
 	def drag_begin(self, event):
 		# record the item and its location
-		item = self.canvas.find_closest(event.x, event.y)[0]
+		item = self.canvas.find_closest(event.x, event.y,halo=5)[0]
+		if 'line' not in self.canvas.gettags(item):
+			return
 		self._drag_data["item"] = item
+		self._drag_data["label"] = self.labels[self.lines.index(item)]
 		self._drag_data["x"] = event.x
-		self._drag_data["y"] = event.y
 
 	def drag_end(self, event):
 		if self.drag_release_action:
@@ -195,18 +243,21 @@ class ProgressBar:
 			self.drag_release_action(i,event.x/self.width)
 		# reset the drag information
 		self._drag_data["item"] = None
+		self._drag_data["label"] = None
 		self._drag_data["x"] = 0
-		#self._drag_data["y"] = 0
 
 	def drag(self, event):
 		# compute how much this object has moved
 		delta_x = event.x - self._drag_data["x"]
 		#delta_y = event.y - self._drag_data["y"]
 		# move the object the appropriate amount
-		self.canvas.move(self._drag_data["item"], delta_x, 0)# delta_y)
+		if self._drag_data["item"]:
+			self.canvas.move(self._drag_data["item"], delta_x, 0)# delta_y)
+			for label_item in self._drag_data["label"]: 
+				self.canvas.move(label_item, delta_x, 0)
+				self.loop_update()
 		# record the new position
 		self._drag_data["x"] = event.x
-		#self._drag_data["y"] = event.y	
 
 	def map_osc(self,addr):
 		def mapfun(_,msg):
@@ -216,6 +267,22 @@ class ProgressBar:
 			except:
 				self.move_bar(0)
 		self.parent.osc_server.map(addr,mapfun)
+
+	def loop_update(self):
+		if not self.cliporsong.vars['loopon']:
+			self.canvas.coords(self.looprect,0,0,0,0)
+			return
+		lelines = [self.lines[i] for i in self.cliporsong.vars['lp']]
+		if not any(lelines): # if the ii activated in the looping are not lines no need to draw this
+			return
+		for line in lelines:
+			self.canvas.addtag_withtag('temploop',line)
+		coordz = self.canvas.bbox('temploop')
+		lw = 3 # linewidth
+		self.canvas.coords(self.looprect,coordz[0]+lw,0,coordz[2]-lw,self.height)
+		for line in lelines:
+			self.canvas.dtag(line,'temploop')
+
 
 class ConnectionSelect:
 	# to-do: 
@@ -278,5 +345,11 @@ class ConnectionSelect:
 if __name__ == '__main__':
 	root = tk.Tk()
 	root.title('py_amp')
+	root.resizable(0,0)
 	test_gui = MainGui(root)
+	test_gui.progress_bar.add_line(0.33,0)
+	test_gui.progress_bar.add_line(0.67,1)
+	test_gui.current_song.vars['loopon'] = True
+	test_gui.current_song.vars['lp'] = [0, 1]
+	test_gui.progress_bar.loop_update()
 	root.mainloop()
