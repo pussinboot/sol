@@ -190,19 +190,19 @@ class ControlR:
 					self.ignore_last = False
 					return
 				qp0, qp1 = 0.0,1.0
-				speedup = 1.5 # clip.speedup_factor
+				speedup = clip.vars['speedup_factor']
 				new_val = float(msg) * speedup
 				if new_val > 1.0:
 					new_val = 1.0
 				if clip.vars['loopon']:	qp0,qp1 = clip.vars['qp'][clip.vars['lp'][0]],clip.vars['qp'][clip.vars['lp'][1]] # if looping
 				# linear scale
-				new_val = (qp1 - qp0)*new_val + qp0
-				if new_val == qp1: # if reached end
+				#new_val = (qp1 - qp0)*new_val + qp0
+				if new_val >= qp1: # if reached end
 					self.ignore_last = True
-					self.build_n_send(recv_addr,1.0/speedup)
-				elif new_val == qp0: # if reached beginning
+					self.build_n_send(recv_addr,qp1/speedup)
+				elif new_val <= qp0: # if reached beginning
 					self.ignore_last = True
-					self.build_n_send(recv_addr,0.0 + qp0)
+					self.build_n_send(recv_addr,qp0/speedup)
 				self.build_n_send(send_addr,new_val)
 
 			return fun_tor

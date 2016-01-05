@@ -2,7 +2,8 @@
 # to-do
 # add little numbers under cue spots : )
 # make prettier gui for looping
-# then.. everything to save this per clip ;D
+# then.. everything to save this per clip ;D DONE
+# 		now make it so save entire library BV)
 """
 ______________________________
 | [    lil #s       (canvas)]|
@@ -45,6 +46,9 @@ class ClipControl:
 		self.control_button_frame = tk.Frame(self.right_half)
 		self.param_frame = tk.Frame(self.right_half)
 		self.loop_param_frame = tk.Frame(self.right_half)
+		# subparams
+		self.playback_speed_frame = tk.Frame(self.param_frame)
+		self.control_speed_frame = tk.Frame(self.param_frame)
 		# pack it
 		self.progress_frame.pack(side=tk.TOP)
 		self.control_frame.pack(side=tk.TOP)
@@ -57,7 +61,8 @@ class ClipControl:
 		self.control_button_frame.pack(side=tk.TOP)
 		self.param_frame.pack(side=tk.TOP)
 		self.loop_param_frame.pack(side=tk.TOP)
-
+		self.playback_speed_frame.pack(side=tk.TOP)
+		self.control_speed_frame.pack(side=tk.TOP)
 		self.progress_bar = ProgressBar(self,self.clip.control_addr,width=300)
 		self.progress_bar.map_osc(self.clip.control_addr)
 		def move_cue(i,x):
@@ -154,7 +159,7 @@ class ClipControl:
 		
 		self.loop_to_clip_var = {'loop_a':['lp',0],'loop_b':['lp',1],
 								 'enabled': ['loopon'], 'loop_type' : ['looptype'],
-								 'speed':['playback_speed']}
+								 'speed':['playback_speed'],'control_speed':['speedup_factor']}
 
 		for key in self.loop_to_clip_var:
 			self.looping_vars[key] = tk.StringVar()
@@ -191,18 +196,26 @@ class ClipControl:
 		
 		# speedup (of playback)
 
-		speed_box = tk.Spinbox(self.param_frame,from_=0.0,to=10.0,increment=0.1,format="%.2f",textvariable=self.looping_vars['speed'])
+		speed_scale = tk.Scale(self.playback_speed_frame,from_=0.0,to=10.0,resolution=0.05,variable=self.looping_vars['speed'],
+							   orient=tk.HORIZONTAL, showvalue = 0)
+		speed_box = tk.Spinbox(self.playback_speed_frame,from_=0.0,to=10.0,increment=0.1,format="%.2f",
+							   textvariable=self.looping_vars['speed'], width=4)
 		def send_speed(*args):
 			speed = float(self.looping_vars['speed'].get())/10.0
-			print('sending speed',speed)
 			self.osc_client.build_n_send('/activeclip/video/position/speed',speed)
+		speed_scale.config(command=send_speed)
 		speed_box.config(command=send_speed)
 		speed_box.bind("<Return>",send_speed)
-		# also need to bind enter to same thing -.-
+		self.looping_controls.append(speed_scale)
 		self.looping_controls.append(speed_box)
 
 		# speedup of control?
-
+		control_speed_scale = tk.Scale(self.control_speed_frame,from_=1.0,to=6.66,resolution=0.01,variable=self.looping_vars['control_speed'],
+							   orient=tk.HORIZONTAL, showvalue = 0)
+		control_speed_box = tk.Spinbox(self.control_speed_frame,from_=1.0,to=6.66,increment=0.03,format="%.2f",
+							   textvariable=self.looping_vars['control_speed'], width=4)
+		self.looping_controls.append(control_speed_scale)
+		self.looping_controls.append(control_speed_box)
 		# loop selection
 		loop_select_a = tk.OptionMenu(self.loop_ctrl_frame,self.looping_vars['loop_a'],*loop_poss)
 		loop_select_b = tk.OptionMenu(self.loop_ctrl_frame,self.looping_vars['loop_b'],*loop_poss)
