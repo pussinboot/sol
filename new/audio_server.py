@@ -16,6 +16,8 @@ osc mapping is as follows
 			frame/ - seek to frame no (int?)
 /pyaud/connect [string, bool] - dis/connect certain outputs
 
+/pyaud/querystatus - ask to send current status ## TO-DO
+
 -- outputs (port 7008) --
 
 /pyaud/out/[0-7] - outputs from frequency buckets 0-7
