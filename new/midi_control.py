@@ -71,7 +71,7 @@ class Midi2Osc:
 			print(e)
 			return default()
 
-	def send_output(self,note,channel,on_off=True,velocity=None):
+	def send_output(self,note,channel,velocity=None,on_off=True):
 		if not self.outp:
 			return
 		try:
@@ -134,7 +134,7 @@ class ConfigMidi:
 		self.backend.osc_server.stop()
 		self.m2o.stop()
 
-	def id_midi(self):
+	def id_midi(self,*args):
 		# find most common key, look @ ns, figure out wat kind of key it is : )
 		msgs = []
 		while self.queue.qsize():
@@ -174,7 +174,7 @@ if __name__ == '__main__':
 		for note in range(96,104):
 			m2o_test.send_output(note,channel,velocity=127)
 			time.sleep(.1)
-			m2o_test.send_output(note,channel,False)
+			m2o_test.send_output(note,channel,on_off=False)
 	m2o_test.stop()
 	
 	### test ConfigMidi

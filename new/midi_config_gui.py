@@ -18,6 +18,7 @@ class ConfigGui:
 		self.deviceselect = DeviceSelect(self)
 
 		self.configbook = ttk.Notebook(self.configframe)
+		self.configbook.bind_all('<<NotebookTabChanged>>',self.deviceselect.switch_test)
 		self.inputtab = ttk.Frame(self.configbook)
 		self.inputs = []
 		self.outputtab = ttk.Frame(self.configbook)
@@ -69,12 +70,23 @@ class DeviceSelect:
 		self.possinps.append('-')
 		self.possouts = [key for key in self.device_dict[1]]
 		self.possouts.append('-')
+
 		self.selected_devices = [-1,-1]
+		self.tested_inp = tk.StringVar()
+		self.tested_inp.set('[-,-]')
+		self.tested_out = [tk.IntVar() , tk.IntVar(), tk.IntVar()]
 
 		self.topframe = self.parent.deviceframe
-		self.selectframe = tk.LabelFrame(self.topframe,text='Device Selection')
+		self.selectframe = tk.LabelFrame(self.topframe,text='device selection')
 		self.testframe = tk.Frame(self.topframe)
 
+		self.setup_select()
+		self.setup_test()
+
+		self.selectframe.pack()
+		self.testframe.pack()
+
+	def setup_select(self):
 		self.width = max(max([len(k) for k in self.possinps]),max([len(k) for k in self.possouts])) + 5
 
 		self.input_label = tk.Label(self.selectframe,width=self.width,text='input')
@@ -111,9 +123,61 @@ class DeviceSelect:
 		for thing in pack_order:
 			thing.pack()
 
-		self.selectframe.pack()
-		self.testframe.pack()
+	def setup_test(self):
+		self.testframe.grid_rowconfigure(0, weight=1)
+		self.testframe.grid_columnconfigure(0, weight=1) 
 
+		self.inputtest = tk.LabelFrame(self.testframe,text='test input')
+		self.inputtestlabel = tk.Label(self.inputtest,textvariable = self.tested_inp)
+		self.inputtestlist = tk.Entry(self.inputtest)
+		def test_inp(*args):
+			res = self.parent.configmidi.id_midi()
+			print(res)
+			if res:
+				self.tested_inp.set(res[0])
+				self.inputtestlistbox.delete(0, tk.END)
+				self.inputtestlist.insert(tk.END,str(res[1]))
+
+		self.inputtestbut = tk.Button(self.inputtest,text='id midi',command=test_inp)
+		self.inputtestbut.pack(side=tk.TOP)
+		self.inputtestlabel.pack(side=tk.LEFT)
+		self.inputtestlist.pack(side=tk.LEFT)
+
+		self.outputtest = tk.LabelFrame(self.testframe,text='test output')
+
+		self.subouttestframe = tk.Frame(self.outputtest)
+		self.subouttestlabels = [None]*3
+		self.subouttestentries = [None]*3
+		for i,x in enumerate(['channel','note','velocity']):
+			self.subouttestlabels[i] = tk.Label(self.subouttestframe,text=x)
+			self.subouttestentries[i] = tk.Spinbox(self.subouttestframe,from_=0,to=127,increment=1,
+				textvariable=self.tested_out[i],width=3)
+			self.subouttestlabels[i].grid(row=0, column=i)
+			self.subouttestentries[i].grid(row=1, column=i)
+
+		def gen_on_off(on_off):
+			def tor(*args):
+				params = [x.get() for x in self.tested_out]
+				self.m2o.send_output(*params,on_off=on_off)
+				#print(params,on_off)
+			return tor
+
+		self.outputtestbut = tk.Button(self.outputtest,text='send midi')
+		self.outputtestbut.bind("<ButtonPress-1>",gen_on_off(True))
+		self.outputtestbut.bind("<ButtonRelease-1>",gen_on_off(False))		
+		self.outputtestbut.pack()
+		self.subouttestframe.pack()
+
+		self.inputtest.grid(row=0, column=0, sticky='news')
+		self.outputtest.grid(row=0, column=0, sticky='news')
+		self.inputtest.tkraise()
+
+	def switch_test(self,event):
+		cur_tab = event.widget.tab(event.widget.index("current"),"text")
+		if cur_tab == 'input':
+			self.inputtest.tkraise()
+		elif cur_tab == 'output':
+			self.outputtest.tkraise()
 
 if __name__ == '__main__':
 	from sol_backend import Backend
