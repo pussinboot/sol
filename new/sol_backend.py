@@ -23,6 +23,9 @@ class Backend:
 		self.cur_time = RefObj("cur_time")
 		self.cur_clip_pos = RefObj("cur_clip_pos")
 
+		self.cur_clip = None
+		self.cur_song = None
+
 		def update_time(_,msg): # this is the driving force behind the backend :o)
 			try:				# add going through log file and redoing it in playback mode
 								# plus making of the log file in record mode
@@ -32,8 +35,19 @@ class Backend:
 				pass
 		#self.osc_server.map("/pyaud/pos/frame",update_time)
 		self.osc_server.map("/activeclip/video/position/values",self.cur_clip_pos.update_generator('float'))
-		# add midi control here
-		#self.osc_server.start()
+
+		### MIDI CONTROL
+		# basically, here are the descriptions that map to functions
+		# then in the midi config it reads the keys and figures out 
+		# what keys to set to which functions
+		# which are then mapped thru the osc server to figure out 
+		# what to do with the note value (different types of notes)
+		self.desc_to_fun = {
+			'clip_play'  : self.osc_client.play  ,
+			'clip_pause' : self.osc_client.pause
+		}
+		# can also auto-gen some of these for cue select etc
+		# no clue how im going to add midi out.. for now
 
 class RefObj:
 	"""
