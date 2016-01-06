@@ -54,4 +54,4 @@
 # root.mainloop()
 
 testlist = [0,1,2,34]
-print(', '.join(testlist))
+print(testlist[1:])

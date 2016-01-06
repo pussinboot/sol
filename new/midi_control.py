@@ -96,7 +96,7 @@ class Midi2Osc:
 
 	def serve(self):
 		while self.going: # not sure how to do this without an infinite while loop, pygame.midi is bad but nothing else is ez 2 setup on windows lol
-			if self.inp.poll():
+			if self.inp and self.inp.poll():
 				midi_events = self.inp.read(10)
 				#the_key = str([midi_events[0][0][0],midi_events[0][0][1]])
 				#n = int(midi_events[0][0][2])

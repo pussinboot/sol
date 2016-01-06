@@ -24,7 +24,7 @@ import file_io as IO
 class ClipControl:
 	def __init__(self,root,clip,backend):
 		# sol stuff
-		self.clip = clip
+		self.clip = clip # maybe just backend.cur_clip
 		#self.clip.control_addr = '/activeclip/video/position/values' # temp for activeclip only
 		self.backend = backend
 		self.osc_client = self.backend.osc_client
