@@ -6,7 +6,6 @@ and allows for configuring midi
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
 import pygame.midi, threading, queue
-from sol_backend import Backend
 
 class Midi2Osc:
 	def __init__(self,inp=None,ip="127.0.0.1",port=7000):
@@ -156,13 +155,14 @@ class ConfigMidi:
 			ns = [msgs[i][1] for i, x in enumerate(msgs) if x[0] == maxval]
 			f=lambda s,d={}:([d.__setitem__(i,d.get(i,0)+1) for i in s],d)[-1]
 			hist_ns = f(ns)
-			return [maxval,len(hist_ns)] # returns midi key and number of different values it took on
-			# for example if it is [[],2] then [] is a piano type control
+			return [maxval,hist_ns] # returns midi key and different values it took on
+			# can then use len(hist_ns) to classify what kind of key it is
 
 			
 
 if __name__ == '__main__':
 	import time
+	from sol_backend import Backend
 
 	### test Midi2Osc
 	m2o_test = Midi2Osc()
