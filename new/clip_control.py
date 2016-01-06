@@ -63,7 +63,7 @@ class ClipControl:
 		self.loop_param_frame.pack(side=tk.TOP)
 		self.playback_speed_frame.pack(side=tk.TOP)
 		self.control_speed_frame.pack(side=tk.TOP)
-		self.progress_bar = ProgressBar(self,self.clip.control_addr,width=300)
+		self.progress_bar = ProgressBar(self,self.clip,width=300)
 		self.progress_bar.map_osc(self.clip.control_addr)
 		def move_cue(i,x):
 			self.osc_client.set_q(self.clip,i,x)
@@ -191,8 +191,18 @@ class ClipControl:
 					self.clip.vars[lookup[0]] = newtype(self.looping_vars[which_one].get())
 			return fun_tor
 
+		def gen_update_pbar_related_var(which_one):
+			doit = gen_update_clip_var(which_one)
+			def fun_tor(*args):
+				doit()
+				self.progress_bar.refresh()
+			return fun_tor
+
 		for key in self.loop_to_clip_var:
-			self.looping_vars[key].trace('w', gen_update_clip_var(key))
+			if key in ['loop_a','loop_b','enabled']:
+				self.looping_vars[key].trace('w', gen_update_pbar_related_var(key))
+			else:
+				self.looping_vars[key].trace('w', gen_update_clip_var(key))
 		
 		# speedup (of playback)
 

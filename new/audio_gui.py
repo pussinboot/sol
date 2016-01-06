@@ -183,6 +183,9 @@ class ProgressBar:
 		self.canvas.tag_bind("line","<B3-Motion>",self.drag)
 		self.canvas.tag_bind("line","<ButtonPress-1>",self.find_nearest)
 		self.canvas.tag_bind("label","<ButtonPress-1>",self.find_nearest)
+		self.canvas.bind("<MouseWheel>", self.mouse_wheel)
+		self.canvas.bind("<Button-4>", self.mouse_wheel)
+		self.canvas.bind("<Button-5>", self.mouse_wheel)
 
 		self.zoominbut = tk.Button(self.control_frame,text="+",width=2,
 			command = lambda *pargs: self.zoom(1.25))
@@ -198,7 +201,7 @@ class ProgressBar:
 		self.canvas_frame.pack(anchor=tk.W,side=tk.LEFT,expand=tk.YES,fill=tk.BOTH)
 		self.control_frame.pack(side=tk.LEFT,anchor=tk.E)
 		self.frame.pack(anchor=tk.W,side=tk.TOP,expand=tk.YES,fill=tk.BOTH)
-		#self.canvas.bind("<Configure>", self.on_resize)
+		self.refresh()
 
 	# progress bar follow mouse
 	def find_mouse(self,event):
@@ -266,9 +269,9 @@ class ProgressBar:
 		x_coord = x_float*self.width
 		self.lines[i] = self.canvas.create_line(x_coord,0,x_coord,self.height,
 			activefill='white',fill='#ccc',width=3,dash=(4,),tags='line')
+		labelbox = self.canvas.create_rectangle(x_coord,self.height,x_coord+15,self.height+15,tags='label',activefill='#aaa')
 		labeltext = self.canvas.create_text(x_coord,self.height+14,anchor=tk.SW,text=" {}".format(i),
 						  fill='black',activefill='white',justify='center',tags='label')
-		labelbox = self.canvas.create_rectangle(x_coord,self.height,x_coord+12,self.height+15,tags='label')
 		self.labels[i] = [labelbox,labeltext]
 
 	def remove_line(self,i):
@@ -303,6 +306,10 @@ class ProgressBar:
 		for line in lelines:
 			self.canvas.dtag(line,'temploop')
 
+	def refresh(self):
+		# refresh where things are on screen if vars have changed
+		self.loop_update()
+
 	# zoom funs
 	def rescale(self):
 		wscale = float(self.width)/self.oldwidth
@@ -331,6 +338,7 @@ class ProgressBar:
 		# at end
 		self.oldwidth = self.width
 		self.canvas.config(scrollregion=(0,0,self.width,self.height))
+		self.canvas.xview_moveto(self.canvas.coords(self.pbar)[0]*2/(self.width+self.oldwidth))
 
 	def zoom(self,factor=1.00):
 		self.width = self.width * factor
@@ -343,6 +351,9 @@ class ProgressBar:
 
 	def zoom_reset(self):
 		self.zoom(self.og_width/self.width)
+
+	def mouse_wheel(self,event):
+	    self.canvas.xview('scroll',-1*int(event.delta//120),'units')
 
 class ConnectionSelect:
 	# to-do: 
