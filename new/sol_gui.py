@@ -4,7 +4,7 @@ the main gui : )
 import tkinter as tk
 from sol_backend import Backend
 from clip_control import ClipControl
-
+from library_gui import LibraryGui
 class MainGui:
 	def __init__(self,root,fname):
 
@@ -27,6 +27,7 @@ class MainGui:
 
 		# sol
 		self.backend = Backend(fname,self,ports=(7000,7001))
+		self.library_gui = LibraryGui(self,self.library_frame)
 		self.clipcontrol = ClipControl(self.cc_frame,self.backend)
 		self.backend.osc_server.start()
 		self.backend.osc_client.map_loop()
@@ -37,7 +38,7 @@ class MainGui:
 		self.clipcontrol.change_clip(newclip)
 
 
-if __name__ == '__main__':
+def test():
 	import file_io as IO
 	import time
 
@@ -48,3 +49,6 @@ if __name__ == '__main__':
 	test_clip = IO.load_clip('./Subconscious_12.mov.saved_clip')
 	testgui.change_clip(test_clip)
 	root.mainloop()
+
+if __name__ == '__main__':
+	test()

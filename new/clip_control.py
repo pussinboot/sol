@@ -235,9 +235,9 @@ class ClipControl:
 		self.looping_controls.append(loop_select_a)
 		self.looping_controls.append(loop_select_b)
 	
-		loop_on_off = tk.Checkbutton(self.loop_ctrl_frame,text='loop',variable=self.looping_vars['enabled'],
+		self.loop_on_off = tk.Checkbutton(self.loop_ctrl_frame,text='loop',variable=self.looping_vars['enabled'],
 									 onvalue='T',offvalue='') # empty string equates to false..
-		self.looping_controls.append(loop_on_off)
+		self.looping_controls.append(self.loop_on_off)
 		loop_select_type = tk.OptionMenu(self.loop_param_frame,self.looping_vars['loop_type'],'default','bounce')
 		self.looping_controls.append(loop_select_type)
 		for control in self.looping_controls:
@@ -286,9 +286,9 @@ class ClipControl:
 
 		# stupid checkbox :^)
 		if self.clip.vars['loopon']:
-			self.looping_controls[-2].select()
+			self.loop_on_off.select()
 		else:
-			self.looping_controls[-2].deselect()
+			self.loop_on_off.deselect()
 
 
 
