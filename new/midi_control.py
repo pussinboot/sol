@@ -186,11 +186,13 @@ class MidiControl:
 			except:
 				print(desc,'failed to load')
 
-		if Config.has_section('IO'):
-			inpid,outpid = None, None
-			if Config.has_section('Input ID'): inpid = int(Config.get('IO','Input ID'))
-			if Config.has_section('Output ID'): outpid = int(Config.get('IO','Output ID'))
-			self.select_devices(inpid,outpid)
+		## keeping this here in case i fix midi2osc so that it plays nice in a sep thread
+		#  (right now it massively slows down the tk gui :/)
+		# if Config.has_section('IO'):
+		# 	inpid,outpid = None, None
+		# 	if Config.has_section('Input ID'): inpid = int(Config.get('IO','Input ID'))
+		# 	if Config.has_section('Output ID'): outpid = int(Config.get('IO','Output ID'))
+		# 	self.select_devices(inpid,outpid)
 
 		def osc2midi(_,osc_msg):
 			msg = eval(osc_msg)

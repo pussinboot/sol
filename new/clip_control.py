@@ -22,9 +22,11 @@ import CONSTANTS as C
 import file_io as IO
 
 class ClipControl:
-	def __init__(self,root,clip,backend):
+	def __init__(self,root,backend,clip=None):
 		# sol stuff
-		self.clip = clip # maybe just backend.cur_clip
+		if not clip:
+			clip = backend.cur_clip
+		self.clip = clip
 		#self.clip.control_addr = '/activeclip/video/position/values' # temp for activeclip only
 		self.backend = backend
 		self.osc_client = self.backend.osc_client
@@ -32,10 +34,30 @@ class ClipControl:
 
 		### tk stuff
 		self.root = root
+		self.setup_gui()
+		self.change_clip(self.clip)
+
+	def change_clip(self,newclip):
+		# activated when clip is changed, whether on first time setup or on backend cur_clip change
+		if newclip != self.clip: 
+			self.clip = newclip
+			self.progress_bar.cliporsong = newclip
+		self.update_info()
+		self.update_pbar()
+		self.update_cue_buttons()
+		self.update_looping()
+
+
+	def setup_gui(self):
 		# top lvl
-		self.frame = tk.Frame(root)
+		self.frame = tk.Frame(self.root)
+		self.info_frame = tk.Frame(self.frame) # name, mayb add tags/way to edit/add/delete these things
 		self.progress_frame = tk.Frame(self.frame)
 		self.control_frame = tk.Frame(self.frame)
+		self.name_var = tk.StringVar()
+		self.name_label = tk.Label(self.info_frame,textvariable=self.name_var,relief=tk.RIDGE)
+		self.name_label.pack(side=tk.TOP,fill=tk.X)
+
 		# bottom half
 		self.left_half = tk.Frame(self.control_frame)
 		self.right_half = tk.Frame(self.control_frame)
@@ -50,6 +72,7 @@ class ClipControl:
 		self.playback_speed_frame = tk.Frame(self.param_frame)
 		self.control_speed_frame = tk.Frame(self.param_frame)
 		# pack it
+		self.info_frame.pack(side=tk.TOP)
 		self.progress_frame.pack(side=tk.TOP)
 		self.control_frame.pack(side=tk.TOP)
 		self.left_half.pack(side=tk.LEFT)
@@ -63,12 +86,8 @@ class ClipControl:
 		self.loop_param_frame.pack(side=tk.TOP)
 		self.playback_speed_frame.pack(side=tk.TOP)
 		self.control_speed_frame.pack(side=tk.TOP)
-		self.progress_bar = ProgressBar(self,self.clip,width=300)
+		self.progress_bar = ProgressBar(self,self.clip,root=self.progress_frame,width=300)
 		self.progress_bar.map_osc(self.clip.control_addr)
-		def move_cue(i,x):
-			self.osc_client.set_q(self.clip,i,x)
-		self.progress_bar.drag_release_action = move_cue
-
 		self.cue_buttons = []
 		self.setup_cue_buttons()
 
@@ -81,7 +100,35 @@ class ClipControl:
 
 		self.frame.pack()
 
+	def update_info(self):
+		try:
+			if self.clip: self.name_var.set(self.clip.name)
+		except:
+			pass
+
+	def update_pbar(self):
+		#self.progress_bar.map_osc(self.clip.control_addr)
+		self.progress_bar.send_addr = self.clip.control_addr
+		def move_cue(i,x):
+			self.osc_client.set_q(self.clip,i,x)
+		self.progress_bar.drag_release_action = move_cue
+
 	def setup_cue_buttons(self):
+		n_buts = len(self.clip.vars['qp'])
+		n_rows = 1
+		if n_buts > 4:
+			n_rows = n_buts // 4
+			if n_buts % 4 != 0: n_rows += 1 # yuck
+
+		for r in range(n_rows):
+			for c in range(4):
+				i = r*4 + c
+				but = tk.Button(self.cue_button_frame,text=str(i),padx=10,pady=10,relief='flat') 
+				but.grid(row=r,column=c)
+				if i + 1 > n_buts: but.config(state='disabled')
+				self.cue_buttons.append(but)
+
+	def update_cue_buttons(self):
 		n_buts = len(self.clip.vars['qp'])
 		n_rows = 1
 		if n_buts > 4:
@@ -106,22 +153,18 @@ class ClipControl:
 		for r in range(n_rows):
 			for c in range(4):
 				i = r*4 + c
-				but = tk.Button(self.cue_button_frame,text=str(i),padx=10,pady=10,relief='flat') 
+				but = self.cue_buttons[i]
 				if self.clip.vars['qp'][i]:
-					but.config(relief='groove')
+					but.config(relief='groove') # make it so button is grooved if has cue
 					self.progress_bar.add_line(self.clip.vars['qp'][i],i)
-
-				# make it so button is grooved if has cue
-				but.grid(row=r,column=c)
+				else:
+					but.config(relief='flat')
 				# tie it to fxn of q_points
-				if len(self.cue_buttons) + 1 <= n_buts:
-					#activate = lambda : self.qp.activate(r*4+c)
-					but.config(command=gen_activate(r*4+c))
+				if i + 1 <= n_buts:
+					but.config(command=gen_activate(r*4+c),state='active')
 					but.bind("<ButtonPress-3>",gen_deactivate(r*4+c))
 				else:
 					but.config(state='disabled')
-				
-				self.cue_buttons.append(but)
 
 	def gen_osc_sender(self,addr,msg):
 		osc_msg = self.osc_client.build_msg(addr,msg)
@@ -164,6 +207,43 @@ class ClipControl:
 		for key in self.loop_to_clip_var:
 			self.looping_vars[key] = tk.StringVar()
 
+		# speedup (of playback)
+
+		speed_scale = tk.Scale(self.playback_speed_frame,from_=0.0,to=10.0,resolution=0.05,variable=self.looping_vars['speed'],
+							   orient=tk.HORIZONTAL, showvalue = 0)
+		speed_box = tk.Spinbox(self.playback_speed_frame,from_=0.0,to=10.0,increment=0.1,format="%.2f",
+							   textvariable=self.looping_vars['speed'], width=4)
+		def send_speed(*args):
+			speed = float(self.looping_vars['speed'].get())/10.0
+			self.osc_client.build_n_send('/activeclip/video/position/speed',speed)
+		speed_scale.config(command=send_speed)
+		speed_box.config(command=send_speed)
+		speed_box.bind("<Return>",send_speed)
+		self.looping_controls.append(speed_scale)
+		self.looping_controls.append(speed_box)
+
+		# speedup of control?
+		control_speed_scale = tk.Scale(self.control_speed_frame,from_=1.0,to=6.66,resolution=0.01,variable=self.looping_vars['control_speed'],
+							   orient=tk.HORIZONTAL, showvalue = 0)
+		control_speed_box = tk.Spinbox(self.control_speed_frame,from_=1.0,to=6.66,increment=0.03,format="%.2f",
+							   textvariable=self.looping_vars['control_speed'], width=4)
+		self.looping_controls.append(control_speed_scale)
+		self.looping_controls.append(control_speed_box)
+		# loop selection
+		loop_select_a = tk.OptionMenu(self.loop_ctrl_frame,self.looping_vars['loop_a'],*loop_poss)
+		loop_select_b = tk.OptionMenu(self.loop_ctrl_frame,self.looping_vars['loop_b'],*loop_poss)
+		self.looping_controls.append(loop_select_a)
+		self.looping_controls.append(loop_select_b)
+	
+		loop_on_off = tk.Checkbutton(self.loop_ctrl_frame,text='loop',variable=self.looping_vars['enabled'],
+									 onvalue='T',offvalue='') # empty string equates to false..
+		self.looping_controls.append(loop_on_off)
+		loop_select_type = tk.OptionMenu(self.loop_param_frame,self.looping_vars['loop_type'],'default','bounce')
+		self.looping_controls.append(loop_select_type)
+		for control in self.looping_controls:
+			control.pack(side=tk.LEFT)
+
+	def update_looping(self):
 		# set all variables to their current values
 
 		def update_loop_var(which_one): # reverse of below fxn
@@ -203,49 +283,20 @@ class ClipControl:
 				self.looping_vars[key].trace('w', gen_update_pbar_related_var(key))
 			else:
 				self.looping_vars[key].trace('w', gen_update_clip_var(key))
-		
-		# speedup (of playback)
 
-		speed_scale = tk.Scale(self.playback_speed_frame,from_=0.0,to=10.0,resolution=0.05,variable=self.looping_vars['speed'],
-							   orient=tk.HORIZONTAL, showvalue = 0)
-		speed_box = tk.Spinbox(self.playback_speed_frame,from_=0.0,to=10.0,increment=0.1,format="%.2f",
-							   textvariable=self.looping_vars['speed'], width=4)
-		def send_speed(*args):
-			speed = float(self.looping_vars['speed'].get())/10.0
-			self.osc_client.build_n_send('/activeclip/video/position/speed',speed)
-		speed_scale.config(command=send_speed)
-		speed_box.config(command=send_speed)
-		speed_box.bind("<Return>",send_speed)
-		self.looping_controls.append(speed_scale)
-		self.looping_controls.append(speed_box)
+		# stupid checkbox :^)
+		if self.clip.vars['loopon']:
+			self.looping_controls[-2].select()
+		else:
+			self.looping_controls[-2].deselect()
 
-		# speedup of control?
-		control_speed_scale = tk.Scale(self.control_speed_frame,from_=1.0,to=6.66,resolution=0.01,variable=self.looping_vars['control_speed'],
-							   orient=tk.HORIZONTAL, showvalue = 0)
-		control_speed_box = tk.Spinbox(self.control_speed_frame,from_=1.0,to=6.66,increment=0.03,format="%.2f",
-							   textvariable=self.looping_vars['control_speed'], width=4)
-		self.looping_controls.append(control_speed_scale)
-		self.looping_controls.append(control_speed_box)
-		# loop selection
-		loop_select_a = tk.OptionMenu(self.loop_ctrl_frame,self.looping_vars['loop_a'],*loop_poss)
-		loop_select_b = tk.OptionMenu(self.loop_ctrl_frame,self.looping_vars['loop_b'],*loop_poss)
-		self.looping_controls.append(loop_select_a)
-		self.looping_controls.append(loop_select_b)
-	
-		loop_on_off = tk.Checkbutton(self.loop_ctrl_frame,text='loop',variable=self.looping_vars['enabled'],
-									 onvalue='T',offvalue='') # empty string equates to false..
-		self.looping_controls.append(loop_on_off)
-		loop_select_type = tk.OptionMenu(self.loop_param_frame,self.looping_vars['loop_type'],'default','bounce')
-		self.looping_controls.append(loop_select_type)
-		for control in self.looping_controls:
-			control.pack(side=tk.LEFT)
 
 
 if __name__ == '__main__':
 	# testing
 	bb = Backend('./test_ex.avc',ports=(7000,7001)) # './test_ex.avc' '../old/test.avc'
 	test_clip = IO.load_clip('./Subconscious_12.mov.saved_clip')
-	
+	bb.cur_clip = test_clip
 	#bb = Backend('../old/test.avc',ports=(7000,7001))
 	#test_clip = IO.load_clip('./00 Dodge N Kill From Back.mov.saved_clip')
 	#test_clip = bb.library.random_clip()
@@ -253,13 +304,13 @@ if __name__ == '__main__':
 
 	root = tk.Tk()
 	root.title('controlR_test')
-	test_cc = ClipControl(root,test_clip,bb)
+	test_cc = ClipControl(root,bb)
 	bb.osc_server.gui = test_cc
 	bb.osc_server.start()
 
 	bb.osc_client.select_clip(test_cc.clip)
-	bb.osc_client.map_loop(test_cc.clip)
-	bb.osc_client.map_timeline(test_cc.clip)
+	bb.osc_client.map_loop()
+	bb.osc_client.map_timeline()
 
 	root.mainloop()
 
