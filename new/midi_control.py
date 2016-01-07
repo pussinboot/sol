@@ -2,10 +2,14 @@
 runs midi server in a separate thread
 and allows for configuring midi
 / setting the buttons to do stuff : )
+
+TO DO
+ok looks like separate thread is not playing nice for the midi2osc part ;-;
 """
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
 import pygame.midi, threading, queue
+import os, configparser
 
 class Midi2Osc:
 	def __init__(self,inp=None,ip="127.0.0.1",port=7000):
@@ -71,7 +75,7 @@ class Midi2Osc:
 			print(e)
 			return default()
 
-	def send_output(self,note,channel,velocity=None,on_off=True):
+	def send_output(self,channel,note,velocity=None,on_off=True):
 		if not self.outp:
 			return
 		try:
@@ -101,18 +105,19 @@ class Midi2Osc:
 				#the_key = str([midi_events[0][0][0],midi_events[0][0][1]])
 				#n = int(midi_events[0][0][2])
 				#print(midi_events[0][0][:3])#the_key,n)
-				msg = osc_message_builder.OscMessageBuilder(address = "/midi/test")
+				msg = osc_message_builder.OscMessageBuilder(address = "/midi")
 				msg.add_arg(str(midi_events[0][0][:3]))
 				msg = msg.build()
 				self.client.send(msg)
 
 class ConfigMidi:
-	def __init__(self,backend,configfile='/savedata/last_midi'):
+	def __init__(self,backend):
 		self.backend = backend
-		self.configfilename = configfile
 		self.m2o = Midi2Osc(ip=self.backend.osc_server.ip,port=self.backend.osc_server.port)
 		self.queue = queue.Queue()
+		self.key_to_fun = {}
 
+	def config_mode(self):
 		def osc_to_id(_,osc_msg):
 			msg = eval(osc_msg)
 			self.queue.put([str(msg[:2]),msg[2]])
@@ -121,7 +126,7 @@ class ConfigMidi:
 			#	resp = self.key_to_fun[key](val)
 			#	if resp: self.queue.put(resp)
 		
-		self.backend.osc_server.map('/midi/test',osc_to_id)
+		self.backend.osc_server.map('/midi',osc_to_id)
 
 	def select_devices(self,inp=None,outp=None):
 		return [self.m2o.change_inp(inp),self.m2o.change_outp(outp)]
@@ -158,7 +163,44 @@ class ConfigMidi:
 			return [maxval,hist_ns] # returns midi key and different values it took on
 			# can then use len(hist_ns) to classify what kind of key it is
 
-			
+	def map_midi(self,fname):
+		if not os.path.exists(fname): return
+		Config = configparser.RawConfigParser()
+		Config.optionxform = str 
+		Config.read(fname)
+		for desc, fun in self.backend.desc_to_fun.items():
+			try:
+				# get the key & type
+				key = Config.get('Keys',desc)
+				control_type = Config.get('Type',desc)
+				# setup function
+				def newfun(n):
+					if n > 0:
+						fun()
+				# bind to our key -> fun lookup
+				self.key_to_fun[key] = newfun
+			except:
+				print(desc,'failed to load')
+
+		if Config.has_section('IO'):
+			inpid,outpid = None, None
+			if Config.has_section('Input ID'): inpid = int(Config.get('IO','Input ID'))
+			if Config.has_section('Output ID'): outpid = int(Config.get('IO','Input ID'))
+			self.select_devices(inpid,outpid)
+
+		self.backend.osc_server.map('/midi',self.osc2midi)
+
+
+	def osc2midi(self,_,osc_msg):
+		msg = eval(osc_msg)
+		print(msg)
+		parsed = [str(msg[:2]),msg[2]]
+		if parsed[0] in self.key_to_fun:
+			self.key_to_fun[parsed[0]](parsed[1])
+
+
+
+
 
 if __name__ == '__main__':
 	import time
@@ -172,9 +214,9 @@ if __name__ == '__main__':
 	channel = 7
 	for _ in range(4):
 		for note in range(96,104):
-			m2o_test.send_output(note,channel,velocity=127)
+			m2o_test.send_output(channel,note,velocity=127)
 			time.sleep(.1)
-			m2o_test.send_output(note,channel,on_off=False)
+			m2o_test.send_output(channel,note,on_off=False)
 	m2o_test.stop()
 	
 	### test ConfigMidi
