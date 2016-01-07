@@ -18,8 +18,11 @@ class ConfigGui:
 
 	def __init__(self,root,backend):
 		self.root = root
+		self.backend = backend
 		self.configmidi = ConfigMidi(backend) 
+		self.configmidi.config_mode()
 		self.midi_running = False
+		self.last_loaded = 'n/a'
 
 		self.mainframe = tk.Frame(self.root)
 		self.configframe = tk.Frame(self.mainframe)
@@ -60,14 +63,15 @@ class ConfigGui:
 		self.root.destroy()
 
 	def setup_inputs(self):
-		for inp in [str(i) for i in range(8)]:
-			self.inputs.append(InputBox(self,self.inputtab,inp))
-			self.outputs.append(OutputBox(self,self.outputtab,inp))
+		for desc in self.backend.desc_to_fun:
+			self.inputs.append(InputBox(self,self.inputtab,desc))
+		# for inp in [str(i) for i in range(8)]:
+			#self.outputs.append(OutputBox(self,self.outputtab,inp))
 
 	def save(self):
 		# inputs
 		if self.deviceselect.selected_devices[0][0] == '-': return
-		fname = self.deviceselect.selected_devices[0][0]+'.ini'
+		fname = "./savedata/{}.ini".format(self.deviceselect.selected_devices[0][0].strip())
 		Config = configparser.RawConfigParser()
 		Config.optionxform = str 
 		cfgfile = open(fname,'w')
@@ -85,9 +89,31 @@ class ConfigGui:
 			if inp.value.get() != '[-,-]':
 				Config.set(keyname,inp.name,inp.value.get())
 			if inp.keytype.get() != '----':
-				Config.set(typename,inp.name,keytype.value.get())
+				Config.set(typename,inp.name,inp.keytype.get())
 		Config.write(cfgfile)
 		cfgfile.close()
+
+	def load(self,fname=None):
+		if not fname:
+			if self.deviceselect.selected_devices[0][0] == '-': return
+			fname = "./savedata/{}.ini".format(self.deviceselect.selected_devices[0][0])
+		if os.path.exists(fname):
+			self.last_loaded = os.path.splitext(fname)[0]
+			Config = configparser.RawConfigParser()
+			Config.optionxform = str 
+			Config.read(fname)
+			for inp in self.inputs:
+				o = inp.name
+				try:
+					key = Config.get('Keys',o)
+					control_type = Config.get('Type',o)
+					inp.value.set(key)
+					inp.keytype.set(control_type)
+				except:
+					print(o,'failed to load')
+			return int(Config.get('IO','Input ID'))
+		return -1
+
 
 class InputBox:
 
@@ -101,12 +127,12 @@ class InputBox:
 		self.value.set('[-,-]'), self.keytype.set('----')
 
 		self.topframe = tk.Frame(frame,bd=1,relief = tk.SUNKEN,padx=2,pady=2)
-		self.label = tk.Label(self.topframe,text=self.name,relief=tk.RAISED,width=16)
-		self.valuelabel = tk.Label(self.topframe,textvariable=self.value,relief=tk.GROOVE,width=4) 
+		self.label = tk.Label(self.topframe,text=self.name,relief=tk.RAISED,width=10)
+		self.valuelabel = tk.Label(self.topframe,textvariable=self.value,relief=tk.GROOVE,width=10) 
 		type_opts = ['i/o','knob','sldr']
 		self.typeselect = tk.OptionMenu(self.topframe,self.keytype,*type_opts)
 		self.label.pack(side=tk.TOP)
-		self.valuelabel.pack(side=tk.LEFT)
+		self.valuelabel.pack(anchor=tk.E)
 		self.typeselect.pack(anchor=tk.E)
 		self.topframe.pack()
 
@@ -145,15 +171,15 @@ class OutputBox:
 	def __init__(self,configgui,frame,output_name):
 		self.parent = configgui
 		self.name = output_name
-		self.values = [tk.IntVar(), tk.IntVar(), tk.IntVar()]
+		self.values = [tk.IntVar(), tk.IntVar()]
 
 		
 		self.topframe = tk.Frame(frame,bd=1,relief = tk.SUNKEN,padx=2,pady=2)
 		self.label = tk.Label(self.topframe,text=self.name,relief=tk.RAISED,width=16)
-		self.value_entries = [None]*3
-		for i in range(3):
+		self.value_entries = [None]*2
+		for i in range(2):
 			self.value_entries[i] = tk.Spinbox(self.topframe,from_=-1,to=127,increment=1, 
-												textvariable=self.values[i],width=3)
+												textvariable=self.values[i],width=6)
 
 		self.label.pack(side=tk.TOP)
 		for entry in self.value_entries:
@@ -161,7 +187,7 @@ class OutputBox:
 		self.topframe.pack()
 
 		def copy_midi(*args):
-			for i in range(3):
+			for i in range(2):
 				self.values[i].set(self.parent.deviceselect.tested_out[i].get())
 
 		def clear_midi(*args):
@@ -230,6 +256,10 @@ class DeviceSelect:
 					self.selected_devices[io] = [newval,setfun(ddict[newval])]
 					if not self.parent.midi_running:
 						self.parent.start()
+					else:
+						self.parent.save()
+					if newval != self.parent.last_loaded:
+						self.parent.load()
 				else:
 					self.selected_devices[io] = ['-',-1]
 			return fun_tor
@@ -253,13 +283,18 @@ class DeviceSelect:
 		self.inputtestlist = tk.Entry(self.inputtest,textvariable=self.tested_inp_ns)
 		def test_inp(*args):
 			res = self.parent.configmidi.id_midi()
-			print(res)
 			if res:
 				self.tested_inp.set(res[0])
-				self.inputtestlistbox.delete(0, tk.END)
+				self.inputtestlist.delete(0, tk.END)
 				self.inputtestlist.insert(tk.END,str(res[1]))
 
+		def clear_inp(*args):
+			self.tested_inp.set('[-,-]')
+			self.inputtestlist.delete(0, tk.END)
+
 		self.inputtestbut = tk.Button(self.inputtest,text='id midi',command=test_inp)
+		self.inputtestbut.bind("<ButtonPress-3>",clear_inp)	
+
 		self.inputtestbut.pack(side=tk.TOP)
 		self.inputtestlabel.pack(side=tk.LEFT)
 		self.inputtestlist.pack(side=tk.LEFT)
@@ -271,7 +306,11 @@ class DeviceSelect:
 		self.subouttestentries = [None]*3
 		for i,x in enumerate(['channel','note','velocity']):
 			self.subouttestlabels[i] = tk.Label(self.subouttestframe,text=x)
-			self.subouttestentries[i] = tk.Spinbox(self.subouttestframe,from_=0,to=127,increment=1, # may have to change for each of the 3 things
+			if x == 'channel': 
+				too = 15
+			else:
+				too = 127
+			self.subouttestentries[i] = tk.Spinbox(self.subouttestframe,from_=0,to=too,increment=1, 
 				textvariable=self.tested_out[i],width=3)
 			self.subouttestlabels[i].grid(row=0, column=i)
 			self.subouttestentries[i].grid(row=1, column=i)
@@ -280,12 +319,16 @@ class DeviceSelect:
 			def tor(*args):
 				params = [x.get() for x in self.tested_out]
 				self.m2o.send_output(*params,on_off=on_off)
-				#print(params,on_off)
 			return tor
+
+		def reset(*args):
+			for testout in self.tested_out:
+				testout.set(0)
 
 		self.outputtestbut = tk.Button(self.outputtest,text='send midi')
 		self.outputtestbut.bind("<ButtonPress-1>",gen_on_off(True))
-		self.outputtestbut.bind("<ButtonRelease-1>",gen_on_off(False))		
+		self.outputtestbut.bind("<ButtonRelease-1>",gen_on_off(False))	
+		self.outputtestbut.bind("<ButtonPress-3>",reset)	
 		self.outputtestbut.pack()
 		self.subouttestframe.pack()
 

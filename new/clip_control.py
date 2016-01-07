@@ -250,17 +250,23 @@ if __name__ == '__main__':
 	test_clip = IO.load_clip('./00 Dodge N Kill From Back.mov.saved_clip')
 	#test_clip = bb.library.random_clip()
 
+	from midi_control import ConfigMidi
+	temp_mc = ConfigMidi(bb)
+	temp_mc.map_midi('./savedata/Twitch.ini')
+
 	root = tk.Tk()
 	root.title('controlR_test')
 	test_cc = ClipControl(root,test_clip,bb)
 	bb.osc_server.gui = test_cc
-	bb.osc_server.start()
+	temp_mc.start()
+	#bb.osc_server.start()
 
 	bb.osc_client.select_clip(test_cc.clip)
 	bb.osc_client.map_loop(test_cc.clip)
 	bb.osc_client.map_timeline(test_cc.clip)
 
 	root.mainloop()
+	temp_mc.stop()
 
 	bb.osc_client.build_n_send("/activelayer/clear",1)
 	IO.save_clip(test_cc.clip)
