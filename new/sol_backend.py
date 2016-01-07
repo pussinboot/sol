@@ -9,6 +9,7 @@ timeline needs to be transport
 
 from file_io import SavedXMLParse
 from midi_control import MidiControl
+from clip import Clip
 
 from pythonosc import dispatcher, osc_server, osc_message_builder, udp_client
 import threading, os, random
@@ -18,14 +19,16 @@ class Backend:
 	"""
 	def __init__(self,xmlfile=None,gui=None,ports=(7007,7008)):
 		self.library = Library(xmlfile)
+
+		self.cur_clip = Clip('',[-1,-1],"no clip loaded")
+		self.cur_song = None
+		
 		self.osc_client = ControlR(self,port=ports[0]) 
 		self.osc_server = ServeR(gui,port=ports[1])
 
 		self.cur_time = RefObj("cur_time")
 		self.cur_clip_pos = RefObj("cur_clip_pos")
 
-		self.cur_clip = None
-		self.cur_song = None
 
 		def update_time(_,msg): # this is the driving force behind the backend :o)
 			try:				# add going through log file and redoing it in playback mode
@@ -36,7 +39,6 @@ class Backend:
 				pass
 		#self.osc_server.map("/pyaud/pos/frame",update_time)
 		self.osc_server.map("/activeclip/video/position/values",self.cur_clip_pos.update_generator('float'))
-
 		### MIDI CONTROL
 		# basically, here are the descriptions that map to functions
 		# then in the midi config it reads the keys and figures out 
@@ -59,6 +61,10 @@ class Backend:
 				fname = last_midi.read()
 				self.midi_control.map_midi(fname)
 
+	def change_clip(self,newclip):
+		self.cur_clip = newclip
+		self.osc_client.select_clip(newclip)
+
 
 class RefObj:
 	"""
@@ -74,7 +80,7 @@ class RefObj:
 		def fun_tor(_,msg):
 			try:
 				self.value = lookup[type](msg)
-				#print(self) # for debugging
+				# print(self) # for debugging
 			except:
 				pass
 		return fun_tor
@@ -138,7 +144,7 @@ class ControlR:
 	def __init__(self,backend,ip="127.0.0.1",port=7000):
 		self.backend = backend
 		self.osc_client = udp_client.UDPClient(ip, port)
-		self.current_clip = None
+		self.current_clip = self.backend.cur_clip
 		self.send = self.osc_client.send
 		self.ignore_last = False
 		self.setup_control()
@@ -200,7 +206,7 @@ class ControlR:
 	# 
 	# now can use resolume midi behavior for own purposes >:)
 	
-	def map_timeline(self,clip):
+	def map_timeline(self):
 		"""
 		maps a function to osc_server that looks at current useless midi controlled param
 		and uses it to drive timeline control
@@ -217,11 +223,11 @@ class ControlR:
 					self.ignore_last = False
 					return
 				qp0, qp1 = 0.0,1.0
-				speedup = clip.vars['speedup_factor']
+				speedup = self.current_clip.vars['speedup_factor']
 				new_val = float(msg) * speedup
 				if new_val > 1.0:
 					new_val = 1.0
-				if clip.vars['loopon']:	qp0,qp1 = clip.vars['qp'][clip.vars['lp'][0]],clip.vars['qp'][clip.vars['lp'][1]] # if looping
+				if self.current_clip.vars['loopon']:	qp0,qp1 = self.current_clip.vars['qp'][self.current_clip.vars['lp'][0]],self.current_clip.vars['qp'][self.current_clip.vars['lp'][1]] # if looping
 				# linear scale
 				#new_val = (qp1 - qp0)*new_val + qp0
 				if new_val >= qp1: # if reached end
@@ -245,7 +251,7 @@ class ControlR:
 	### looping behavior
 	# select any 2 cue points, once reach one of them jump to the other
 
-	def map_loop(self,clip):
+	def map_loop(self):
 		"""
 		maps a function to osc_server that looks at curr pos 
 		and flips it to perform next correct action
@@ -253,43 +259,43 @@ class ControlR:
 		if bounce - hit cue a, reverse direction, hit cue b, reverse direction
 		"""
 		keep_pos_fun = self.backend.cur_clip_pos.update_generator('float')
-		single_frame = clip.single_frame_float()
+		single_frame = self.current_clip.single_frame_float()
 		def check_within(time,compare,factor=10):
 			dt = abs(time - compare)
 			return dt <= factor*single_frame
 
 		def default_loop(time):
-			if not clip.vars['loopon']:
+			if not self.current_clip.vars['loopon']:
 				return
-			playdir = clip.vars['playdir']
+			playdir = self.current_clip.vars['playdir']
 			if playdir == 0 or playdir == -2:
 				return
-			if playdir == -1 and time - clip.vars['qp'][clip.vars['lp'][0]] < 0:
-				self.activate(clip,clip.vars['lp'][1])
-			elif playdir == 1 and time - clip.vars['qp'][clip.vars['lp'][1]] > 0:
-				self.activate(clip,clip.vars['lp'][0])
+			if playdir == -1 and time - self.current_clip.vars['qp'][self.current_clip.vars['lp'][0]] < 0:
+				self.activate(self.current_clip,self.current_clip.vars['lp'][1])
+			elif playdir == 1 and time - self.current_clip.vars['qp'][self.current_clip.vars['lp'][1]] > 0:
+				self.activate(self.current_clip,self.current_clip.vars['lp'][0])
 
 		playfun = [lambda: None,self.play,self.reverse] # 1 goes to play, -1 goes to reverse, 0 does nothing
 		def bounce_loop(time):
-			if not clip.vars['loopon']:
+			if not self.current_clip.vars['loopon']:
 				return
-			playdir = clip.vars['playdir']
+			playdir = self.current_clip.vars['playdir']
 			if playdir == 0 or playdir == -2:
 				return
-			if playdir == -1 and time - clip.vars['qp'][clip.vars['lp'][0]] < 0:
-				playfun[-1*playdir](clip)
-				self.activate(clip,clip.vars['lp'][0])
-			elif playdir == 1 and time - clip.vars['qp'][clip.vars['lp'][1]] > 0:
-				playfun[-1*playdir](clip)
-				self.activate(clip,clip.vars['lp'][1])
+			if playdir == -1 and time - self.current_clip.vars['qp'][self.current_clip.vars['lp'][0]] < 0:
+				playfun[-1*playdir](self.current_clip)
+				self.activate(self.current_clip,self.current_clip.vars['lp'][0])
+			elif playdir == 1 and time - self.current_clip.vars['qp'][self.current_clip.vars['lp'][1]] > 0:
+				playfun[-1*playdir](self.current_clip)
+				self.activate(self.current_clip,self.current_clip.vars['lp'][1])
 		loop_type_to_fun = {'default':default_loop,'bounce':bounce_loop}
 		def map_fun(toss,msg):
-			keep_pos_fun(toss,msg)	# keep default behavior
+			#keep_pos_fun(toss,msg)	# keep default behavior # dont need this since mapping appends ^_^
 			curval = float(msg)
 			try:
-				loop_type_to_fun[clip.vars['looptype']](curval)
+				loop_type_to_fun[self.current_clip.vars['looptype']](curval)
 			except:
-				#clip.vars['looptype'] = 'default'
+				#self.current_clip.vars['looptype'] = 'default'
 				pass
 
 		self.backend.osc_server.map("/activeclip/video/position/values",map_fun)
@@ -306,6 +312,7 @@ class ServeR:
 		self.ip, self.port = ip,port
 		self.dispatcher = dispatcher.Dispatcher()
 		self.map = self.dispatcher.map
+		#self.dispatcher.set_default_handler(print)	# for debugging
 
 	def start(self):
 		self.running = 1

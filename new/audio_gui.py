@@ -144,7 +144,7 @@ class MainGui:
 			tkmb.showerror("Bad file","please choose a proper .wav file")
 
 class ProgressBar:
-	def __init__(self,parent,cliporsong,width=330,height=50):
+	def __init__(self,parent,cliporsong,root=None,width=330,height=50):
 
 		self.width, self.height = width, height
 		self.oldwidth, self.oldheight = width, height
@@ -157,7 +157,10 @@ class ProgressBar:
 		self.labels = [None]*C.NO_Q
 
 		self.parent = parent
-		self.root = parent.root
+		if not root:
+			self.root = parent.root
+		else:
+			self.root = root
 		self.cliporsong = cliporsong # song or clip
 
 		self.frame = tk.Frame(self.root)
