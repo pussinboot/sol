@@ -8,9 +8,10 @@ timeline needs to be transport
 """
 
 from file_io import SavedXMLParse
+from midi_control import MidiControl
+
 from pythonosc import dispatcher, osc_server, osc_message_builder, udp_client
 import threading, os, random
-
 class Backend:
 	"""
 	entire backend for sol
@@ -49,6 +50,16 @@ class Backend:
 		# can also auto-gen some of these for cue select etc
 		# no clue how im going to add midi out.. for now
 
+		self.midi_control = MidiControl(self)
+		self.load_last()
+
+	def load_last(self):
+		if os.path.exists('./savedata/last_midi'):
+			with open('./savedata/last_midi','r') as last_midi:
+				fname = last_midi.read()
+				self.midi_control.map_midi(fname)
+
+
 class RefObj:
 	"""
 	special object that can be used to refer to an osc value
@@ -76,10 +87,12 @@ class Library:
 	def __init__(self,xmlfile=None):
 		self.clips = {}
 		self.tags = {}
-		if xmlfile:
-			parsed = SavedXMLParse(xmlfile)
-			for clip in parsed.clips:
-				self.add_clip(clip)
+		if xmlfile: self.load_xml(xmlfile)
+			
+	def load_xml(self,xmlfile):
+		parsed = SavedXMLParse(xmlfile)
+		for clip in parsed.clips:
+			self.add_clip(clip)
 
 	@property
 	def clip_names(self):
