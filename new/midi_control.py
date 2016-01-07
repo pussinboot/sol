@@ -115,7 +115,6 @@ class ConfigMidi:
 		self.backend = backend
 		self.m2o = Midi2Osc(ip=self.backend.osc_server.ip,port=self.backend.osc_server.port)
 		self.queue = queue.Queue()
-		self.key_to_fun = {}
 
 	def config_mode(self):
 		def osc_to_id(_,osc_msg):
@@ -163,6 +162,11 @@ class ConfigMidi:
 			return [maxval,hist_ns] # returns midi key and different values it took on
 			# can then use len(hist_ns) to classify what kind of key it is
 
+class MidiControl:
+	def __init__(self,backend):
+		self.backend = backend
+		self.key_to_fun = {}
+
 	def map_midi(self,fname):
 		if not os.path.exists(fname): return
 		Config = configparser.RawConfigParser()
@@ -185,43 +189,103 @@ class ConfigMidi:
 		if Config.has_section('IO'):
 			inpid,outpid = None, None
 			if Config.has_section('Input ID'): inpid = int(Config.get('IO','Input ID'))
-			if Config.has_section('Output ID'): outpid = int(Config.get('IO','Input ID'))
+			if Config.has_section('Output ID'): outpid = int(Config.get('IO','Output ID'))
 			self.select_devices(inpid,outpid)
 
-		self.backend.osc_server.map('/midi',self.osc2midi)
+		def osc2midi(_,osc_msg):
+			msg = eval(osc_msg)
+			print(msg)
+			parsed = [str(msg[:2]),msg[2]]
+			if parsed[0] in self.key_to_fun:
+				self.key_to_fun[parsed[0]](parsed[1])
 
+		self.backend.osc_server.map('/midi',osc2midi)
 
-	def osc2midi(self,_,osc_msg):
-		msg = eval(osc_msg)
-		print(msg)
-		parsed = [str(msg[:2]),msg[2]]
-		if parsed[0] in self.key_to_fun:
-			self.key_to_fun[parsed[0]](parsed[1])
+def main(ip,port,inp):
+	print("serving midi as osc to {0}:{1}/midi".format(ip,port))
+	m2o = Midi2Osc(ip=ip,port=port)
+	dev_dict = m2o.get_inps()
+	id_to_inp = {v: k for k, v in dev_dict[0].items()}
 
+	def set_default():
+		checkinp = m2o.change_inp()
+		if checkinp in id_to_inp:
+			print('set midi input to default', id_to_inp[checkinp])
+		else:
+			print('failed to set midi input')
 
+	if inp:
+		m2o.change_inp(inp)
+		print("set midi input to {0} - {1}".format(inp,id_to_inp[inp]))
+	else:
+		if os.path.exists('./savedata/last_midi'):
+			with open('./savedata/last_midi','r') as last_midi:
+				fname = last_midi.read()
+				if os.path.exists(fname):
+					Config = configparser.RawConfigParser()
+					Config.optionxform = str 
+					Config.read(fname)
+					definp = int(Config.get('IO','Input ID'))
+					checkinp = m2o.change_inp(definp)
+					if checkinp == definp:
+						print('set midi input to',Config.get('IO','Input Name'))
+					else:
+						set_default()
+				else:
+					set_default()
+		else:
+			set_default()
 
+	m2o.start()
+	try:
+		while True:
+			time.sleep(.5)
+	except KeyboardInterrupt:
+		pass
+	finally:
+		m2o.stop()
+		print('bye')
+
+	# if im going to do outputs, need to either figure out how to properly thread or 
+	# i will have to add an osc server to listen for midi messages to send -.-
 
 
 if __name__ == '__main__':
-	import time
-	from sol_backend import Backend
+	import argparse, time
 
-	### test Midi2Osc
-	m2o_test = Midi2Osc()
-	m2o_test.change_inp()
-	m2o_test.change_outp(3)
-	m2o_test.start()
-	channel = 7
-	for _ in range(4):
-		for note in range(96,104):
-			m2o_test.send_output(channel,note,velocity=127)
-			time.sleep(.1)
-			m2o_test.send_output(channel,note,on_off=False)
-	m2o_test.stop()
+	parser = argparse.ArgumentParser(description='Host the Midi2Osc Server')
+	parser.add_argument(
+	    "--inp", type=int, default=None,
+	    help="The MIDI input to convert")
+	parser.add_argument(
+	    "--ip", default="127.0.0.1",
+	    help="The ip to send MIDI OSC messages")
+	parser.add_argument(
+	    "--port", type=int, default=7008,
+	    help="The port to send MIDI OSC messages")
+	args = parser.parse_args()
+	main(args.ip,args.port,args.inp) # run main to turn on correct last i/o 
+
+	# import time
+	# from sol_backend import Backend
+
+	# ### test Midi2Osc
+	# m2o_test = Midi2Osc()
+	# m2o_test.change_inp()
+	# m2o_test.change_outp(3)
+	# m2o_test.start()
+	# channel = 7
+	# for _ in range(4):
+	# 	for note in range(96,104):
+	# 		m2o_test.send_output(channel,note,velocity=127)
+	# 		time.sleep(.1)
+	# 		m2o_test.send_output(channel,note,on_off=False)
+	# m2o_test.stop()
 	
 	### test ConfigMidi
 	# bb = Backend('../old/test.avc')
 	# cm_test = ConfigMidi(bb)
+	# cm_test.config_mode()
 	# print(cm_test.m2o.get_inps())
 	# print('default i/o',cm_test.select_devices())
 	# cm_test.start()

@@ -90,8 +90,19 @@ class ConfigGui:
 				Config.set(keyname,inp.name,inp.value.get())
 			if inp.keytype.get() != '----':
 				Config.set(typename,inp.name,inp.keytype.get())
+		# outputs
+		if self.deviceselect.selected_devices[1][0] != '-':
+			Config.set('IO','Output Name',self.deviceselect.selected_devices[1][0])
+			Config.set('IO','Output ID',self.deviceselect.selected_devices[1][1])
+			for outp in self.outputs:
+				out_key = outp.nice_rep()
+				if out_key != [-1,-1]:
+					Config.set("Output Keys", outp.name, out_key)
 		Config.write(cfgfile)
 		cfgfile.close()
+		# last_midi
+		with open('./savedata/last_midi','w') as last_midi:
+			last_midi.write(fname)
 
 	def load(self,fname=None):
 		if not fname:
@@ -198,6 +209,9 @@ class OutputBox:
 		self.label.bind("<ButtonPress-3>",clear_midi)
 
 		clear_midi()
+
+	def nice_rep(self):
+		return [value.get() for value in self.values]
 
 
 
