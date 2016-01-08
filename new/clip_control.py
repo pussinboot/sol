@@ -43,9 +43,14 @@ class ClipControl:
 			self.clip = newclip
 			self.progress_bar.cliporsong = newclip
 		self.update_info()
-		self.update_pbar()
 		self.update_cue_buttons()
 		self.update_looping()
+		self.update_pbar()
+		self.update_mapping()
+
+	def update_mapping(self):
+		self.osc_client.map_loop()
+		self.osc_client.map_timeline()
 
 
 	def setup_gui(self):
@@ -112,6 +117,9 @@ class ClipControl:
 		def move_cue(i,x):
 			self.osc_client.set_q(self.clip,i,x)
 		self.progress_bar.drag_release_action = move_cue
+		# clear the screen of any junk
+		self.progress_bar.loop_update()
+
 
 	def setup_cue_buttons(self):
 		n_buts = len(self.clip.vars['qp'])
@@ -154,17 +162,18 @@ class ClipControl:
 			for c in range(4):
 				i = r*4 + c
 				but = self.cue_buttons[i]
+				# tie it to fxn of q_points
+				if i + 1 <= n_buts:
+					but.config(command=gen_activate(r*4+c),state='active')
+					but.bind("<ButtonPress-3>",gen_deactivate(r*4+c))
+					self.progress_bar.remove_line(i) # remove old shit
+				else:
+					but.config(state='disabled')
 				if self.clip.vars['qp'][i]:
 					but.config(relief='groove') # make it so button is grooved if has cue
 					self.progress_bar.add_line(self.clip.vars['qp'][i],i)
 				else:
 					but.config(relief='flat')
-				# tie it to fxn of q_points
-				if i + 1 <= n_buts:
-					but.config(command=gen_activate(r*4+c),state='active')
-					but.bind("<ButtonPress-3>",gen_deactivate(r*4+c))
-				else:
-					but.config(state='disabled')
 
 	def gen_osc_sender(self,addr,msg):
 		osc_msg = self.osc_client.build_msg(addr,msg)
@@ -257,7 +266,7 @@ class ClipControl:
 				print('{} failed to update'.format(which_one))
 
 		for key in self.loop_to_clip_var:
-			update_loop_var(key)
+			if key != 'enabled': update_loop_var(key)
 
 		def gen_update_clip_var(which_one): # depends on the clipvar to be set to proper type ahead of time :)
 			lookup = self.loop_to_clip_var[which_one]
