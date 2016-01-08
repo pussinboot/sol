@@ -184,13 +184,12 @@ class MidiControl:
 				# get the key & type
 				key = Config.get('Keys',desc)
 				control_type = Config.get('Type',desc)
-				
 				self.key_to_fun[key] = self.gen_midi_fun(desc,control_type)
-
 			except:
 				print(desc,'failed to load')
-		for key, func in self.key_to_fun.items():
-			print(key,func)
+		# check that setup is gud
+		# for key, func in self.key_to_fun.items():
+		# 	print(key,func)
 		## keeping this here in case i fix midi2osc so that it plays nice in a sep thread
 		#  (right now it massively slows down the tk gui :/)
 		# if Config.has_section('IO'):
@@ -201,7 +200,7 @@ class MidiControl:
 
 		def osc2midi(_,osc_msg):
 			msg = eval(osc_msg)
-			print(msg[:2],"n:",msg[2])
+			#print(msg[:2],"n:",msg[2])
 			key, n = str(msg[:2]),msg[2]
 			if key in self.key_to_fun:
 				self.key_to_fun[key](n)

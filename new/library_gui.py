@@ -47,6 +47,7 @@ class ClipContainer:
 	# gui element that holds a single clip
 	def __init__(self,librarygui,parent_frame,clip=None):
 		self.clip = clip
+		self.fname = None
 		self.maingui = librarygui.maingui		
 		self.librarygui = librarygui
 
@@ -83,13 +84,16 @@ class ClipContainer:
 			new_text = new_text[:17] + ".."
 		self.label.config(text=new_text)
 
-	def change_clip(self,clip_name):
-		self.clip = self.librarygui.backend.library.clips[clip_name] # will need to
+	def change_clip(self,clip_fname):
+		if not clip_fname in self.librarygui.backend.library.clips: return
+		self.clip = self.librarygui.backend.library.clips[clip_fname]
+		self.fname = self.clip.fname
 		print('clip changed to ',self.clip.name)
 		self.toggle_dnd()
 
-	def remove_clip(self):
+	def remove_clip(self,*args):
 		self.clip = None
+		self.fname = None
 		self.toggle_dnd()
 
 	# tkdnd stuff here
@@ -115,9 +119,9 @@ class ClipContainer:
 		
 	def dnd_commit(self, source, event):
 		#print('source:',source)
-		if not source.name:
+		if not source.fname:
 			return
-		self.change_clip(source.name) #change_text
+		self.change_clip(source.fname) #change_text
 		self.dnd_leave(source, event)
 
 	def dnd_end(self,target,event):
@@ -191,11 +195,11 @@ class BrowseLibrary:
 		#res = self.library.clip_names
 		#res.sort()
 		res = self.library.clips
-		self.tree_root = self.search_tree.insert('', 'end',iid="root", text='All',open=True)
+		self.tree_root = self.search_tree.insert('', 'end',iid="root", text='All',open=True,values=['category'])
 		for r in res:
-			self.search_tree.insert(self.tree_root, 'end', text=r)#[0],values=r[1])
+			self.search_tree.insert(self.tree_root, 'end', text=res[r].name,values=["clip",r,res[r].thumbnail])
 
-def make_tree_clip(event,tag=False):
+def make_tree_clip(event):
 	if event.state != 8:
 		return
 	tv = event.widget
@@ -204,11 +208,9 @@ def make_tree_clip(event,tag=False):
 	if not tv.selection():
 		return
 	item = tv.selection()[0]
-	
-	if tag:
-		if tv.item(item,"values")[0] != 'clip':
-			return
-	clip_name = tv.item(item,"text")
+	if tv.item(item,"values")[0] != 'clip':
+		return
+	clip_name = tv.item(item,"values")[1]
 	if dnd_start(TreeClip(clip_name),event):
 		pass
 
@@ -217,9 +219,9 @@ class TreeClip:
 	this is what can be dragged : )
 	needs to be created when you press on a clip in the treeview
 	"""
-	def __init__(self,name):
+	def __init__(self,fname):
 		# note clip is just name of clip, that is used only once dropped 
-		self.name = name
+		self.fname = fname
 
 	def dnd_end(self,target,event):
 		#print('target:',target)

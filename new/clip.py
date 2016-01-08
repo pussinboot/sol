@@ -11,6 +11,8 @@ class Clip:
 		self.fname = filepath
 		self.loc = deckloc
 		self.params = params
+		self.thumbnail = None
+		
 		if name is None:
 			self.name = os.path.splitext(filepath)[0]
 		else:

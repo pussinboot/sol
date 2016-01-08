@@ -12,7 +12,7 @@ from midi_control import MidiControl
 from clip import Clip
 
 from pythonosc import dispatcher, osc_server, osc_message_builder, udp_client
-import threading, os, random
+import threading, os, random, collections
 class Backend:
 	"""
 	entire backend for sol
@@ -34,7 +34,7 @@ class Backend:
 			try:				# add going through log file and redoing it in playback mode
 								# plus making of the log file in record mode
 				self.cur_time.value = int(msg)
-				print(self.cur_time)
+				#print(self.cur_time)
 			except:
 				pass
 		#self.osc_server.map("/pyaud/pos/frame",update_time)
@@ -192,7 +192,6 @@ class ControlR:
 		def gen_control_sender(addr,msg,direction):
 			osc_msg = self.build_msg(addr,msg)
 			def fun_tor(clip=None):
-				print(direction)
 				self.send(osc_msg)
 				if clip:
 					clip.vars['playdir'] = direction
@@ -241,7 +240,7 @@ class ControlR:
 				self.build_n_send(send_addr,new_val)
 
 			return fun_tor
-		self.backend.osc_server.map(recv_addr,gen_osc_route())
+		self.backend.osc_server.map_replace("map_timeline",recv_addr,gen_osc_route())
 		# do i need to update the opacity value as well? let's test n see
 		# then will also have to do reverse op if im choosing to scale in order
 		# to limit active range of control
@@ -292,7 +291,8 @@ class ControlR:
 				self.activate(self.current_clip,self.current_clip.vars['lp'][1])
 		loop_type_to_fun = {'default':default_loop,'bounce':bounce_loop}
 		def map_fun(toss,msg):
-			#keep_pos_fun(toss,msg)	# keep default behavior # dont need this since mapping appends ^_^
+			keep_pos_fun(toss,msg)	# keep default behavior # dont need this since mapping appends ^_^ 
+			#LOL not default anymore
 			curval = float(msg)
 			try:
 				loop_type_to_fun[self.current_clip.vars['looptype']](curval)
@@ -300,7 +300,7 @@ class ControlR:
 				#self.current_clip.vars['looptype'] = 'default'
 				pass
 
-		self.backend.osc_server.map("/activeclip/video/position/values",map_fun)
+		self.backend.osc_server.map_replace("map_loop","/activeclip/video/position/values",map_fun)
 
 
 class ServeR:
@@ -314,6 +314,9 @@ class ServeR:
 		self.ip, self.port = ip,port
 		self.dispatcher = dispatcher.Dispatcher()
 		self.map = self.dispatcher.map
+		# gna override some pythonosc stuff
+		self.Handler = collections.namedtuple(typename='Handler',field_names=('callback', 'args')) 
+		self.special_handlers = {}
 		#self.dispatcher.set_default_handler(print)	# for debugging
 
 	def start(self):
@@ -331,6 +334,15 @@ class ServeR:
 		if self.gui:
 			self.gui.root.destroy()
 
+	def map_replace(self,special,addr,handler,*args):
+		if special not in self.special_handlers:
+			self.dispatcher._map[addr].append(self.Handler(handler,list(args)))
+			self.special_handlers[special] = len(self.dispatcher._map[addr]) - 1
+		else:
+			self.dispatcher._map[addr][self.special_handlers[special]] = self.Handler(handler,list(args))
+		#print(self.dispatcher._map[addr])
+
+			
 
 
 if __name__ == '__main__':
