@@ -56,7 +56,7 @@ class ClipContainer:
 		self.grid = self.frame.grid
 
 		self.default_img = self.img = ImageTk.PhotoImage(Image.open('../old/sample_clip.png'))
-		self.label = tk.Label(self.frame,image=self.img,text='test',compound='top',width=125) # width of clip preview
+		self.label = tk.Label(self.frame,image=self.img,text='test',compound='top',width=C.THUMB_W) # width of clip preview
 		self.label.image = self.img
 		self.label.pack()
 		self.label.bind('<Double-1>',self.activate)
@@ -88,7 +88,10 @@ class ClipContainer:
 		if not clip_fname in self.librarygui.backend.library.clips: return
 		self.clip = self.librarygui.backend.library.clips[clip_fname]
 		self.fname = self.clip.fname
-		print('clip changed to ',self.clip.name)
+		if self.clip.thumbnail:
+			print(self.clip.thumbnail)
+			self.change_img_from_file(self.clip.thumbnail)
+		print('clip changed to',self.clip.name)
 		self.toggle_dnd()
 
 	def remove_clip(self,*args):
