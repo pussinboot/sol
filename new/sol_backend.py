@@ -12,13 +12,16 @@ from midi_control import MidiControl
 from clip import Clip
 
 from pythonosc import dispatcher, osc_server, osc_message_builder, udp_client
+from bisect import bisect_left
 import threading, os, random, collections
+
 class Backend:
 	"""
 	entire backend for sol
 	"""
 	def __init__(self,xmlfile=None,gui=None,ports=(7007,7008)):
 		self.library = Library(xmlfile)
+		self.search = SearchR(self.library.clips)
 
 		self.cur_clip = Clip('',[-1,-1],"no clip loaded")
 		self.cur_song = None
@@ -134,7 +137,65 @@ class Library:
 		lame_list = list(self.clips)
 		return self.clips[random.choice(lame_list)]
 
+class SearchR:
+	"""
+	trie-based search of clips in a library (for use with making treeviews)
+	we store both the name and the filename so that can send the fname to lookup the clip
+	after searching
+	to change clip name have to remove it and readd (dw it's fast)
+	"""
+	def __init__(self, clips):
+		self.index = [ (clip.name.lower(), clip.fname) for clip in clips.values() ] 
+		for clip in clips.values():
+			for ix, c in enumerate(clip.name):
+				if c == " " or c == "_":
+					self.index.append((clip.name[ix+1:].lower(),clip.fname))
 
+		#self.index = [ (w.lower(), clip) for w in [clip[ix+1:] for ix, c in enumerate(clip) for clip in clips if c == " "] ] 
+		#space_ix = [clip[ix+1:] for ix, c in enumerate(clip) if c == " "]
+
+		self.index.sort()
+		#print(self.index)
+
+	def add_clip(self, clip):
+		self.index.append((clip.name.lower(),clip.fname))
+		for ix, c in enumerate(clip.name):
+				if c == " " or c == "_":
+					self.index.append((clip.name[ix+1:].lower(),clip.fname))
+		self.index.sort()
+
+	def remove_clip(self,clip):
+		if (clip.name.lower(),clip.fname) in self.index:
+			to_remove = [(clip.name.lower(),clip.fname)]
+			for ix, c in enumerate(clip.name.lower()):
+					if c == " " or c == "_":
+						to_remove.append((clip.name[ix+1:].lower(),clip.fname))
+			for rem in to_remove:
+				self.index.remove(rem)
+			#self.index.sort()
+
+	def by_prefix(self, prefix,n=-1):
+		#Return clips with names starting with a given prefix in lexicographical order
+		tor = set([])
+		prefix = prefix.lower()
+		i = bisect_left(self.index, (prefix, ''))
+		if n < 0:
+			till = len(self.index)
+		else:
+			till = n
+		while len(tor) <= till:
+			if 0 <= i < len(self.index):
+				found = self.index[i]
+				if not found[0].startswith(prefix):
+					break
+				tor.add(found[1])
+				i = i + 1
+			else:
+				break
+
+		tor = list(tor)
+		tor.sort()
+		return tor
 
 class ControlR:
 	"""
@@ -342,7 +403,7 @@ class ServeR:
 			self.dispatcher._map[addr][self.special_handlers[special]] = self.Handler(handler,list(args))
 		#print(self.dispatcher._map[addr])
 
-			
+
 
 
 if __name__ == '__main__':

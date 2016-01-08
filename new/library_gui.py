@@ -31,7 +31,7 @@ class LibraryGui:
 
 		self.testcontainercollection = ContainerCollection(self,self.clipframe)
 
-		self.search_or_browse = BrowseLibrary(self.backend.library,self.searchframe)
+		self.search_or_browse = BrowseLibrary(self.backend,self.searchframe)
 
 		self.clipframe.pack(side=tk.LEFT,anchor=tk.E)
 		self.searchframe.pack()
@@ -45,18 +45,20 @@ class LibraryGui:
 
 class ClipContainer:
 	# gui element that holds a single clip
-	def __init__(self,librarygui,parent_frame,clip=None):
+	def __init__(self,librarygui,parent,clip=None):
 		self.clip = clip
+		self.active = False
 		self.fname = None
 		self.maingui = librarygui.maingui		
 		self.librarygui = librarygui
 
-		self.parent_frame = parent_frame
+		self.parent = parent
+		self.parent_frame = parent.frame
 		self.frame = tk.Frame(self.parent_frame)
 		self.grid = self.frame.grid
 
 		self.default_img = self.img = ImageTk.PhotoImage(Image.open('../old/sample_clip.png'))
-		self.label = tk.Label(self.frame,image=self.img,text='test',compound='top',width=C.THUMB_W) # width of clip preview
+		self.label = tk.Label(self.frame,image=self.img,text='test',compound='top',width=C.THUMB_W,bd=2) # width of clip preview
 		self.label.image = self.img
 		self.label.pack()
 		self.label.bind('<Double-1>',self.activate)
@@ -66,7 +68,19 @@ class ClipContainer:
 
 	def activate(self,*args):
 		if self.clip:
+			if self.parent.last_active and self.parent.last_active != self:
+				self.parent.last_active.deactivate()
 			self.maingui.change_clip(self.clip)
+			self.label.config(relief=tk.RAISED)
+			self.active = True
+			self.parent.last_active = self
+
+
+	def deactivate(self,*args):
+		# mayb clear whatever
+		# for now this is just if we move the clip or delete it
+		self.label.config(relief=tk.FLAT)
+		self.active = False
 
 	def change_img_from_file(self,new_img):
 		self.img = ImageTk.PhotoImage(Image.open(new_img))
@@ -89,15 +103,16 @@ class ClipContainer:
 		self.clip = self.librarygui.backend.library.clips[clip_fname]
 		self.fname = self.clip.fname
 		if self.clip.thumbnail:
-			print(self.clip.thumbnail)
 			self.change_img_from_file(self.clip.thumbnail)
-		print('clip changed to',self.clip.name)
+		#print('clip changed to',self.clip.name)
 		self.toggle_dnd()
+		self.deactivate()
 
 	def remove_clip(self,*args):
 		self.clip = None
 		self.fname = None
 		self.toggle_dnd()
+		self.deactivate()
 
 	# tkdnd stuff here
 	def press(self, event):
@@ -125,6 +140,7 @@ class ClipContainer:
 		if not source.fname:
 			return
 		self.change_clip(source.fname) #change_text
+		if source.active: self.activate()
 		self.dnd_leave(source, event)
 
 	def dnd_end(self,target,event):
@@ -150,12 +166,13 @@ class ContainerCollection:
 	# gui element that holds multiple clips
 	def __init__(self,librarygui,parent_frame):
 		self.clip_conts = []
+		self.last_active = None
 		self.librarygui = librarygui
 
 		self.frame = tk.Frame(parent_frame)
 
 		for i in range(C.NO_Q):
-			self.clip_conts.append(ClipContainer(librarygui,self.frame))
+			self.clip_conts.append(ClipContainer(librarygui,self))
 
 		n_buts = C.NO_Q
 		n_rows = 1
@@ -171,13 +188,17 @@ class ContainerCollection:
 		self.frame.pack()
 
 class BrowseLibrary:
-	def __init__(self,library,parent_frame):
-		self.library = library
+	def __init__(self,backend,parent_frame):
+		self.backend = backend
+		self.library = self.backend.library
+		self.searcher = self.backend.search
+
 		self.parent_frame = parent_frame
 		self.frame = tk.Frame(self.parent_frame)
 
 		self.search_query = tk.StringVar()
 		self.search_field = tk.Entry(self.frame,textvariable=self.search_query)
+		self.search_query.trace('w',self.search)
 
 		# setup the tree
 		self.search_frame = tk.Frame(self.frame)
@@ -200,7 +221,23 @@ class BrowseLibrary:
 		res = self.library.clips
 		self.tree_root = self.search_tree.insert('', 'end',iid="root", text='All',open=True,values=['category'])
 		for r in res:
-			self.search_tree.insert(self.tree_root, 'end', text=res[r].name,values=["clip",r,res[r].thumbnail])
+			self.search_tree.insert(self.tree_root, 'end', text=res[r].name,values=["clip",r])
+
+	def search(self,event,*args):
+			search_term = self.search_query.get()
+			if search_term != "":
+				res = self.searcher.by_prefix(search_term) # n = 3 # for limiting
+				self.search_tree.item("root",open=False)
+				if self.search_tree.exists("search"):
+					self.search_tree.delete("search")
+				search_res = self.search_tree.insert('', 'end',iid="search", text='search res',open=True,values=['category'])
+				for r in res:
+					if r in self.library.clips:
+						self.search_tree.insert(search_res, 'end', text=self.library.clips[r].name,values=["clip",r])
+			else:
+				if self.search_tree.exists("search"):
+					self.search_tree.delete("search")
+				self.search_tree.item("root",open=True)
 
 def make_tree_clip(event):
 	if event.state != 8:
@@ -225,6 +262,7 @@ class TreeClip:
 	def __init__(self,fname):
 		# note clip is just name of clip, that is used only once dropped 
 		self.fname = fname
+		self.active = False
 
 	def dnd_end(self,target,event):
 		#print('target:',target)
