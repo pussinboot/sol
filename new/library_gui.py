@@ -106,7 +106,7 @@ class ClipContainer:
 			self.change_img_from_file(self.clip.thumbnail)
 		#print('clip changed to',self.clip.name)
 		self.toggle_dnd()
-		self.deactivate()
+		if not self.active:	self.deactivate()
 
 	def remove_clip(self,*args):
 		self.clip = None
@@ -140,8 +140,8 @@ class ClipContainer:
 		if not source.fname:
 			return
 		self.change_clip(source.fname) #change_text
-		if source.active: self.activate()
 		self.dnd_leave(source, event)
+		if source.active: self.activate()
 
 	def dnd_end(self,target,event):
 		#print('target:',target)
@@ -164,11 +164,13 @@ class ClipContainer:
 
 class ContainerCollection:
 	# gui element that holds multiple clips
+	# mayb i need to be able to save/load as clipcollections (would add to sol_backend)
 	def __init__(self,librarygui,parent_frame):
 		self.clip_conts = []
 		self.last_active = None
 		self.librarygui = librarygui
-
+		self.name = tk.StringVar()
+		self.name.set('..')
 		self.frame = tk.Frame(parent_frame)
 
 		for i in range(C.NO_Q):
@@ -185,7 +187,8 @@ class ContainerCollection:
 				i = r*4 + c
 				self.clip_conts[i].grid(row=r,column=c)
 
-		self.frame.pack()
+		self.frame.grid(row=0, column=0, sticky='news')
+		self.frame.tkraise()
 
 class BrowseLibrary:
 	def __init__(self,backend,parent_frame):
