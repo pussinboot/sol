@@ -104,7 +104,7 @@ class Midi2Osc:
 				midi_events = self.inp.read(10)
 				#the_key = str([midi_events[0][0][0],midi_events[0][0][1]])
 				#n = int(midi_events[0][0][2])
-				#print(midi_events[0][0][:3])#the_key,n)
+				print(midi_events[0][0][:3])#the_key,n)
 				msg = osc_message_builder.OscMessageBuilder(address = "/midi")
 				msg.add_arg(str(midi_events[0][0][:3]))
 				msg = msg.build()
@@ -167,25 +167,30 @@ class MidiControl:
 		self.backend = backend
 		self.key_to_fun = {}
 
+	def gen_midi_fun(self,desc,type):
+		fun = self.backend.desc_to_fun[desc]
+		def funtor(n):
+			if n > 0: # for now assume all are simple
+				fun()
+		return funtor
+
 	def map_midi(self,fname):
 		if not os.path.exists(fname): return
 		Config = configparser.RawConfigParser()
 		Config.optionxform = str 
 		Config.read(fname)
-		for desc, fun in self.backend.desc_to_fun.items():
+		for desc in self.backend.desc_to_fun:
 			try:
 				# get the key & type
 				key = Config.get('Keys',desc)
 				control_type = Config.get('Type',desc)
-				# setup function
-				def newfun(n):
-					if n > 0:
-						fun()
-				# bind to our key -> fun lookup
-				self.key_to_fun[key] = newfun
+				
+				self.key_to_fun[key] = self.gen_midi_fun(desc,control_type)
+
 			except:
 				print(desc,'failed to load')
-
+		for key, func in self.key_to_fun.items():
+			print(key,func)
 		## keeping this here in case i fix midi2osc so that it plays nice in a sep thread
 		#  (right now it massively slows down the tk gui :/)
 		# if Config.has_section('IO'):
@@ -196,10 +201,10 @@ class MidiControl:
 
 		def osc2midi(_,osc_msg):
 			msg = eval(osc_msg)
-			print(msg)
-			parsed = [str(msg[:2]),msg[2]]
-			if parsed[0] in self.key_to_fun:
-				self.key_to_fun[parsed[0]](parsed[1])
+			print(msg[:2],"n:",msg[2])
+			key, n = str(msg[:2]),msg[2]
+			if key in self.key_to_fun:
+				self.key_to_fun[key](n)
 
 		self.backend.osc_server.map('/midi',osc2midi)
 
@@ -263,7 +268,7 @@ if __name__ == '__main__':
 	    "--ip", default="127.0.0.1",
 	    help="The ip to send MIDI OSC messages")
 	parser.add_argument(
-	    "--port", type=int, default=7008,
+	    "--port", type=int, default=7001,
 	    help="The port to send MIDI OSC messages")
 	args = parser.parse_args()
 	main(args.ip,args.port,args.inp) # run main to turn on correct last i/o 
