@@ -40,6 +40,7 @@ class MainGui:
 	def __init__(self,root):
 		# gui
 		self.root = root
+		self.current_song = Song('')
 		self.frame = tk.Frame(root)
 		self.control_frame = tk.Frame(self.frame)
 		self.progress_frame = tk.Frame(self.frame)
@@ -54,12 +55,11 @@ class MainGui:
 		self.frame.pack(fill=tk.X)
 		# osc
 		self.osc_server = ServeR(self,port=7008)
-		self.osc_client = ControlR(None,port=7007)
+		self.osc_client = ControlR(self.current_song,port=7007)
 		self.osc_to_send = None
 
 		self.setup_buttons()
 		self.setup_menu()
-		self.current_song = Song('')
 		self.progress_bar = ProgressBar(self,self.current_song)
 		self.progress_bar.map_osc('/pyaud/pos/float')
 
@@ -421,9 +421,9 @@ if __name__ == '__main__':
 	root.title('py_amp')
 	root.resizable(0,0)
 	test_gui = MainGui(root)
-	test_gui.progress_bar.add_line(0.33,0)
-	test_gui.progress_bar.add_line(0.67,1)
-	test_gui.current_song.vars['loopon'] = True
-	test_gui.current_song.vars['lp'] = [0, 1]
-	test_gui.progress_bar.loop_update()
+	#test_gui.progress_bar.add_line(0.33,0)
+	#test_gui.progress_bar.add_line(0.67,1)
+	#test_gui.current_song.vars['loopon'] = True
+	#test_gui.current_song.vars['lp'] = [0, 1]
+	#test_gui.progress_bar.loop_update()
 	root.mainloop()

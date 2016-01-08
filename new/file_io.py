@@ -19,21 +19,25 @@ class SavedXMLParse:
 	"""
 	class to deal with resolume save-data (fake xml file)
 	"""
-	def __init__(self,xmlfile,remakethumbs=False):
+	def __init__(self,xmlfile,remakethumbs=False,skipthumbs=False):
 		self.xml_soup = BeautifulSoup(open(xmlfile),"xml")
 		vidclips = self.xml_soup.find_all('clip')
+		compwidth = int(self.xml_soup.composition.generalInfo['width'])
+		compheight = int(self.xml_soup.composition.generalInfo['height'])
 		self.clips = [None] * len(vidclips)
+		if not os.path.exists('./scrot/'): os.makedirs('./scrot/')
 		for i, clip in enumerate(vidclips):
 			parsed_rep = self.parse_clip(clip)
 			newclip = Clip(*parsed_rep)
 			new_thumb = './scrot/{}.png'.format(ntpath.basename(newclip.fname))
-			if os.path.exists(new_thumb):
-				if remakethumbs:
-					new_thumb = gen_thumbnail(newclip,C.THUMB_W)
-			else:
-				new_thumb = gen_thumbnail(newclip,C.THUMB_W)
-			if new_thumb and os.path.exists(new_thumb):
-				newclip.thumbnail = new_thumb
+			if not skipthumbs:
+				if os.path.exists(new_thumb):
+					if remakethumbs:
+						new_thumb = gen_thumbnail(newclip,C.THUMB_W,compw=compwidth,comph=compheight)
+				else:
+					new_thumb = gen_thumbnail(newclip,C.THUMB_W,compw=compwidth,comph=compheight)
+				if new_thumb and os.path.exists(new_thumb):
+					newclip.thumbnail = new_thumb
 			self.clips[i] = newclip
 
 	def parse_clip(self,clip):

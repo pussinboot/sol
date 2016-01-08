@@ -53,5 +53,7 @@
 
 # root.mainloop()
 
-testlist = [0,1,2,34]
-print(testlist[1:])
+from bs4 import BeautifulSoup
+xml_soup = BeautifulSoup(open("./new/test_ex.avc"),"xml")
+print(xml_soup.composition.generalInfo['width'])
+print(xml_soup.composition.generalInfo['height'])
