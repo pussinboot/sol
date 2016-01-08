@@ -7,21 +7,34 @@ to-do:
 - save logfile (?)
 """
 
-from bs4 import BeautifulSoup
 from clip import Clip
-#import dill
-import pickle as dill
+import CONSTANTS as C
+
+from bs4 import BeautifulSoup
+import dill
+# import pickle as dill
+import subprocess, ntpath, os
+
 class SavedXMLParse:
 	"""
 	class to deal with resolume save-data (fake xml file)
 	"""
-	def __init__(self,xmlfile):
+	def __init__(self,xmlfile,remakethumbs=False):
 		self.xml_soup = BeautifulSoup(open(xmlfile),"xml")
 		vidclips = self.xml_soup.find_all('clip')
 		self.clips = [None] * len(vidclips)
 		for i, clip in enumerate(vidclips):
 			parsed_rep = self.parse_clip(clip)
-			self.clips[i] = Clip(*parsed_rep)
+			newclip = Clip(*parsed_rep)
+			new_thumb = './scrot/{}.png'.format(ntpath.basename(newclip.fname))
+			if os.path.exists(new_thumb):
+				if remakethumbs:
+					new_thumb = gen_thumbnail(newclip,C.THUMB_W)
+			else:
+				new_thumb = gen_thumbnail(newclip,C.THUMB_W)
+			if new_thumb and os.path.exists(new_thumb):
+				newclip.thumbnail = new_thumb
+			self.clips[i] = newclip
 
 	def parse_clip(self,clip):
 		l, c = int(clip['layerIndex'])+1, int(clip['trackIndex'])+1
@@ -82,12 +95,27 @@ def load_clip(fname):
 		tor = dill.load(f)
 		return tor
 
+def gen_thumbnail(clip,scalew,frameno=None,compw=1280,comph=720):
+	input_name = ntpath.abspath(clip.fname)
+	output_name = ntpath.basename(clip.fname)
+	scaleh = int(scalew * comph / compw)
+	vf_command = '-vf "crop={0}:{1},scale={2}:{3},thumbnail"'.format(compw,comph,scalew,scaleh)
+	# scale=(iw*sar)*max({0}/(iw*sar)\,{1}/ih):ih*max({0}/(iw*sar)\,{1}/ih), 
+
+	if not frameno:
+		command = 'ffmpeg -y -i "{0}" {2} -q:v 2 -vframes 1 ./scrot/{1}.png'.format(input_name,output_name,vf_command)
+	else:
+		command = 'ffmpeg -ss {2} -y -i "{0}" -q:v 2 -vframes 1 ./scrot/{1}.png'.format(input_name,output_name,vf_command)
+	subprocess.Popen(command) # -ss to seek to frame
+	return './scrot/{}.png'.format(output_name)
 
 if __name__ == '__main__':
-	#testparser = SavedXMLParse("../old/test.avc")
-	#print(len(testparser.clips)) # 32
+	testparser = SavedXMLParse("./test_ex.avc",False)
+	print(len(testparser.clips)) # 30
 	#testparser.print_clip(testparser.clips[0])
 
 	# test load
-	test_clip = load_clip('./DW_L1_C2.mov.saved_clip')
-	print(test_clip)
+	#test_clip = load_clip('./Subconscious_12.mov.saved_clip')
+	#print(test_clip.name)
+	#
+	#gen_thumbnail(test_clip,100)
