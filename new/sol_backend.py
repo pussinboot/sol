@@ -38,6 +38,7 @@ class Backend:
 			except:
 				pass
 		#self.osc_server.map("/pyaud/pos/frame",update_time)
+		# self.osc_server.map("/midi",print)
 		self.osc_server.map("/activeclip/video/position/values",self.cur_clip_pos.update_generator('float'))
 		### MIDI CONTROL
 		# basically, here are the descriptions that map to functions
@@ -191,6 +192,7 @@ class ControlR:
 		def gen_control_sender(addr,msg,direction):
 			osc_msg = self.build_msg(addr,msg)
 			def fun_tor(clip=None):
+				print(direction)
 				self.send(osc_msg)
 				if clip:
 					clip.vars['playdir'] = direction
