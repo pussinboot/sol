@@ -53,9 +53,14 @@
 
 # root.mainloop()
 
-from bs4 import BeautifulSoup
-xml_soup = BeautifulSoup(open("./old/test.avc"),"xml")
-# print(xml_soup.composition.generalInfo['width'])
-# print(xml_soup.composition.generalInfo['height'])
-vidclips = xml_soup.find_all('clip')
-print(int(vidclips[0].find_all('settings')[1]['desc'].split('\n')[1].strip().split('x')))
+# from bs4 import BeautifulSoup
+# xml_soup = BeautifulSoup(open("./old/test.avc"),"xml")
+# # print(xml_soup.composition.generalInfo['width'])
+# # print(xml_soup.composition.generalInfo['height'])
+# vidclips = xml_soup.find_all('clip')
+# print(int(vidclips[0].find_all('settings')[1]['desc'].split('\n')[1].strip().split('x')))
+
+test = r'D:\Downloads\DJ\vj\vids\organized\gundam\dxv\00 Dodge N Kill From Back.mov'
+test = test.replace('\\dxv\\','\\webm\\')
+test = test.replace('.mov','.webm')
+print(test)

@@ -14,6 +14,7 @@ from bs4 import BeautifulSoup
 import dill
 # import pickle as dill
 import subprocess, ntpath, os
+from PIL import Image, ImageChops, ImageOps
 
 class SavedXMLParse:
 	"""
@@ -39,6 +40,9 @@ class SavedXMLParse:
 				if new_thumb and os.path.exists(new_thumb):
 					newclip.thumbnail = new_thumb
 			self.clips[i] = newclip
+		make_thumbnail('../old/sample_clip.png','../old/sample_clip.png',size=(C.THUMB_W,int(C.THUMB_W*compheight/compwidth)))
+		if os.path.exists('./scrot/temp.png'):
+			os.remove('./scrot/temp.png')
 
 	def parse_clip(self,clip):
 		l, c = int(clip['layerIndex'])+1, int(clip['trackIndex'])+1
@@ -66,7 +70,6 @@ class SavedXMLParse:
 		try:
 			wh = clip.find_all('settings')[1]['desc'].split('\n')[1].strip().split('x')
 			width, height = int(wh[0]), int(wh[1])
-			print(name, width, height)
 		except:
 			width, height = None, None
 
@@ -98,28 +101,41 @@ def load_clip(fname):
 		tor = dill.load(f)
 		return tor
 
-def gen_thumbnail(clip,scalew,frameno=None,compw=1280,comph=720):
-	input_name = ntpath.abspath(clip.fname)
-	output_name = ntpath.basename(clip.fname)
+def make_thumbnail(f_in, f_out, size=(100,100), pad=True):
+	image = Image.open(f_in)
+	image.thumbnail(size, Image.ANTIALIAS)
+	image_size = image.size
+	if pad:
+		thumb = image.crop( (0, 0, size[0], size[1]) )
 
-	[clipw,cliph] = clip.params['dims']
-	if clipw/compw < cliph/comph:
-
-		compw = clipw
-		comph = int(clipw * scale)
+		offset_x = max( (size[0] - image_size[0]) // 2, 0 )
+		offset_y = max( (size[1] - image_size[1]) // 2, 0 )
+		thumb = ImageChops.offset(thumb, offset_x, offset_y)
 	else:
-		comph = cliph
-		compw = int(clipw / scale)
+		thumb = ImageOps.fit(image, size, Image.ANTIALIAS, (0.5, 0.5))
+	thumb.save(f_out)
+
+def gen_thumbnail(clip,scalew,frameno=None,compw=1280,comph=720,special_hack=False):
+	input_name = ntpath.abspath(clip.fname)
+	if special_hack:
+		input_name = input_name.replace('\\dxv\\','\\webm\\').replace('.mov','.webm')
+	output_name = './scrot/{}.png'.format(ntpath.basename(clip.fname))
+
 	scaleh = int(scalew * comph/compw)
-	vf_command = '-vf "crop={0}:{1},scale={2}:{3},thumbnail"'.format(compw,comph,scalew,scaleh)
-	# scale=(iw*sar)*max({0}/(iw*sar)\,{1}/ih):ih*max({0}/(iw*sar)\,{1}/ih), 
 
 	if not frameno:
-		command = 'ffmpeg -y -i "{0}" {2} -q:v 2 -vframes 1 "./scrot/{1}.png"'.format(input_name,output_name,vf_command)
+		command = 'ffmpeg -y -i "{0}" -vf "thumbnail" -q:v 2 -vframes 1 "./scrot/temp.png"'.format(input_name)
 	else:
-		command = 'ffmpeg -ss {2} -y -i "{0}" -q:v 2 -vframes 1 "./scrot/{1}.png"'.format(input_name,output_name,vf_command)
-	subprocess.Popen(command) # -ss to seek to frame
-	return './scrot/{}.png'.format(output_name)
+		command = 'ffmpeg -ss {1} -y -i "{0}" -q:v 2 -vframes 1 "./scrot/temp.png"'.format(input_name,frameno)
+	print(command)
+	print('\#'*10)
+	process = subprocess.Popen(command) # -ss to seek to frame
+	process.communicate()
+	make_thumbnail('./scrot/temp.png',output_name,size=(scalew,scaleh))
+	if not special_hack:
+		if not os.path.exists(output_name):
+			return gen_thumbnail(clip,scalew,frameno,compw,comph,special_hack=True)
+	return output_name
 
 if __name__ == '__main__':
 	# testparser = SavedXMLParse("./test_ex.avc",False)

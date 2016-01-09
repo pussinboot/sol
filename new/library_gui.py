@@ -26,8 +26,8 @@ class LibraryGui:
 		self.backend = maingui.backend
 		self.root = root
 		self.mainframe = tk.Frame(root)#,height=500,width=600)
-		self.clipframe = tk.Frame(self.mainframe)
-		self.searchframe = tk.Frame(self.mainframe)
+		self.clipframe = tk.Frame(self.mainframe,padx=2,pady=1)
+		self.searchframe = tk.Frame(self.mainframe,padx=2,pady=1)
 
 		self.testcontainercollection = ContainerCollection(self,self.clipframe)
 
@@ -54,11 +54,11 @@ class ClipContainer:
 
 		self.parent = parent
 		self.parent_frame = parent.frame
-		self.frame = tk.Frame(self.parent_frame)
+		self.frame = tk.Frame(self.parent_frame,padx=1,pady=1)
 		self.grid = self.frame.grid
 
 		self.default_img = self.img = ImageTk.PhotoImage(Image.open('../old/sample_clip.png'))
-		self.label = tk.Label(self.frame,image=self.img,text='test',compound='top',width=C.THUMB_W,bd=2) # width of clip preview
+		self.label = tk.Label(self.frame,image=self.img,text='test',compound='top',width=C.THUMB_W,bd=6) # width of clip preview
 		self.label.image = self.img
 		self.label.pack()
 		self.label.bind('<Double-1>',self.activate)
@@ -94,8 +94,8 @@ class ClipContainer:
 
 	def change_text(self,new_text):
 		new_text = str(new_text)
-		if len(new_text) > 18:
-			new_text = new_text[:17] + ".."
+		if len(new_text) > 17:
+			new_text = new_text[:16] + ".."
 		self.label.config(text=new_text)
 
 	def change_clip(self,clip_fname):
