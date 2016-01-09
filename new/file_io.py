@@ -63,14 +63,13 @@ class SavedXMLParse:
 			# 	for choice in ps[0].pointsOfInterest.choices.find_all("choice"):
 			# 		poi.append(choice['value'])
 		
-		width, height = None, None
-		if len(ps) > 2:
-			if check_name(ps[1],'Width'):
-				width = ps[1].values['curValue']
-		
-			if check_name(ps[2],'Height'):
-				height = ps[2].values['curValue']
-	
+		try:
+			wh = clip.find_all('settings')[1]['desc'].split('\n')[1].strip().split('x')
+			width, height = int(wh[0]), int(wh[1])
+			print(name, width, height)
+		except:
+			width, height = None, None
+
 		tor = [filename, (l,c), name, {'range': [start_pos, stop_pos], 'speed': speed, 'dims' : [width, height]}]#, 'poi':poi}
 	
 		return tor
@@ -102,19 +101,29 @@ def load_clip(fname):
 def gen_thumbnail(clip,scalew,frameno=None,compw=1280,comph=720):
 	input_name = ntpath.abspath(clip.fname)
 	output_name = ntpath.basename(clip.fname)
-	scaleh = int(scalew * comph / compw)
+
+	[clipw,cliph] = clip.params['dims']
+	if clipw/compw < cliph/comph:
+
+		compw = clipw
+		comph = int(clipw * scale)
+	else:
+		comph = cliph
+		compw = int(clipw / scale)
+	scaleh = int(scalew * comph/compw)
 	vf_command = '-vf "crop={0}:{1},scale={2}:{3},thumbnail"'.format(compw,comph,scalew,scaleh)
 	# scale=(iw*sar)*max({0}/(iw*sar)\,{1}/ih):ih*max({0}/(iw*sar)\,{1}/ih), 
 
 	if not frameno:
-		command = 'ffmpeg -y -i "{0}" {2} -q:v 2 -vframes 1 ./scrot/{1}.png'.format(input_name,output_name,vf_command)
+		command = 'ffmpeg -y -i "{0}" {2} -q:v 2 -vframes 1 "./scrot/{1}.png"'.format(input_name,output_name,vf_command)
 	else:
-		command = 'ffmpeg -ss {2} -y -i "{0}" -q:v 2 -vframes 1 ./scrot/{1}.png'.format(input_name,output_name,vf_command)
+		command = 'ffmpeg -ss {2} -y -i "{0}" -q:v 2 -vframes 1 "./scrot/{1}.png"'.format(input_name,output_name,vf_command)
 	subprocess.Popen(command) # -ss to seek to frame
 	return './scrot/{}.png'.format(output_name)
 
 if __name__ == '__main__':
-	testparser = SavedXMLParse("./test_ex.avc",False)
+	# testparser = SavedXMLParse("./test_ex.avc",False)
+	testparser = SavedXMLParse("../old/test.avc",True)
 	print(len(testparser.clips)) # 30
 	#testparser.print_clip(testparser.clips[0])
 

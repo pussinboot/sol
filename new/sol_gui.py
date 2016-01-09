@@ -45,11 +45,11 @@ def test():
 	root = tk.Tk()
 	root.title('sol_test')
 
-	testgui = MainGui(root,'./test_ex.avc')
-	test_clip = IO.load_clip('./Subconscious_12.mov.saved_clip')
+	# testgui = MainGui(root,'./test_ex.avc')
+	# test_clip = IO.load_clip('./Subconscious_12.mov.saved_clip')
 
-	# testgui = MainGui(root,'../old/test.avc')
-	# test_clip = IO.load_clip('./00 Dodge N Kill From Back.mov.saved_clip')
+	testgui = MainGui(root,'../old/test.avc')
+	test_clip = IO.load_clip('./00 Dodge N Kill From Back.mov.saved_clip')
 
 	testgui.change_clip(test_clip)
 	#print(testgui.backend.osc_server.dispatcher._map["/midi"])

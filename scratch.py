@@ -54,6 +54,8 @@
 # root.mainloop()
 
 from bs4 import BeautifulSoup
-xml_soup = BeautifulSoup(open("./new/test_ex.avc"),"xml")
-print(xml_soup.composition.generalInfo['width'])
-print(xml_soup.composition.generalInfo['height'])
+xml_soup = BeautifulSoup(open("./old/test.avc"),"xml")
+# print(xml_soup.composition.generalInfo['width'])
+# print(xml_soup.composition.generalInfo['height'])
+vidclips = xml_soup.find_all('clip')
+print(int(vidclips[0].find_all('settings')[1]['desc'].split('\n')[1].strip().split('x')))
