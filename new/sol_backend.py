@@ -5,6 +5,7 @@ allows for recording osc actions to a soundtrack
 
 resolume notes - 
 timeline needs to be transport
+clip -> active layer (for now)
 """
 
 from file_io import SavedXMLParse
@@ -14,24 +15,28 @@ from clip import Clip
 from pythonosc import dispatcher, osc_server, osc_message_builder, udp_client
 from bisect import bisect_left
 import threading, os, random, collections
+try:
+	import dill
+except:
+	import pickle as dill
 
 class Backend:
 	"""
 	entire backend for sol
 	"""
 	def __init__(self,xmlfile=None,gui=None,ports=(7007,7008)):
+		self.xmlfile = xmlfile
 		self.library = Library(xmlfile)
 		self.search = SearchR(self.library.clips)
 
 		self.cur_clip = Clip('',[-1,-1],"no clip loaded")
 		self.cur_song = None
-		
+
 		self.osc_client = ControlR(self,port=ports[0]) 
 		self.osc_server = ServeR(gui,port=ports[1])
 
 		self.cur_time = RefObj("cur_time")
 		self.cur_clip_pos = RefObj("cur_clip_pos")
-
 
 		def update_time(_,msg): # this is the driving force behind the backend :o)
 			try:				# add going through log file and redoing it in playback mode
@@ -59,7 +64,45 @@ class Backend:
 		self.midi_control = MidiControl(self)
 		self.load_last()
 
+	def update_save_data(self):
+		self.savedata = {'xmlfile':self.xmlfile,'library':self.library}
+
+	def save_data(self,savefile=None):
+		if not os.path.exists('./savedata'): os.makedirs('./savedata')
+		if not savefile:
+			filename = os.path.splitext(self.xmlfile)[0]
+			filename = filename.split('/')[-1]
+			savefile = "./savedata/{}".format(filename)
+		########
+		savedata = {'xmlfile':self.xmlfile,'library':self.library, 'current_clip':self.cur_clip}
+		########
+		with open(savefile,'wb') as f:
+			dill.dump(savedata,f)
+			with open('./savedata/last_save','w') as last_save:
+				last_save.write(savefile)
+			print('successfully saved',savefile)
+			return savefile # success
+
+	def load_data(self,savefile):
+		if os.path.exists(savefile):
+			with open(savefile,'rb') as save:
+				savedata = dill.load(save)
+				########
+				loaddata = {'xmlfile':'self.xmlfile','library':'self.library', 'current_clip':'self.cur_clip'}
+				########
+				for key in loaddata:
+					if key in savedata:
+						exec("{} = savedata[key]".format(loaddata[key]))
+				print('successfully loaded',savefile)
+
 	def load_last(self):
+		if os.path.exists('./savedata/last_save'):
+			with open('./savedata/last_save') as last_save:
+				fname = last_save.read()
+				self.load_data(fname)
+				self.load_last_midi()
+
+	def load_last_midi(self):
 		if os.path.exists('./savedata/last_midi'):
 			with open('./savedata/last_midi','r') as last_midi:
 				fname = last_midi.read()
@@ -411,12 +454,15 @@ if __name__ == '__main__':
 	# print(test_lib.clip_names)
 	# print(test_lib.clips['D:\\Downloads\\DJ\\vj\\vids\\organized\\gundam\\dxv\\Cca Amuro Vs Cute Gril.mov'].params)
 	import time
-	bb = Backend('../old/test.avc')
-	bb.osc_client.build_n_send('/pyaud/open','./test.wav')
-	time.sleep(.5)
-	bb.osc_client.build_n_send('/pyaud/pps',1)
-	time.sleep(1)
-	bb.osc_client.build_n_send('/pyaud/pps',-1)
-	time.sleep(.1)
+	#bb = Backend('../old/test.avc')
+	#bb.save_data()
+	bb = Backend()
+	print(bb.xmlfile)
+	#bb.osc_client.build_n_send('/pyaud/open','./test.wav')
+	#time.sleep(.5)
+	#bb.osc_client.build_n_send('/pyaud/pps',1)
+	#time.sleep(1)
+	#bb.osc_client.build_n_send('/pyaud/pps',-1)
+	#time.sleep(.1)
 	#bb.osc_server.stop()
 
