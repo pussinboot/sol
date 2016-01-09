@@ -6,7 +6,7 @@ from sol_backend import Backend
 from clip_control import ClipControl
 from library_gui import LibraryGui
 class MainGui:
-	def __init__(self,root,fname):
+	def __init__(self,root,fname=None):
 
 		# tk
 		self.root = root
@@ -33,27 +33,26 @@ class MainGui:
 		self.backend.osc_client.map_loop()
 		self.backend.osc_client.map_timeline()
 
+		self.change_clip(self.backend.cur_clip)
+
 	def change_clip(self,newclip):
 		self.backend.change_clip(newclip)
 		self.clipcontrol.change_clip(newclip)
 
+	def quit(self):
+		self.backend.save_data()
+
 
 def test():
-	import file_io as IO
-	import time
 
 	root = tk.Tk()
 	root.title('sol_test')
 
-	# testgui = MainGui(root,'./test_ex.avc')
-	# test_clip = IO.load_clip('./Subconscious_12.mov.saved_clip')
-
-	testgui = MainGui(root,'../old/test.avc')
-	test_clip = IO.load_clip('./00 Dodge N Kill From Back.mov.saved_clip')
-
-	testgui.change_clip(test_clip)
-	#print(testgui.backend.osc_server.dispatcher._map["/midi"])
+	testgui = MainGui(root)
 	root.mainloop()
+	testgui.quit()
+
+
 
 if __name__ == '__main__':
 	test()
