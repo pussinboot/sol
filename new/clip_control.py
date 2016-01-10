@@ -1,11 +1,8 @@
 # basic clip control module
-# to-do
-# add little numbers under cue spots : )
-# make prettier gui for looping
-# then.. everything to save this per clip ;D DONE
-# 		now make it so save entire library BV)
+
 """
 ______________________________
+| [    clip name            ]|
 | [    lil #s       (canvas)]|
 | [    timeline w/ lines    ]| top half - progress frame
 |____________________________|
@@ -18,6 +15,7 @@ ______________________________
 import tkinter as tk
 from sol_backend import Backend
 from audio_gui import ProgressBar
+
 import CONSTANTS as C
 import file_io as IO
 

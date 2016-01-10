@@ -7,36 +7,96 @@ to become the active clip
 a rly cool search bar for clips
  PLUS
 the clips can be organized in collections
-
-basically update old sol gui keeping left half and search,
-but adding icons to the tree
-have to update tree list so that it contains 2nd element (not the name) which carries filename
 """
 
 import tkinter as tk
 from tkinter import ttk
 from tkdnd import dnd_start
+import tkinter.simpledialog as tksimpledialog
 
-import CONSTANTS as C
 from PIL import ImageTk,Image
 
+import CONSTANTS as C
+from clip import ClipCollection
 class LibraryGui:
 	def __init__(self,maingui,root):
 		self.maingui = maingui
 		self.backend = maingui.backend
+		self.containers = []
+		self.container_labels = []
+		# tk
 		self.root = root
 		self.mainframe = tk.Frame(root)#,height=500,width=600)
 		self.clipframe = tk.Frame(self.mainframe,padx=2,pady=1)
+		self.collectionframe = tk.Frame(self.clipframe)
+		self.collectionlabelframe = tk.Frame(self.clipframe)
 		self.searchframe = tk.Frame(self.mainframe,padx=2,pady=1)
 
-		self.testcontainercollection = ContainerCollection(self,self.clipframe)
+		for collection in self.backend.library.clip_collections:
+			new_cont = ContainerCollection(self,self.collectionframe,len(self.containers),collection)
+			self.containers.append(new_cont)
+			self.add_collection_label(new_cont,len(self.containers)-1)
+		if self.backend.cur_col < len(self.containers):
+			self.highlight_col(self.backend.cur_col)
+		else:
+			self.highlight_col()
+			self.backend.cur_col = len(self.containers)-1
+
+		self.add_col_but = tk.Button(self.collectionlabelframe,text='+',command=self.add_collection)
+		self.go_l_but = tk.Button(self.collectionlabelframe,text='<',command=self.go_left)
+		self.go_r_but = tk.Button(self.collectionlabelframe,text='>',command=self.go_right)
+		self.add_col_but.pack(side=tk.RIGHT)
+		self.go_r_but.pack(side=tk.RIGHT)
+		self.go_l_but.pack(side=tk.RIGHT)
 
 		self.search_or_browse = BrowseLibrary(self.backend,self.searchframe)
 
+		self.collectionframe.pack(side=tk.TOP)
+		self.collectionlabelframe.pack(side=tk.TOP,fill=tk.X)
 		self.clipframe.pack(side=tk.LEFT,anchor=tk.E)
-		self.searchframe.pack()
+		self.searchframe.pack(expand=True,fill=tk.Y)
 		self.mainframe.pack()
 
+	def highlight_col(self,index=-1):
+		for cl in self.container_labels:
+			cl.configure(relief=tk.FLAT)
+		
+		if index < 0 : 
+			index = len(self.containers) - 1
+		if index > len(self.containers) - 1: 
+			index = 0
+
+		self.containers[index].frame.tkraise()
+		self.container_labels[index].configure(relief=tk.SUNKEN)
+		self.backend.cur_col = index
+
+	def add_collection(self,*args):
+		new_cont = ContainerCollection(self,self.collectionframe,len(self.containers))
+		self.containers.append(new_cont)
+		self.backend.library.clip_collections.append(new_cont.clip_collection)
+		self.add_collection_label(new_cont,len(self.containers)-1)
+		self.containers[len(self.containers)-1].frame.tkraise()
+
+	def remove_collection(self,index):
+		del self.containers[index]
+		self.container_labels[index].pack_forget()
+		del self.container_labels[index]
+		del self.backend.library.clip_collections[index]
+
+	def add_collection_label(self,collection,index):
+		newlabel = tk.Label(self.collectionlabelframe,text=collection.clip_collection.name,bd=4)
+		newlabel.bind('<ButtonPress-1>',lambda *args: self.highlight_col(index))
+		newlabel.bind("<Double-1>",collection.change_name_dialog)
+		newlabel.bind('<ButtonPress-2>',lambda *args: self.remove_collection(index))
+		newlabel.pack(side=tk.LEFT)
+		self.container_labels.append(newlabel)
+
+	def go_left(self,*args):
+		if self.backend.cur_col <= 0: self.backend.cur_col = len(self.containers)
+		self.highlight_col(self.backend.cur_col-1)
+
+	def go_right(self,*args):
+		self.highlight_col(self.backend.cur_col + 1)
 
 # library gui is whole window
 # on left side have 1+ container collections, each of which has as many clip containers as there are cue buttons
@@ -45,7 +105,8 @@ class LibraryGui:
 
 class ClipContainer:
 	# gui element that holds a single clip
-	def __init__(self,librarygui,parent,clip=None):
+	def __init__(self,librarygui,parent,index,clip=None):
+		self.index = index # index in parent collection
 		self.clip = clip
 		self.active = False
 		self.fname = None
@@ -65,6 +126,10 @@ class ClipContainer:
 		self.frame.dnd_accept = self.dnd_accept
 
 		self.toggle_dnd()
+		if not self.clip:
+			if self.parent.clip_collection[index]:
+				starting_clip = self.parent.clip_collection[index]
+				self.change_clip(starting_clip.fname)
 
 	def activate(self,*args):
 		if self.clip:
@@ -107,10 +172,14 @@ class ClipContainer:
 		#print('clip changed to',self.clip.name)
 		self.toggle_dnd()
 		if not self.active:	self.deactivate()
+		# add to clip collection
+		self.parent.clip_collection[self.index] = self.clip
+
 
 	def remove_clip(self,*args):
 		self.clip = None
 		self.fname = None
+		self.parent.clip_collection[self.index] = None
 		self.toggle_dnd()
 		self.deactivate()
 
@@ -165,8 +234,13 @@ class ClipContainer:
 class ContainerCollection:
 	# gui element that holds multiple clips
 	# mayb i need to be able to save/load as clipcollections (would add to sol_backend)
-	def __init__(self,librarygui,parent_frame):
+	def __init__(self,librarygui,parent_frame,index,clipcol=None):
+		self.index = index
 		self.clip_conts = []
+		if not clipcol:
+			self.clip_collection = ClipCollection()
+		else:
+			self.clip_collection = clipcol
 		self.last_active = None
 		self.librarygui = librarygui
 		self.name = tk.StringVar()
@@ -174,7 +248,7 @@ class ContainerCollection:
 		self.frame = tk.Frame(parent_frame)
 
 		for i in range(C.NO_Q):
-			self.clip_conts.append(ClipContainer(librarygui,self))
+			self.clip_conts.append(ClipContainer(librarygui,self,i))
 
 		n_buts = C.NO_Q
 		n_rows = 1
@@ -188,7 +262,15 @@ class ContainerCollection:
 				self.clip_conts[i].grid(row=r,column=c)
 
 		self.frame.grid(row=0, column=0, sticky='news')
-		self.frame.tkraise()
+		#self.frame.tkraise()
+
+	def change_name_dialog(self,*args):
+		new_name = tksimpledialog.askstring("rename collection",self.clip_collection.name)
+		if new_name and new_name != self.clip_collection.name:
+			# change name
+			self.clip_collection.name = new_name
+			self.librarygui.container_labels[self.index].configure(text=new_name)
+
 
 class BrowseLibrary:
 	def __init__(self,backend,parent_frame):
@@ -216,7 +298,7 @@ class BrowseLibrary:
 		self.search_tree.configure(yscrollcommand=self.ysb.set)
 		self.ysb.pack(side=tk.RIGHT,anchor=tk.N,fill=tk.Y)
 		self.search_frame.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)
-		self.frame.pack()
+		self.frame.pack(fill=tk.BOTH,expand=tk.Y)
 
 	def tree_reset(self):
 		#res = self.library.clip_names

@@ -87,3 +87,66 @@ class Clip:
 # 1, osc listening/sending of current location in video
 # 2, midi listener (also osc lol) of different buttons to set/clear cue points
 
+class ClipCollection:
+	"""
+	a collection of n many clips
+	"""
+	def __init__(self,name='new_col'):
+		self.name = name
+		self.clips = [None] * C.NO_Q
+
+	def __getitem__(self,i):
+		return self.clips[i]
+
+	def __setitem__(self,i,clip):
+		self.clips[i] = clip
+
+
+class Library:
+	"""
+	collection of many clips, organized by unique identifier (filename) and tag
+	"""
+	def __init__(self,xmlfile=None):
+		self.clips = {}
+		self.clip_collections = [ClipCollection()]
+		self.tags = {}
+		if xmlfile: self.load_xml(xmlfile)
+			
+	def load_xml(self,xmlfile):
+		from file_io import SavedXMLParse
+		parsed = SavedXMLParse(xmlfile)
+		for clip in parsed.clips:
+			self.add_clip(clip)
+
+	@property
+	def clip_names(self):
+	    return [clip.name for _,clip in self.clips.items()]
+
+	def add_clip(self,clip):
+		if clip.fname in self.clips:
+			return
+		self.clips[clip.fname] = clip
+		for tag in clip.tags:
+			self.add_clip_to_tag(clip,tag)
+
+	def add_clip_to_tag(self,clip,tag):
+		if tag in self.tags:
+			self.tags[tag].append(clip)
+		else:
+			self.tags[tag] = [clip]
+
+	def remove_clip(self,clip):
+		if clip.fname in self.clips: 
+			del self.clips[clip.fname]
+		for tag in clip.get_tags():
+			self.remove_clip_from_tag(clip,tag)
+			
+	def remove_tag(self,tag):
+		if tag in self.tags:
+			for clip in self.tags[tag]:
+				clip.remove_tag(tag)
+			del self.tags[tag]
+
+	def random_clip(self):
+		lame_list = list(self.clips)
+		return self.clips[random.choice(lame_list)]
