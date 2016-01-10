@@ -8,9 +8,8 @@ timeline needs to be transport
 clip -> active layer (for now)
 """
 
-from file_io import SavedXMLParse
 from midi_control import MidiControl
-from clip import Clip
+from clip import Clip, Library
 
 from pythonosc import dispatcher, osc_server, osc_message_builder, udp_client
 from bisect import bisect_left
@@ -31,6 +30,7 @@ class Backend:
 
 		self.cur_clip = Clip('',[-1,-1],"no clip loaded")
 		self.cur_song = None
+		self.cur_col = -1
 
 		self.osc_client = ControlR(self,port=ports[0]) 
 		self.osc_server = ServeR(gui,port=ports[1])
@@ -74,7 +74,8 @@ class Backend:
 			filename = filename.split('/')[-1]
 			savefile = "./savedata/{}".format(filename)
 		########
-		savedata = {'xmlfile':self.xmlfile,'library':self.library, 'current_clip':self.cur_clip}
+		savedata = {'xmlfile':self.xmlfile,'library':self.library,
+		 'current_clip':self.cur_clip,'current_collection':self.cur_col}
 		########
 		with open(savefile,'wb') as f:
 			dill.dump(savedata,f)
@@ -88,11 +89,13 @@ class Backend:
 			with open(savefile,'rb') as save:
 				savedata = dill.load(save)
 				########
-				loaddata = {'xmlfile':'self.xmlfile','library':'self.library', 'current_clip':'self.cur_clip'}
+				loaddata = {'xmlfile':'self.xmlfile','library':'self.library',
+						 'current_clip':'self.cur_clip','current_collection':'self.cur_col'}
 				########
 				for key in loaddata:
 					if key in savedata:
 						exec("{} = savedata[key]".format(loaddata[key]))
+				self.search = SearchR(self.library.clips)
 				print('successfully loaded',savefile)
 
 	def load_last(self):
@@ -131,54 +134,6 @@ class RefObj:
 			except:
 				pass
 		return fun_tor
-
-
-class Library:
-	"""
-	collection of many clips, organized by unique identifier (filename) and tag
-	"""
-	def __init__(self,xmlfile=None):
-		self.clips = {}
-		self.tags = {}
-		if xmlfile: self.load_xml(xmlfile)
-			
-	def load_xml(self,xmlfile):
-		parsed = SavedXMLParse(xmlfile)
-		for clip in parsed.clips:
-			self.add_clip(clip)
-
-	@property
-	def clip_names(self):
-	    return [clip.name for _,clip in self.clips.items()]
-
-	def add_clip(self,clip):
-		if clip.fname in self.clips:
-			return
-		self.clips[clip.fname] = clip
-		for tag in clip.tags:
-			self.add_clip_to_tag(clip,tag)
-
-	def add_clip_to_tag(self,clip,tag):
-		if tag in self.tags:
-			self.tags[tag].append(clip)
-		else:
-			self.tags[tag] = [clip]
-
-	def remove_clip(self,clip):
-		if clip.fname in self.clips: 
-			del self.clips[clip.fname]
-		for tag in clip.get_tags():
-			self.remove_clip_from_tag(clip,tag)
-			
-	def remove_tag(self,tag):
-		if tag in self.tags:
-			for clip in self.tags[tag]:
-				clip.remove_tag(tag)
-			del self.tags[tag]
-
-	def random_clip(self):
-		lame_list = list(self.clips)
-		return self.clips[random.choice(lame_list)]
 
 class SearchR:
 	"""
@@ -454,10 +409,10 @@ if __name__ == '__main__':
 	# print(test_lib.clip_names)
 	# print(test_lib.clips['D:\\Downloads\\DJ\\vj\\vids\\organized\\gundam\\dxv\\Cca Amuro Vs Cute Gril.mov'].params)
 	import time
-	#bb = Backend('../old/test.avc')
-	#bb.save_data()
-	bb = Backend()
-	print(bb.xmlfile)
+	bb = Backend('../old/test.avc')
+	bb.save_data()
+	#bb = Backend()
+	#print(bb.xmlfile)
 	#bb.osc_client.build_n_send('/pyaud/open','./test.wav')
 	#time.sleep(.5)
 	#bb.osc_client.build_n_send('/pyaud/pps',1)
