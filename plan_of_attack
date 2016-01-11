@@ -1,0 +1,13 @@
+> add audio server part
+> make sure time variable is properly updating (so that things can be synced to clock of audio)
+> begin recording part by adding clip activation @ qp for audio
+> patterns, basically like so
+    [clip]
+    0 1 2 3
+t 0 x
+i 1   x
+m 2 x
+e 3     x
+
+etc.
+then can activate patterns with button press or put them @ qp for audio : )
