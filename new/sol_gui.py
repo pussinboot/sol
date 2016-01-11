@@ -5,6 +5,7 @@ import tkinter as tk
 from sol_backend import Backend
 from clip_control import ClipControl
 from library_gui import LibraryGui
+from audio_gui import AudioBar
 class MainGui:
 	def __init__(self,root,fname=None):
 
@@ -23,7 +24,7 @@ class MainGui:
 		self.top_frame.pack()
 		self.library_frame.pack(side=tk.LEFT)
 		self.cc_frame.pack(anchor=tk.E)
-		# self.bot_frame.pack()
+		self.bot_frame.pack()
 
 		# sol
 		self.backend = Backend(fname,self,ports=(7000,7001))
@@ -34,6 +35,9 @@ class MainGui:
 		self.backend.osc_client.map_timeline()
 
 		self.change_clip(self.backend.cur_clip)
+		# audio stuff
+		self.audio_bar = AudioBar(self,self.bot_frame,self.backend)
+
 
 	def change_clip(self,newclip):
 		self.backend.change_clip(newclip)

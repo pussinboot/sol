@@ -266,7 +266,7 @@ class ControlR:
 	# 
 	# now can use resolume midi behavior for own purposes >:)
 	
-	def map_timeline(self):
+	def map_timeline(self,osc_marker = "map_timeline"):
 		"""
 		maps a function to osc_server that looks at current useless midi controlled param
 		and uses it to drive timeline control
@@ -299,7 +299,7 @@ class ControlR:
 				self.build_n_send(send_addr,new_val)
 
 			return fun_tor
-		self.backend.osc_server.map_replace("map_timeline",recv_addr,gen_osc_route())
+		self.backend.osc_server.map_replace(osc_marker,recv_addr,gen_osc_route())
 		# do i need to update the opacity value as well? let's test n see
 		# then will also have to do reverse op if im choosing to scale in order
 		# to limit active range of control
@@ -311,7 +311,7 @@ class ControlR:
 	### looping behavior
 	# select any 2 cue points, once reach one of them jump to the other
 
-	def map_loop(self):
+	def map_loop(self,osc_marker="map_loop"):
 		"""
 		maps a function to osc_server that looks at curr pos 
 		and flips it to perform next correct action
@@ -319,10 +319,11 @@ class ControlR:
 		if bounce - hit cue a, reverse direction, hit cue b, reverse direction
 		"""
 		keep_pos_fun = self.backend.cur_clip_pos.update_generator('float')
-		single_frame = self.current_clip.single_frame_float()
-		def check_within(time,compare,factor=10):
-			dt = abs(time - compare)
-			return dt <= factor*single_frame
+
+		# single_frame = self.current_clip.single_frame_float()
+		# def check_within(time,compare,factor=10):
+		# 	dt = abs(time - compare)
+		# 	return dt <= factor*single_frame
 
 		def default_loop(time):
 			if not self.current_clip.vars['loopon']:
@@ -359,7 +360,7 @@ class ControlR:
 				#self.current_clip.vars['looptype'] = 'default'
 				pass
 
-		self.backend.osc_server.map_replace("map_loop","/activeclip/video/position/values",map_fun)
+		self.backend.osc_server.map_replace(osc_marker,"/activeclip/video/position/values",map_fun)
 
 
 class ServeR:
@@ -409,7 +410,7 @@ if __name__ == '__main__':
 	# print(test_lib.clip_names)
 	# print(test_lib.clips['D:\\Downloads\\DJ\\vj\\vids\\organized\\gundam\\dxv\\Cca Amuro Vs Cute Gril.mov'].params)
 	import time
-	bb = Backend('../old/test.avc')
+	bb = Backend('./test_ex.avc')
 	bb.save_data()
 	#bb = Backend()
 	#print(bb.xmlfile)

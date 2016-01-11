@@ -18,7 +18,7 @@ osc mapping is as follows
 
 /pyaud/querystatus - ask to send current status ## TO-DO
 
--- outputs (port 7008) --
+-- outputs (port 7008) -- (7001 to communicate w/ sol backend)
 
 /pyaud/out/[0-7] - outputs from frequency buckets 0-7
 /pyaud/pos/
@@ -356,7 +356,20 @@ def osc_server_test():
 		print('bye')
 		pp.quit()
 
+def sol_audio_server():
+	pp = PyaudioPlayer(client_port=7001,debug=True)
+	pp.setup_osc_server()
+	try:
+		while True:
+			time.sleep(.5)
+	except KeyboardInterrupt:
+		pass
+	finally:
+		print('bye')
+		pp.quit()
+
 
 if __name__ == '__main__':
-	osc_server_test()
+	#osc_server_test()
 	#osc_send_test()
+	sol_audio_server()
