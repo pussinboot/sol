@@ -64,3 +64,21 @@
 # test = test.replace('\\dxv\\','\\webm\\')
 # test = test.replace('.mov','.webm')
 # print(test)
+from scipy.io import wavfile
+from matplotlib import pyplot as plt
+import numpy as np
+
+# Load the data and calculate the time of each sample
+samplerate, data = wavfile.read('./new/test.wav')
+# print(len(data)) # 7804094
+data = data[:100000]
+times = np.arange(len(data))/float(samplerate)
+
+# Make the plot
+# You can tweak the figsize (width, height) in inches
+plt.figure(figsize=(30, 4))
+plt.fill_between(times, data[:,0], data[:,1], color='k') 
+plt.xlim(times[0], times[-1])
+plt.xlabel('time (s)')
+plt.ylabel('amplitude')
+plt.savefig('plot.png', dpi=100)

@@ -76,12 +76,14 @@ class LibraryGui:
 		self.backend.library.clip_collections.append(new_cont.clip_collection)
 		self.add_collection_label(new_cont,len(self.containers)-1)
 		self.containers[len(self.containers)-1].frame.tkraise()
+		self.highlight_col()
 
 	def remove_collection(self,index):
 		del self.containers[index]
 		self.container_labels[index].pack_forget()
 		del self.container_labels[index]
 		del self.backend.library.clip_collections[index]
+		self.go_left()
 
 	def add_collection_label(self,collection,index):
 		newlabel = tk.Label(self.collectionlabelframe,text=collection.clip_collection.name,bd=4)
@@ -131,11 +133,15 @@ class ClipContainer:
 				starting_clip = self.parent.clip_collection[index]
 				self.change_clip(starting_clip.fname)
 
-	def activate(self,*args):
+		if self.clip == self.maingui.backend.cur_clip:
+			self.activate(pass_=True)
+
+
+	def activate(self,*args,pass_=False):
 		if self.clip:
 			if self.parent.last_active and self.parent.last_active != self:
 				self.parent.last_active.deactivate()
-			self.maingui.change_clip(self.clip)
+			if not pass_: self.maingui.change_clip(self.clip)
 			self.label.config(relief=tk.RAISED)
 			self.active = True
 			self.parent.last_active = self

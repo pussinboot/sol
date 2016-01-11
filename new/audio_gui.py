@@ -3,6 +3,7 @@ import tkinter as tk
 import tkinter.filedialog as tkfd
 import tkinter.messagebox as tkmb
 from tkinter import ttk
+from PIL import ImageTk,Image
 
 import os
 import CONSTANTS as C
@@ -143,8 +144,101 @@ class MainGui:
 		else:
 			tkmb.showerror("Bad file","please choose a proper .wav file")
 
+class AudioBar:
+	def __init__(self,parent,frame,backend,audio_server_port=7007):
+		self.parent = parent
+		self.root = frame
+		self.backend = backend
+		self.current_song = Song('')
+
+		self.cur_clip = self.current_song
+		self.osc_client = ControlR(self,port=audio_server_port)
+		self.osc_server = self.backend.osc_server
+		self.cur_clip_pos = self.backend.cur_time
+
+		self.control_frame = tk.Frame(self.root)
+		self.progress_frame = tk.Frame(self.root)
+		self.progress_bar = ProgressBar(self,self.current_song,self.progress_frame,1000,100)
+		self.progress_bar.replace_bg('test.wav.png')
+
+		self.progress_frame.pack(side=tk.LEFT,fill=tk.X)
+		self.control_frame.pack(side=tk.LEFT,anchor=tk.E)
+		self.setup_control()
+		self.osc_map()
+
+
+	def setup_control(self):
+		self.progress_var = tk.StringVar()
+		self.progress_var.set("--:--")
+		self.progress_time = tk.Label(self.control_frame,textvariable=self.progress_var)
+		self.progress_time.pack()
+		self.open_but = tk.Button(self.control_frame,text='open',command=self.open_file)
+		self.open_but.pack()
+
+		play = self.osc_client.build_msg('/pyaud/pps',1)
+		pause = self.osc_client.build_msg('/pyaud/pps',0)
+		stop = self.osc_client.build_msg('/pyaud/pps',-1)
+
+		def gen_osc_send(msg):
+			def sender():
+				self.osc_client.send(msg)
+			return sender
+
+		self.playbut =  tk.Button(self.control_frame,text=">",padx=8,pady=4,
+							command = gen_osc_send(play),state='disabled')
+		self.pausebut =  tk.Button(self.control_frame,text="||",padx=8,pady=4,
+							command = gen_osc_send(pause),state='disabled')
+		def stopfun():
+			osc_send = gen_osc_send(stop)
+			osc_send()
+			self.progress_var.set("--:--")
+		self.stopbut =  tk.Button(self.control_frame,text="[]",padx=8,pady=4,
+							command = stopfun)
+		self.playbut.pack(side=tk.LEFT)
+		self.pausebut.pack(side=tk.LEFT)
+		self.stopbut.pack(side=tk.LEFT)
+
+	def buttons_enabler(self,_,osc_msg):
+		if osc_msg == 'loaded' or osc_msg == 'paused':
+			self.playbut.config(state='normal')
+			self.pausebut.config(state='disabled')
+		elif osc_msg == 'playing':
+			self.playbut.config(state='disabled')
+			self.pausebut.config(state='normal')
+		elif osc_msg == 'stopped':
+			self.playbut.config(state='disabled')
+			self.pausebut.config(state='disabled')
+
+	def osc_map(self):
+		# osc mappings (inputs)
+		def sec_to_str(_,osc_msg):
+			try:
+				time_sec = float(osc_msg)
+				self.progress_var.set("%d:%02d"  %  (time_sec // 60.0 , time_sec % 60.0))
+			except:
+				self.progress_var.set("--:--")
+		def float_to_prog(_,osc_msg):
+			try:
+				float_perc = float(osc_msg)
+				self.progress_bar.move_bar(float_perc*self.progress_bar.width)
+			except:
+				self.progress_bar.move_bar(0)
+		self.osc_server.map("/pyaud/pos/sec",sec_to_str)
+		#self.osc_server.map("/pyaud/pos/float",float_to_prog)
+		self.osc_server.map("/pyaud/status",self.buttons_enabler)
+
+	def open_file(self,*args):
+
+		filename = tkfd.askopenfilename(parent=self.root,title='Choose your WAV file')
+		splitname = os.path.splitext(filename)
+		if splitname[1] == '.wav' or splitname[1] == '.WAV':
+			self.osc_client.build_n_send('/pyaud/open',filename)
+			self.current_song.fname = filename
+		else:
+			tkmb.showerror("Bad file","please choose a proper .wav file")
+
 class ProgressBar:
-	def __init__(self,parent,cliporsong,root=None,width=330,height=50):
+	def __init__(self,parent,cliporsong,root=None,width=330,height=50,img=None):
 
 		self.width, self.height = width, height
 		self.oldwidth, self.oldheight = width, height
@@ -318,7 +412,7 @@ class ProgressBar:
 		wscale = float(self.width)/self.oldwidth
 		# resize background
 		coordz = self.canvas.coords(self.canvasbg)
-		self.canvas.coords(self.canvasbg,coordz[0],coordz[1],coordz[2]*wscale,coordz[3])
+		self.canvas.coords(self.canvasbg,coordz[0],coordz[1],coordz[2]*wscale,coordz[3]) # needs to be fixed for img lol
 		# move lines
 		for i in range(len(self.lines)):
 			line = self.lines[i]
@@ -357,6 +451,14 @@ class ProgressBar:
 
 	def mouse_wheel(self,event):
 	    self.canvas.xview('scroll',-1*int(event.delta//120),'units')
+
+	def replace_bg(self,imgfile):
+		self.canvas.delete(self.canvasbg)
+		temp_img = Image.open(imgfile)
+		temp_img = temp_img.resize((self.width,self.height), Image.ANTIALIAS)
+		self.img = ImageTk.PhotoImage(temp_img)
+		self.canvasbg = self.canvas.create_image(0,0,image=self.img,anchor=tk.NW,tag='bg')
+		self.canvas.tag_lower(self.canvasbg)
 
 class ConnectionSelect:
 	# to-do: 
@@ -417,13 +519,15 @@ class ConnectionSelect:
 		self.top.destroy()
 
 if __name__ == '__main__':
-	root = tk.Tk()
-	root.title('py_amp')
-	root.resizable(0,0)
-	test_gui = MainGui(root)
-	#test_gui.progress_bar.add_line(0.33,0)
-	#test_gui.progress_bar.add_line(0.67,1)
-	#test_gui.current_song.vars['loopon'] = True
-	#test_gui.current_song.vars['lp'] = [0, 1]
-	#test_gui.progress_bar.loop_update()
-	root.mainloop()
+	# root = tk.Tk()
+	# root.title('py_amp')
+	# root.resizable(0,0)
+	# test_gui = MainGui(root)
+	# #test_gui.progress_bar.add_line(0.33,0)
+	# #test_gui.progress_bar.add_line(0.67,1)
+	# #test_gui.current_song.vars['loopon'] = True
+	# #test_gui.current_song.vars['lp'] = [0, 1]
+	# #test_gui.progress_bar.loop_update()
+	# root.mainloop()
+	import sol_gui
+	sol_gui.test()
