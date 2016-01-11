@@ -16,7 +16,7 @@ osc mapping is as follows
 			frame/ - seek to frame no (int?)
 /pyaud/connect [string, bool] - dis/connect certain outputs
 
-/pyaud/querystatus - ask to send current status ## TO-DO
+/pyaud/querystatus - ask to send current status
 
 -- outputs (port 7008) -- (7001 to communicate w/ sol backend)
 
@@ -66,6 +66,7 @@ class PyaudioPlayer:
 		}
 		# setup osc client
 		self.osc_client = udp_client.UDPClient(ip, client_port)
+		self.last_status = None
 
 	def open(self,filename):
 		try:
@@ -89,7 +90,8 @@ class PyaudioPlayer:
 				self.wf = wf
 				self.tot = wf.getnframes()
 				if self.osc_to_send['status']:
-					self.osc_client.send(build_msg('/pyaud/status','loaded'))
+					self.last_status = 'loaded'
+					self.osc_client.send(build_msg('/pyaud/status',self.last_status))
 		except:
 			return
 
@@ -97,13 +99,15 @@ class PyaudioPlayer:
 		if self.stream: 
 			self.stream.start_stream()
 			if self.osc_to_send['status']:
-				self.osc_client.send(build_msg('/pyaud/status','playing'))
+				self.last_status = 'playing'
+				self.osc_client.send(build_msg('/pyaud/status',self.last_status))
 
 	def pause(self):
 		if self.stream: 
 			self.stream.stop_stream()
 			if self.osc_to_send['status']:
-				self.osc_client.send(build_msg('/pyaud/status','paused'))
+				self.last_status = 'paused'
+				self.osc_client.send(build_msg('/pyaud/status',self.last_status))
 
 	def seek_sec(self, seconds = 0.0):
 		if self.wf:
@@ -121,15 +125,23 @@ class PyaudioPlayer:
 			self.stream = None
 			self.wf = None
 			if self.osc_to_send['status']:
-				self.osc_client.send(build_msg('/pyaud/status','stopped'))
+				self.last_status = 'stopped'
+				self.osc_client.send(build_msg('/pyaud/status',self.last_status))
 
 	def quit(self):
 		if self.osc_to_send['status']:
-			self.osc_client.send(build_msg('/pyaud/status','quit'))
+			self.last_status = 'quit'
+			self.osc_client.send(build_msg('/pyaud/status',self.last_status))
 		self.stop()
 		self.pyaud.terminate()
 		if self.osc_server:
 			self.osc_server.stop()
+
+	def query_status(self,*args):
+		if self.debug:
+			print('query_status:',self.last_status)
+		if self.last_status:
+			self.osc_client.send(build_msg('/pyaud/status',self.last_status))
 
 	@property
 	def time_sec(self): # gets time in seconds
@@ -203,6 +215,8 @@ class PyaudioPlayer:
 				print("pps failed ",osc_msg)
 				pass
 		self.osc_server.dispatcher.map("/pyaud/pps",osc_pps)
+
+		self.osc_server.dispatcher.map("/pyaud/querystatus",self.query_status)
 
 		def osc_seek_sec(_,osc_msg):
 			if self.debug: print("osc_seek_sec",osc_msg)

@@ -158,13 +158,13 @@ class AudioBar:
 
 		self.control_frame = tk.Frame(self.root)
 		self.progress_frame = tk.Frame(self.root)
-		self.progress_bar = ProgressBar(self,self.current_song,self.progress_frame,1000,100)
-		self.progress_bar.replace_bg('test.wav.png')
+		self.progress_bar = ProgressBar(self,self.current_song,self.progress_frame,1000,100,'test.wav.png')
 
 		self.progress_frame.pack(side=tk.LEFT,fill=tk.X)
 		self.control_frame.pack(side=tk.LEFT,anchor=tk.E)
 		self.setup_control()
 		self.osc_map()
+		self.osc_client.build_n_send('/pyaud/querystatus',1)
 
 
 	def setup_control(self):
@@ -224,7 +224,8 @@ class AudioBar:
 			except:
 				self.progress_bar.move_bar(0)
 		self.osc_server.map("/pyaud/pos/sec",sec_to_str)
-		#self.osc_server.map("/pyaud/pos/float",float_to_prog)
+		self.progress_bar.map_osc('/pyaud/pos/float')
+		self.osc_server.map("/pyaud/pos/float",float_to_prog)
 		self.osc_server.map("/pyaud/status",self.buttons_enabler)
 
 	def open_file(self,*args):
@@ -261,8 +262,9 @@ class ProgressBar:
 		self.canvas_frame = tk.Frame(self.frame)
 		self.control_frame = tk.Frame(self.frame)
 		self.canvas = tk.Canvas(self.canvas_frame,width=width,height=height+15,bg="#aaa",scrollregion=(0,0,width,height))
+		
 		self.canvasbg = self.canvas.create_rectangle(0,0,width,height,fill='black',tag='bg')
-
+		if img:	self.replace_bg(img)
 		self.hbar = tk.Scrollbar(self.canvas_frame,orient=tk.HORIZONTAL)
 		self.hbar.config(command=self.canvas.xview)
 		self.canvas.config(xscrollcommand=self.hbar.set)
