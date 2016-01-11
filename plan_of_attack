@@ -1,6 +1,8 @@
 > add audio server part
 	 combine audio gui with sol_gui
+	 (kinda done)
 > make sure time variable is properly updating (so that things can be synced to clock of audio)
+	(y)
 > begin recording part by adding clip activation @ qp for audio
 > patterns, basically like so
     [clip]

@@ -45,7 +45,7 @@ class Backend:
 				#print(self.cur_time)
 			except:
 				pass
-		#self.osc_server.map("/pyaud/pos/frame",update_time)
+		self.osc_server.map("/pyaud/pos/frame",update_time)
 		# self.osc_server.map("/midi",print)
 		self.osc_server.map("/activeclip/video/position/values",self.cur_clip_pos.update_generator('float'))
 		### MIDI CONTROL
@@ -114,6 +114,7 @@ class Backend:
 	def change_clip(self,newclip):
 		self.cur_clip = newclip
 		self.osc_client.select_clip(newclip)
+		print('changed clip @',self.cur_time.value)
 
 
 class RefObj:
