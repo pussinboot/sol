@@ -77,7 +77,7 @@ class MainGui:
 		def float_to_prog(_,osc_msg):
 			try:
 				float_perc = float(osc_msg)
-				#self.progress_bar.move_bar(float_perc*self.progress_bar.width)
+				self.progress_bar.move_bar(float_perc*self.progress_bar.width)
 			except:
 				self.progress_bar.move_bar(0)
 		self.osc_server.map("/pyaud/pos/sec",sec_to_str)

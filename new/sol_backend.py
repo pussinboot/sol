@@ -403,6 +403,17 @@ class ServeR:
 			self.dispatcher._map[addr][self.special_handlers[special]] = self.Handler(handler,list(args))
 		#print(self.dispatcher._map[addr])
 
+class RecordR:
+	"""
+	special thing used to record (certain) osc messages at specific times/play them back later
+	will communicate with controller, to keep track of /certain/ types of commands
+		for now just clip selection/activation of cues
+	"""
+	def __init__(self,song=None):
+		# store an array of however many layers there are, each of which contains a tuple of (TIME, COMMAND)
+		if not song:
+			self.recording = False
+
 
 
 
