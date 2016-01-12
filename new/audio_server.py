@@ -142,6 +142,10 @@ class PyaudioPlayer:
 			print('query_status:',self.last_status)
 		if self.last_status:
 			self.osc_client.send(build_msg('/pyaud/status',self.last_status))
+		try:
+			self.osc_client.send(build_msg('/pyaud/pos/float',self.time_float))
+		except:
+			pass
 
 	@property
 	def time_sec(self): # gets time in seconds

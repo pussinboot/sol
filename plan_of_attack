@@ -3,7 +3,14 @@
 	 (kinda done)
 > make sure time variable is properly updating (so that things can be synced to clock of audio)
 	(y)
+------------------
 > begin recording part by adding clip activation @ qp for audio
+	think of how to save/load this : )
+> write posts
+	overview
+	audio
+	control
+	recording
 > patterns, basically like so
     [clip]
     0 1 2 3
