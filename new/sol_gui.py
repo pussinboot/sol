@@ -54,7 +54,6 @@ def test():
 
 	testgui = MainGui(root)
 	testgui.audio_bar.osc_client.build_n_send('/pyaud/open','./test.wav')
-	#testgui.backend.osc_client.build_n_send('/pyaud/querystatus',1)
 	root.mainloop()
 	testgui.quit()
 

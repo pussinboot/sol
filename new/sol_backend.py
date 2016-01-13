@@ -450,10 +450,11 @@ class RecordR:
 		return True
 
 	def play_command(self,time,layer=0):
-		if time not in self.recording:
+		if time not in self.record:
 			return
 		# temp
 		print(self.record[time][layer])
+		self.backend.change_clip(self.backend.library.clips[self.record[time][layer]])
 
 	def print_self(self):
 		print([item for item in self.record.items()])
@@ -478,17 +479,32 @@ class RecordR:
 			if not self.backend.cur_song.vars['loopon']:
 				return
 			if time - self.backend.cur_song.vars['qp'][self.backend.cur_song.vars['lp'][1]] > 0:
-				pyaud_controlr.activate(self.backend.cur_song,[self.backend.cur_song.vars['lp'][0]])
+				pyaud_controlr.activate(self.backend.cur_song,self.backend.cur_song.vars['lp'][0])
 
-		def map_float(toss,msg):
+		def map_float(_,msg):
 			curfloat = float(msg)
 			try:
 				default_loop(curfloat)
-			except:
+			except Exception as e:
+				#print(e)
 				pass
 
-		self.backend.osc_server.map_replace(osc_marker,"/pyaud/pos/frame",map_float)
-		#self.backend.osc_server.map_replace(osc_marker,"/pyaud/pos/frame",map_frame)
+		def default_playback(cur_frame):
+			if not self.playing:
+				return
+			corrected_frame = cur_frame - (cur_frame % 1024)
+			self.play_command(corrected_frame)
+
+		def map_frame(_,msg):
+			curframe = int(msg)
+			try:
+				default_playback(curframe)
+			except Exception as e:
+				#print(e)
+				pass
+
+		self.backend.osc_server.map_replace(osc_marker,"/pyaud/pos/float",map_float)
+		self.backend.osc_server.map_replace(osc_marker+"_","/pyaud/pos/frame",map_frame)
 
 
 if __name__ == '__main__':
