@@ -16,7 +16,7 @@ osc mapping is as follows
 			frame/ - seek to frame no (int?)
 /pyaud/connect [string, bool] - dis/connect certain outputs
 
-/pyaud/querystatus - ask to send current status
+/pyaud/querystatus - ask to send current status/info
 
 -- outputs (port 7008) -- (7001 to communicate w/ sol backend)
 
@@ -26,7 +26,7 @@ osc mapping is as follows
 			float/ - (0.0 - 1.0)
 			frame/ - position in frames
 /pyaud/status/ - various status messages, ie file loaded, playing, paused
-
+/pyaud/info/ - various information
 """
 import pyaudio, wave, time, sys, os, threading, struct
 from pythonosc import osc_message_builder, udp_client, dispatcher, osc_server
@@ -90,6 +90,7 @@ class PyaudioPlayer:
 				self.pause()
 				self.wf = wf
 				self.tot = wf.getnframes()
+				self.osc_client.send(build_msg('/pyaud/info/song_len',self.tot))
 				if self.osc_to_send['status']:
 					self.last_status = 'loaded'
 					self.osc_client.send(build_msg('/pyaud/status',self.last_status))
@@ -113,10 +114,17 @@ class PyaudioPlayer:
 	def seek_sec(self, seconds = 0.0):
 		if self.wf:
 			self.wf.setpos(int(seconds * self.framerate))
+			self.send_osc()
 
 	def seek_float(self, pos = 0.0):
 		if self.wf:
 			self.wf.setpos(int(pos*self.tot))
+			self.send_osc()
+
+	def seek_frame(self, frame = 0):
+		if self.wf:
+			self.wf.setpos(frame)
+			self.send_osc()
 
 	def stop(self):
 		if self.stream:
@@ -144,7 +152,8 @@ class PyaudioPlayer:
 		if self.last_status:
 			self.osc_client.send(build_msg('/pyaud/status',self.last_status))
 		try:
-			self.osc_client.send(build_msg('/pyaud/pos/float',self.time_float))
+			self.osc_client.send(build_msg('/pyaud/info/song_len',self.tot))
+			self.send_osc()
 		except:
 			pass
 
@@ -157,7 +166,7 @@ class PyaudioPlayer:
 		return self.wf.tell()/self.tot
 	
 	@property
-	def time_frame(self): # gets time as proportion 
+	def time_frame(self): # gets current frame 
 		return self.wf.tell()
 
 	@property

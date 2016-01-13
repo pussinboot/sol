@@ -33,7 +33,8 @@ class Song:
 	def __init__(self,fname):
 		self.fname = fname
 		self.vars = {'qp':[None] * C.NO_Q, # for better cuepoints
-					'lp':[0,-1], 'loopon':False, # loop points
+					'lp':[0,1], 'loopon':False, # loop points
+					'total_len':None # total length of file (used for converting frame count to float)
 		}
 		self.control_addr = '/pyaud/seek/float'
 
@@ -150,6 +151,7 @@ class AudioBar:
 		self.root = frame
 		self.backend = backend
 		self.current_song = Song('')
+		self.backend.cur_song = self.current_song
 
 		self.cur_clip = self.current_song
 		self.osc_client = ControlR(self,port=audio_server_port)
@@ -168,12 +170,75 @@ class AudioBar:
 
 
 	def setup_control(self):
+		self.audio_frame = tk.Frame(self.control_frame)
 		self.progress_var = tk.StringVar()
 		self.progress_var.set("--:--")
-		self.progress_time = tk.Label(self.control_frame,textvariable=self.progress_var)
-		self.progress_time.pack()
-		self.open_but = tk.Button(self.control_frame,text='open',command=self.open_file)
-		self.open_but.pack()
+		self.progress_time = tk.Label(self.audio_frame,textvariable=self.progress_var)
+		self.progress_time.pack(side=tk.LEFT)
+		self.open_but = tk.Button(self.audio_frame,text='open',command=self.open_file)
+		self.open_but.pack(side=tk.LEFT)
+		self.audio_frame.pack()
+
+		# looping/recording control # spaghetti code needs to be rewritten to be similar to clip_control ok
+		self.ugly_frame = tk.Frame(self.control_frame)
+		self.rec_var = tk.StringVar()
+		self.rec_var.set('')
+		self.rec_on_off = tk.Checkbutton(self.ugly_frame,text='rec',variable=self.rec_var,
+									 onvalue='T',offvalue='') 
+		def update_recorder(*args):
+			self.backend.record.recording = bool(self.rec_var.get())
+		self.rec_var.trace('w',update_recorder)
+		self.rec_on_off.pack(side=tk.LEFT)
+
+		self.playback_var = tk.StringVar()
+		self.playback_var.set('')
+		self.pb_on_off = tk.Checkbutton(self.ugly_frame,text='pb r',variable=self.playback_var,
+									 onvalue='T',offvalue='') 
+		def update_playback(*args):
+			new_pb = bool(self.playback_var.get())
+			self.backend.record.set_playing(new_pb)
+			if new_pb: self.rec_on_off.deselect()
+		self.playback_var.trace('w',update_playback)
+		self.pb_on_off.pack(side=tk.LEFT)
+
+		self.loop_var = tk.StringVar()
+		self.loop_var.set('')
+		self.loop_on_off = tk.Checkbutton(self.ugly_frame,text='loop',variable=self.loop_var,
+									 onvalue='T',offvalue='') 
+		def update_looper(*args):
+			self.backend.cur_song.vars['loopon'] = bool(self.loop_var.get())
+		self.loop_var.trace('w',update_recorder)
+		self.loop_on_off.pack(side=tk.LEFT)
+
+		self.ugly_frame.pack()
+
+		self.cue_frame = tk.Frame(self.control_frame)
+		self.cue_buttons = []
+		
+		def gen_activate(i):
+			def tor():
+				new = self.osc_client.activate(self.backend.cur_song,i,scale=self.backend.cur_song.vars['total_len']) # add return value
+				self.cue_buttons[i].config(relief='groove')
+				if new:
+					self.progress_bar.add_line(new,i)
+			return tor
+
+		def gen_deactivate(i):
+			def tor(*args):
+				self.osc_client.clear_q(self.backend.cur_song,i)
+				self.cue_buttons[i].config(relief='flat')
+				self.progress_bar.remove_line(i)
+			return tor
+
+		for i in range(2):
+			but = tk.Button(self.cue_frame,text=str(i),padx=10,pady=10,relief='flat') 
+			but.pack(side=tk.LEFT)
+			but.config(command=gen_activate(i),state='active')
+			but.bind("<ButtonPress-3>",gen_deactivate(i))
+			self.cue_buttons.append(but)
+		self.cue_frame.pack()
+
+		############ end yuck ############
 
 		play = self.osc_client.build_msg('/pyaud/pps',1)
 		pause = self.osc_client.build_msg('/pyaud/pps',0)
@@ -227,6 +292,8 @@ class AudioBar:
 		self.progress_bar.map_osc('/pyaud/pos/float')
 		self.osc_server.map("/pyaud/pos/float",float_to_prog)
 		self.osc_server.map("/pyaud/status",self.buttons_enabler)
+		############################### !!!!! ###################
+		self.backend.record.map_record(self.osc_client)
 
 	def open_file(self,*args):
 
