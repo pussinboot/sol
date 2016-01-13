@@ -57,6 +57,7 @@ class PyaudioPlayer:
 		self.maxlevels = [1] * NO_LEVELS
 		self.minlevels = [0] * NO_LEVELS
 		self.movinwin = np.zeros((WINDOW_SIZE,NO_LEVELS))
+		self.framerate = None
 
 		#osc stuff
 		self.osc_server = None # holds osc server (runs in separate thread)
@@ -76,15 +77,15 @@ class PyaudioPlayer:
 				return
 			else:
 				wf = wave.open(filename, 'rb')
-				framerate = wf.getframerate()
+				self.framerate = wf.getframerate()
 				def callback(in_data, frame_count, time_info, status):
 					data = wf.readframes(frame_count)
-					self.update_levels(calculate_levels(data,frame_count,framerate,len(self.levels)))
+					self.update_levels(calculate_levels(data,frame_count,self.framerate,len(self.levels)))
 					self.send_osc()
 					return (data, pyaudio.paContinue)
 				# print("n chans: ",wf.getnchannels(),"rate: ",wf.getframerate()) # 2 channels, 44100, frame count is 1024
 				self.stream = self.pyaud.open(format=self.pyaud.get_format_from_width(wf.getsampwidth()),
-											channels = wf.getnchannels(), rate = framerate,
+											channels = wf.getnchannels(), rate = self.framerate,
 											output = True, stream_callback = callback)
 				self.pause()
 				self.wf = wf
@@ -111,7 +112,7 @@ class PyaudioPlayer:
 
 	def seek_sec(self, seconds = 0.0):
 		if self.wf:
-			self.wf.setpos(int(seconds * self.wf.getframerate()))
+			self.wf.setpos(int(seconds * self.framerate))
 
 	def seek_float(self, pos = 0.0):
 		if self.wf:
@@ -149,7 +150,7 @@ class PyaudioPlayer:
 
 	@property
 	def time_sec(self): # gets time in seconds
-		return float(self.wf.tell())/self.wf.getframerate()
+		return float(self.wf.tell())/self.framerate
 
 	@property
 	def time_float(self): # gets time as proportion 
@@ -242,16 +243,16 @@ class PyaudioPlayer:
 				pass
 		self.osc_server.dispatcher.map("/pyaud/seek/float",osc_seek_float)
 
-		def osc_seek_pos(_,osc_msg):
-			if self.debug: print("osc_seek_pos",osc_msg)
+		def osc_seek_frame(_,osc_msg):
+			if self.debug: print("osc_seek_frame",osc_msg)
 			try:
 				pos = int(osc_msg)
 				if self.wf:
-					self.wf.setpos(pos)
+					self.wf.setpos(pos*self.framerate)
 			except:
 				print("seek_pos failed ",osc_msg)
 				pass
-		self.osc_server.dispatcher.map("/pyaud/seek/pos",osc_seek_pos)
+		self.osc_server.dispatcher.map("/pyaud/seek/frame",osc_seek_frame)
 
 		def osc_connect(_,osc_msg):
 			if self.debug: print("osc_connect", osc_msg)
