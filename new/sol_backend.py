@@ -27,6 +27,7 @@ class Backend:
 		self.xmlfile = xmlfile
 		self.library = Library(xmlfile)
 		self.search = SearchR(self.library.clips)
+		self.record = RecordR(self)
 
 		self.cur_clip = Clip('',[-1,-1],"no clip loaded")
 		self.cur_song = None
@@ -114,7 +115,9 @@ class Backend:
 	def change_clip(self,newclip):
 		self.cur_clip = newclip
 		self.osc_client.select_clip(newclip)
+		self.record.add_command(newclip.fname)
 		print('changed clip @',self.cur_time.value)
+		self.record.print_self()
 
 
 class RefObj:
@@ -409,10 +412,24 @@ class RecordR:
 	will communicate with controller, to keep track of /certain/ types of commands
 		for now just clip selection/activation of cues
 	"""
-	def __init__(self,song=None):
-		# store an array of however many layers there are, each of which contains a tuple of (TIME, COMMAND)
-		if not song:
-			self.recording = False
+	def __init__(self,backend):
+		# dictionary with frame no as key and the item will be a list of however many layers there are 
+		# containing the commands at that time : )
+		self.no_layers = 4
+		self.record = {}
+		self.recording = False
+		self.backend = backend
+
+	def add_command(self,command,layer=0):
+		cur_time = self.backend.cur_time.value
+		if not cur_time:
+			return
+		if cur_time not in self.record:
+			self.record[cur_time] = [None] * self.no_layers
+		self.record[cur_time][layer] = command
+
+	def print_self(self):
+		print([item for item in self.record.items()])
 
 
 
