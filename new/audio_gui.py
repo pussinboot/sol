@@ -160,7 +160,10 @@ class AudioBar:
 
 		self.control_frame = tk.Frame(self.root)
 		self.progress_frame = tk.Frame(self.root)
-		self.progress_bar = ProgressBar(self,self.current_song,self.progress_frame,1000,100)
+		self.progress_bar = ProgressBar(self,self.backend.cur_song,self.progress_frame,1000,100)
+		def move_cue(i,x):
+			self.osc_client.set_q(self.backend.cur_song,i,x)
+		self.progress_bar.drag_release_action = move_cue
 
 		self.progress_frame.pack(side=tk.LEFT,fill=tk.X)
 		self.control_frame.pack(side=tk.LEFT,anchor=tk.E)
