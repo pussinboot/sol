@@ -160,7 +160,7 @@ class AudioBar:
 
 		self.control_frame = tk.Frame(self.root)
 		self.progress_frame = tk.Frame(self.root)
-		self.progress_bar = ProgressBar(self,self.current_song,self.progress_frame,1000,100,'test.wav.png')
+		self.progress_bar = ProgressBar(self,self.current_song,self.progress_frame,1000,100)
 
 		self.progress_frame.pack(side=tk.LEFT,fill=tk.X)
 		self.control_frame.pack(side=tk.LEFT,anchor=tk.E)
@@ -207,10 +207,12 @@ class AudioBar:
 									 onvalue='T',offvalue='') 
 		def update_looper(*args):
 			self.backend.cur_song.vars['loopon'] = bool(self.loop_var.get())
-		self.loop_var.trace('w',update_recorder)
+		self.loop_var.trace('w',update_looper)
 		self.loop_on_off.pack(side=tk.LEFT)
 
 		self.ugly_frame.pack()
+
+		### QQ ###
 
 		self.cue_frame = tk.Frame(self.control_frame)
 		self.cue_buttons = []
