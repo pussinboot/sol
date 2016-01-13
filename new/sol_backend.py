@@ -34,6 +34,7 @@ class Backend:
 		self.cur_col = -1
 
 		self.osc_client = ControlR(self,port=ports[0]) 
+		# self.record.fix_osc() #
 		self.osc_server = ServeR(gui,port=ports[1])
 
 		self.cur_time = RefObj("cur_time")
@@ -47,6 +48,12 @@ class Backend:
 			except:
 				pass
 		self.osc_server.map("/pyaud/pos/frame",update_time)
+		def update_song_info(_,msg):
+			if self.cur_song:
+				print('got song info',msg) #
+				self.cur_song.vars['total_len'] = int(msg)
+		self.osc_server.map("/pyaud/pos/frame",update_time)
+		self.osc_server.map("/pyaud/info/song_len",update_song_info)
 		# self.osc_server.map("/midi",print)
 		self.osc_server.map("/activeclip/video/position/values",self.cur_clip_pos.update_generator('float'))
 		### MIDI CONTROL
@@ -115,9 +122,12 @@ class Backend:
 	def change_clip(self,newclip):
 		self.cur_clip = newclip
 		self.osc_client.select_clip(newclip)
-		self.record.add_command(newclip.fname)
-		print('changed clip @',self.cur_time.value)
-		self.record.print_self()
+		check_it = self.record.add_command(newclip.fname)
+		if check_it: 
+			print('changed clip @',self.cur_time.value)
+		#if self.cur_song:
+		#	print(self.cur_time.value/self.cur_song.vars['total_len'])
+			self.record.print_self()
 
 
 class RefObj:
@@ -220,7 +230,9 @@ class ControlR:
 		return msg
 
 	def build_n_send(self,addr,arg):
-		self.osc_client.send(self.build_msg(addr,arg))
+		msg = self.build_msg(addr,arg)
+		self.osc_client.send(msg)
+		return msg
 
 	def select_clip(self,clip):
 		addr = "/layer{0}/clip{1}/connect".format(*clip.loc)
@@ -229,25 +241,25 @@ class ControlR:
 
 	### CUE POINTS ###
 
-	def set_q(self,clip,i,qp=None):
+	def set_q(self,clip,i,qp=None,scale=1):
 		if not qp:
-			qp = self.backend.cur_clip_pos.value 
+			qp = self.backend.cur_clip_pos.value / scale
 		clip.vars['qp'][i] = qp
 		return qp
 
 	def get_q(self,clip,i):
 		qp = clip.vars['qp'][i]
-		self.build_n_send("/activeclip/video/position/values",qp)
+		self.build_n_send(clip.control_addr,qp)
 		return qp
 
 	def clear_q(self,clip,i):
 		clip.vars['qp'][i] = None
 
-	def activate(self,clip,i):
+	def activate(self,clip,i,scale=1):
 		if clip.vars['qp'][i]:
 			self.get_q(clip,i)
 		else:
-			return self.set_q(clip,i)
+			return self.set_q(clip,i,scale=scale)
 
 	### playback control
 
@@ -322,7 +334,7 @@ class ControlR:
 		if default looping - hit cue a go to b
 		if bounce - hit cue a, reverse direction, hit cue b, reverse direction
 		"""
-		keep_pos_fun = self.backend.cur_clip_pos.update_generator('float')
+		#keep_pos_fun = self.backend.cur_clip_pos.update_generator('float')
 
 		# single_frame = self.current_clip.single_frame_float()
 		# def check_within(time,compare,factor=10):
@@ -355,7 +367,7 @@ class ControlR:
 				self.activate(self.current_clip,self.current_clip.vars['lp'][1])
 		loop_type_to_fun = {'default':default_loop,'bounce':bounce_loop}
 		def map_fun(toss,msg):
-			keep_pos_fun(toss,msg)	# keep default behavior # dont need this since mapping appends ^_^ 
+			#keep_pos_fun(toss,msg)	# keep default behavior # dont need this since mapping appends ^_^ 
 			#LOL not default anymore
 			curval = float(msg)
 			try:
@@ -365,7 +377,6 @@ class ControlR:
 				pass
 
 		self.backend.osc_server.map_replace(osc_marker,"/activeclip/video/position/values",map_fun)
-
 
 class ServeR:
 	"""
@@ -415,23 +426,69 @@ class RecordR:
 	def __init__(self,backend):
 		# dictionary with frame no as key and the item will be a list of however many layers there are 
 		# containing the commands at that time : )
-		self.no_layers = 4
+		self.no_layers = 1
 		self.record = {}
 		self.recording = False
+		self.playing = False
 		self.backend = backend
 
+	def set_playing(self,to_what):
+		self.playing = to_what
+		if self.playing:
+			self.recording = False
+
 	def add_command(self,command,layer=0):
+		if not self.recording:
+			return
 		cur_time = self.backend.cur_time.value
 		if not cur_time:
 			return
-		if cur_time not in self.record:
-			self.record[cur_time] = [None] * self.no_layers
-		self.record[cur_time][layer] = command
+		fixed_time = cur_time - (cur_time % 1024)
+		if fixed_time not in self.record:
+			self.record[fixed_time] = [None] * self.no_layers
+		self.record[fixed_time][layer] = command
+		return True
+
+	def play_command(self,time,layer=0):
+		if time not in self.recording:
+			return
+		# temp
+		print(self.record[time][layer])
 
 	def print_self(self):
 		print([item for item in self.record.items()])
 
+	def fix_osc(self): # probably wont be used.. 
+		curfun = self.backend.osc_client.build_n_send
+		def newfun(addr,msg):
+			ret_val = curfun(addr,msg)
+			self.add_command(ret_val)
+		self.backend.osc_client.build_n_send = newfun
 
+	### reecording behavior
+
+	def map_record(self,pyaud_controlr,osc_marker="map_record"):
+		"""
+		maps a function to osc_server that looks at curr time
+		if looping is on then loops the audio : )
+		if playback is on then plays back whatever
+		"""
+		
+		def default_loop(time):
+			if not self.backend.cur_song.vars['loopon']:
+				return
+			if time - self.backend.cur_song.vars['qp'][self.backend.cur_song.vars['lp'][1]] > 0:
+				pyaud_controlr.activate(self.backend.cur_song,[self.backend.cur_song.vars['lp'][0]])
+
+		def map_float(toss,msg):
+			curfloat = float(msg)
+			try:
+				default_loop(curfloat)
+			except:
+				pass
+
+		self.backend.osc_server.map_replace(osc_marker,"/pyaud/pos/frame",map_float)
+		#self.backend.osc_server.map_replace(osc_marker,"/pyaud/pos/frame",map_frame)
 
 
 if __name__ == '__main__':
