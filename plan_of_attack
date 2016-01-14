@@ -4,12 +4,14 @@
 > add recording part
 	so that can represent all the various things 
 	like clip/qp activation and copy pasta patterns : )
+	(kinda done)
 > make sure time variable is properly updating (so that things can be synced to clock of audio)
 	(y)
 ------------------
 > begin recording part by adding clip activation @ qp for audio
 	clip activ works, now need way to repr qp/patterns so can do next step too
 		think of how to save/load this : )
+		(y)
 	recording_quanta objects
 	represented as little squares on timeline (w/in each layer) can click on em to open up popup
 		that has checkboxes/dropdowns for stuff like
@@ -18,9 +20,10 @@
 		> enable looping
 		> etc
 	then these little squares can be copied/cut/pasted over the entire timeline : )
+		do this
 > write posts
-	> overview <
-	audio
+	overview 
+	> audio <
 	control
 	recording
 > patterns, basically like so
@@ -33,3 +36,11 @@ e 3     x
 
 etc.
 then can activate patterns with button press or put them @ qp for audio : )
+> not sure
+===============================
+new to-do
+besides writing posts : )
+fix delete lol
+on load of recording need to populate the gui with all the little squares
+add multiple selection stuff so can move multiple clips @ once
+copy pasta?
