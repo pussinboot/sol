@@ -10,6 +10,7 @@ clip -> active layer (for now)
 
 from midi_control import MidiControl
 from clip import Clip, Library
+import CONSTANTS as C
 
 from pythonosc import dispatcher, osc_server, osc_message_builder, udp_client
 from bisect import bisect_left
@@ -122,12 +123,12 @@ class Backend:
 	def change_clip(self,newclip):
 		self.cur_clip = newclip
 		self.osc_client.select_clip(newclip)
-		check_it = self.record.add_command(newclip.fname)
-		if check_it: 
-			print('changed clip @',self.cur_time.value)
-		#if self.cur_song:
-		#	print(self.cur_time.value/self.cur_song.vars['total_len'])
-			self.record.print_self()
+		#check_it = self.record.add_command(newclip.fname)
+		#if check_it: 
+		#	print('changed clip @',self.cur_time.value)
+		##if self.cur_song:
+		##	print(self.cur_time.value/self.cur_song.vars['total_len'])
+		#	self.record.print_self()
 
 
 class RefObj:
@@ -417,6 +418,30 @@ class ServeR:
 			self.dispatcher._map[addr][self.special_handlers[special]] = self.Handler(handler,list(args))
 		#print(self.dispatcher._map[addr])
 
+
+class RecordingObject:
+	"""
+	special object that holds recorded messages	with their timestamps
+	"""
+	def __init__(self,clip,timestamp,activate=False):
+		self.clip = clip # what clip this object is for
+		self.timestamp = timestamp # what time this happened
+		self.activate = activate # whether or not to activate the clip
+		self.seek_point = None # where to seek to in the clip
+		self.playback_control = None # what direction to play the clip in (reverse, paused, play, random)
+		self.qp_to_activate = None # what cue point to activate
+		self.lp_to_select = None # what loop points to select
+		self.lp_type = None # what kind of looping to set/turn on
+		# as in if you specify a type of looping it will activate it
+
+
+class RecordingPattern:
+	"""
+	special object that holds multiple recording objects
+	"""
+	def __init__(self):
+		self.recordings = []
+
 class RecordR:
 	"""
 	special thing used to record (certain) osc messages at specific times/play them back later
@@ -426,7 +451,7 @@ class RecordR:
 	def __init__(self,backend):
 		# dictionary with frame no as key and the item will be a list of however many layers there are 
 		# containing the commands at that time : )
-		self.no_layers = 1
+		self.no_layers = C.NO_LAYERS
 		self.record = {}
 		self.recording = False
 		self.playing = False
@@ -436,6 +461,20 @@ class RecordR:
 		self.playing = to_what
 		if self.playing:
 			self.recording = False
+
+	def add_new_clip(self,clip,layer=0):
+		if not self.recording:
+			return
+		cur_time = self.backend.cur_time.value
+		if not cur_time:
+			return
+		fixed_time = cur_time - (cur_time % 1024)
+		new_rec = RecordingObject(clip,fixed_time)
+		if fixed_time not in self.record:
+			self.record[fixed_time] = [None] * self.no_layers
+		self.record[fixed_time][layer] = new_rec.clip.fname # temp
+		return new_rec
+		
 
 	def add_command(self,command,layer=0):
 		if not self.recording:

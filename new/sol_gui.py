@@ -42,6 +42,8 @@ class MainGui:
 	def change_clip(self,newclip):
 		self.backend.change_clip(newclip)
 		self.clipcontrol.change_clip(newclip)
+		rec_obj = self.backend.record.add_new_clip(newclip)
+		if rec_obj: self.audio_bar.progress_bar.add_recording(rec_obj)
 
 	def quit(self):
 		self.backend.save_data()

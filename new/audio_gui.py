@@ -8,7 +8,7 @@ from PIL import ImageTk,Image
 import os
 import CONSTANTS as C
 
-from sol_backend import ControlR, ServeR
+from sol_backend import ControlR, ServeR, RecordingObject
 
 # gui should be like
 # file -> open
@@ -160,7 +160,7 @@ class AudioBar:
 
 		self.control_frame = tk.Frame(self.root)
 		self.progress_frame = tk.Frame(self.root)
-		self.progress_bar = ProgressBar(self,self.backend.cur_song,self.progress_frame,1000,100)
+		self.progress_bar = RecordingBar(self,self.backend.cur_song,self.progress_frame,self.backend.record)
 		def move_cue(i,x):
 			self.osc_client.set_q(self.backend.cur_song,i,x)
 		self.progress_bar.drag_release_action = move_cue
@@ -344,7 +344,15 @@ class ProgressBar:
 
 		self.pbar = self.canvas.create_line(0,0,0,height,fill='gray',width=3)
 		self.looprect = self.canvas.create_rectangle(0,0,0,0,fill='gray',stipple='gray12',tag='bg')
+		self.canvas.pack(anchor=tk.W)
+		self.canvas_frame.pack(anchor=tk.W,side=tk.LEFT,expand=tk.YES,fill=tk.BOTH)
+		self.control_frame.pack(side=tk.LEFT,anchor=tk.E)
+		self.frame.pack(anchor=tk.W,side=tk.TOP,expand=tk.YES,fill=tk.BOTH)
+		self.actions_binding()
+		self.setup_control()
+		self.refresh()
 
+	def actions_binding(self):
 
 		self.canvas.tag_bind("bg","<B1-Motion>",self.find_mouse)
 		self.canvas.tag_bind("bg","<ButtonRelease-1>",self.find_mouse)
@@ -358,6 +366,8 @@ class ProgressBar:
 		self.canvas.bind("<Button-4>", self.mouse_wheel)
 		self.canvas.bind("<Button-5>", self.mouse_wheel)
 
+	def setup_control(self):
+
 		self.zoominbut = tk.Button(self.control_frame,text="+",width=2,
 			command = lambda *pargs: self.zoom(1.25))
 		self.zoomoutbut = tk.Button(self.control_frame,text="-",width=2,
@@ -368,11 +378,7 @@ class ProgressBar:
 		self.zoominbut.pack()
 		self.zoomoutbut.pack()
 		self.zoomresetbut.pack()
-		self.canvas.pack(anchor=tk.W)
-		self.canvas_frame.pack(anchor=tk.W,side=tk.LEFT,expand=tk.YES,fill=tk.BOTH)
-		self.control_frame.pack(side=tk.LEFT,anchor=tk.E)
-		self.frame.pack(anchor=tk.W,side=tk.TOP,expand=tk.YES,fill=tk.BOTH)
-		self.refresh()
+
 
 	# progress bar follow mouse
 	def find_mouse(self,event):
@@ -510,6 +516,7 @@ class ProgressBar:
 		self.oldwidth = self.width
 		self.canvas.config(scrollregion=(0,0,self.width,self.height))
 		self.canvas.xview_moveto(self.canvas.coords(self.pbar)[0]*2/(self.width+self.oldwidth))
+		return wscale
 
 	def zoom(self,factor=1.00):
 		self.width = self.width * factor
@@ -533,6 +540,38 @@ class ProgressBar:
 		self.img = ImageTk.PhotoImage(temp_img)
 		self.canvasbg = self.canvas.create_image(0,0,image=self.img,anchor=tk.NW,tag='bg')
 		self.canvas.tag_lower(self.canvasbg)
+
+class RecordingBar(ProgressBar):
+	"""
+	special recording bar
+	"""
+	def __init__(self,parent,cliporsong,root,recordr,width=1000,height=100):
+		super().__init__(parent,cliporsong,root,width,height)
+
+		self.recordr = recordr
+		self.recordings = []
+		# self.total_len = self.parent.backend.cur_song.vars['total_len']
+		self.layer_lines = []
+		self.layer_height = self.height // C.NO_LAYERS
+		for i in range(1,C.NO_LAYERS):
+			self.layer_lines.append(self.canvas.create_line(0,i*self.layer_height,self.width,i*self.layer_height,fill='gray'))
+
+	def rescale(self):
+		wscale = super().rescale()
+		for ll in self.layer_lines:
+			coordz = self.canvas.coords(ll)
+			self.canvas.coords(ll,coordz[0],coordz[1],coordz[2]*wscale,coordz[3])
+
+	def add_recording(self,recording_object,i=0):
+		x_coord = recording_object.timestamp / self.parent.backend.cur_song.vars['total_len'] * self.width
+		new_rec = self.canvas.create_rectangle(x_coord,(C.NO_LAYERS-i)*self.layer_height,x_coord+self.layer_height,
+			(C.NO_LAYERS-i-1)*self.layer_height,tags='rec',activefill='#aaa',fill='white')
+		print(self.canvas.coords(new_rec))
+		self.recordings.append((new_rec,recording_object))
+
+
+
+
 
 class ConnectionSelect:
 	# to-do: 
