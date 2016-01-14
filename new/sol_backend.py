@@ -485,6 +485,12 @@ class RecordR:
 			self.record[fixed_time][new_layer] = rec_obj
 			self.record_keeper[rec_obj.fname] = [fixed_time,new_layer]
 
+	def remove_rec(self,rec_obj):
+		if rec_obj.fname not in self.record_keeper:
+			return
+		[find_t,find_l] = self.record_keeper[rec_obj.fname]
+		self.record[find_t][find_l] = None
+
 	def add_command(self,command,layer=0):
 		if not self.recording:
 			return
