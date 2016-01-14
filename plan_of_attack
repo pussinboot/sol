@@ -10,6 +10,14 @@
 > begin recording part by adding clip activation @ qp for audio
 	clip activ works, now need way to repr qp/patterns so can do next step too
 		think of how to save/load this : )
+	recording_quanta objects
+	represented as little squares on timeline (w/in each layer) can click on em to open up popup
+		that has checkboxes/dropdowns for stuff like
+		> activate clip
+		> activate cue
+		> enable looping
+		> etc
+	then these little squares can be copied/cut/pasted over the entire timeline : )
 > write posts
 	> overview <
 	audio
