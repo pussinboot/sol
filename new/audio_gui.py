@@ -164,6 +164,7 @@ class AudioBar:
 		def move_cue(i,x):
 			self.osc_client.set_q(self.backend.cur_song,i,x)
 		self.progress_bar.drag_release_action = move_cue
+		self.progress_bar.rec_drag_release_action = self.backend.record.edit_clip_pos
 
 		self.progress_frame.pack(side=tk.LEFT,fill=tk.X)
 		self.control_frame.pack(side=tk.LEFT,anchor=tk.E)
@@ -560,6 +561,9 @@ class RecordingBar(ProgressBar):
 		self.layer_height = self.height // C.NO_LAYERS
 		for i in range(1,C.NO_LAYERS):
 			self.layer_lines.append(self.canvas.create_line(0,i*self.layer_height,self.width,i*self.layer_height,fill='gray'))
+		self.hoverinfo = self.canvas.create_text(-100,-100,anchor=tk.SW,fill='white')
+		self.hoverinfo_bg = self.canvas.create_rectangle(-100,-100,-100,-100,fill='black')
+		self.canvas.bind("<Motion>", Follower(self))
 
 	def rescale(self):
 		wscale = super().rescale()
@@ -579,7 +583,6 @@ class RecordingBar(ProgressBar):
 			(i+1)*self.layer_height,tags='rec',activefill='#aaa',fill='white')
 		self.recordings.append(recording_object)
 		self.recording_boxes.append(new_rec)
-		self.hover = HoverInfo(new_rec,'test')
 
 	## rec_obj moving around
 	def actions_binding(self):
@@ -587,6 +590,7 @@ class RecordingBar(ProgressBar):
 		self.canvas.tag_bind("rec","<ButtonPress-3>",self.rec_drag_begin)
 		self.canvas.tag_bind("rec","<ButtonRelease-3>",self.rec_drag_end)
 		self.canvas.tag_bind("rec","<B3-Motion>",self.rec_drag)
+
 
 	def rec_drag_begin(self, event):
 		# record the item and its location
@@ -598,8 +602,12 @@ class RecordingBar(ProgressBar):
 		self._drag_data["y"] = event.y
 
 	def rec_drag_end(self, event):
-		cury = self.canvas.coords(self._drag_data["item"])[1]
+		try:
+			cury = self.canvas.coords(self._drag_data["item"])[1]
+		except:
+			return
 		new_layer = min( cury // self.layer_height,C.NO_LAYERS-1)
+		new_layer = int(new_layer)
 		new_y = new_layer*self.layer_height
 		delta_y = new_y - cury
 		self.canvas.move(self._drag_data["item"], 0, delta_y)
@@ -639,6 +647,37 @@ class RecordingBar(ProgressBar):
 		# record the new position
 		self._drag_data["x"] = event.x
 		self._drag_data["y"] = event.y
+
+class Follower:
+	def __init__(self,parent):
+		self.parent = parent
+		self.to_config = parent.hoverinfo
+		self.to_config_bg = parent.hoverinfo_bg
+
+	def hover(self, canvas, item, x, y):
+		x1, y1, x2, y2 = canvas.bbox(item)
+		if x1 <= x <= x2 and y1 <= y <= y2:
+			if 'rec' in canvas.gettags(item):
+				return True
+		return False
+
+	def __call__(self, event):
+		canvas = event.widget
+		item = canvas.find_closest(canvas.canvasx(event.x), canvas.canvasy(event.y))[0]
+		hovering = self.hover(canvas, item, canvas.canvasx(event.x), canvas.canvasy(event.y))
+		if not hovering :
+			canvas.itemconfig(self.to_config, text='')
+			canvas.coords(self.to_config,-100,-100)
+			canvas.coords(self.to_config_bg,-100,-100,-100,-100)
+		else:
+			rec_obj =self.parent.recordings[self.parent.recording_boxes.index(item)]
+			canvas.itemconfig(self.to_config, text=rec_obj.clip.name)
+			item_coords = canvas.coords(item)
+			canvas.coords(self.to_config, item_coords[0] + 12,item_coords[3])
+			bbox = canvas.bbox(self.to_config)
+			canvas.coords(self.to_config_bg, *bbox)
+			canvas.tag_raise(self.to_config_bg)
+			canvas.tag_raise(self.to_config)
 
 
 class ConnectionSelect:

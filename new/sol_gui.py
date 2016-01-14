@@ -57,6 +57,7 @@ def test():
 	testgui = MainGui(root)
 	testgui.audio_bar.osc_client.build_n_send('/pyaud/open','./test.wav')
 	root.mainloop()
+	testgui.backend.record.save_data('test_rec')
 	testgui.quit()
 	#testgui.backend.osc_client.build_n_send("/activelayer/clear",1)
 
