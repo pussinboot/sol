@@ -83,9 +83,10 @@
 # plt.ylabel('amplitude')
 # plt.savefig('plot.png', dpi=100)
 
-test_dict = {}
-test_dict[1] = 'testing'
-test_dict[100] = 'testinggg'
-for item in test_dict.items():
-	print(item)
-print(1 in test_dict)
+# test_dict = {}
+# test_dict[1] = 'testing'
+# test_dict[100] = 'testinggg'
+# for item in test_dict.items():
+# 	print(item)
+# print(1 in test_dict)
+
