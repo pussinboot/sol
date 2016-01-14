@@ -5,7 +5,7 @@ import tkinter.messagebox as tkmb
 from tkinter import ttk
 from PIL import ImageTk,Image
 
-import os
+import os, re
 import CONSTANTS as C
 
 from sol_backend import ControlR, ServeR, RecordingObject
@@ -531,7 +531,7 @@ class ProgressBar:
 		self.zoom(self.og_width/self.width)
 
 	def mouse_wheel(self,event):
-	    self.canvas.xview('scroll',-1*int(event.delta//120),'units')
+		 self.canvas.xview('scroll',-1*int(event.delta//120),'units')
 
 	def replace_bg(self,imgfile):
 		self.canvas.delete(self.canvasbg)
@@ -548,8 +548,13 @@ class RecordingBar(ProgressBar):
 	def __init__(self,parent,cliporsong,root,recordr,width=1000,height=100):
 		super().__init__(parent,cliporsong,root,width,height)
 
+		self.rec_drag_release_action = None
+
 		self.recordr = recordr
 		self.recordings = []
+		self.selected_recs = []
+		self.recording_boxes = []
+		self.rec_width = 10
 		# self.total_len = self.parent.backend.cur_song.vars['total_len']
 		self.layer_lines = []
 		self.layer_height = self.height // C.NO_LAYERS
@@ -561,15 +566,114 @@ class RecordingBar(ProgressBar):
 		for ll in self.layer_lines:
 			coordz = self.canvas.coords(ll)
 			self.canvas.coords(ll,coordz[0],coordz[1],coordz[2]*wscale,coordz[3])
+		for rec_b in self.recording_boxes:
+			coordz = self.canvas.coords(rec_b)
+			oldx = coordz[0]
+			newx = oldx*wscale
+			deltax = newx - oldx
+			self.canvas.move(rec_b,deltax,0)
 
 	def add_recording(self,recording_object,i=0):
 		x_coord = recording_object.timestamp / self.parent.backend.cur_song.vars['total_len'] * self.width
-		new_rec = self.canvas.create_rectangle(x_coord,(C.NO_LAYERS-i)*self.layer_height,x_coord+self.layer_height,
-			(C.NO_LAYERS-i-1)*self.layer_height,tags='rec',activefill='#aaa',fill='white')
-		print(self.canvas.coords(new_rec))
-		self.recordings.append((new_rec,recording_object))
+		new_rec = self.canvas.create_rectangle(x_coord,i*self.layer_height,x_coord+self.rec_width,
+			(i+1)*self.layer_height,tags='rec',activefill='#aaa',fill='white')
+		self.recordings.append(recording_object)
+		self.recording_boxes.append(new_rec)
+		self.hover = HoverInfo(new_rec,'test')
 
+	## rec_obj moving around
+	def actions_binding(self):
+		super().actions_binding()
+		self.canvas.tag_bind("rec","<ButtonPress-3>",self.rec_drag_begin)
+		self.canvas.tag_bind("rec","<ButtonRelease-3>",self.rec_drag_end)
+		self.canvas.tag_bind("rec","<B3-Motion>",self.rec_drag)
 
+	def rec_drag_begin(self, event):
+		# record the item and its location
+		item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y),halo=5)[0]
+		if 'rec' not in self.canvas.gettags(item):
+			return
+		self._drag_data["item"] = item
+		self._drag_data["x"] = event.x
+		self._drag_data["y"] = event.y
+
+	def rec_drag_end(self, event):
+		cury = self.canvas.coords(self._drag_data["item"])[1]
+		new_layer = min( cury // self.layer_height,C.NO_LAYERS-1)
+		new_y = new_layer*self.layer_height
+		delta_y = new_y - cury
+		self.canvas.move(self._drag_data["item"], 0, delta_y)
+
+		if self.rec_drag_release_action:
+			newx = self.canvas.canvasx(event.x)
+			if newx < 0:
+				newx = 0
+			elif newx > self.width:
+				newx = self.width
+			i = self.recording_boxes.index(self._drag_data["item"])
+			self.rec_drag_release_action(self.recordings[i],newx/self.width,new_layer)
+		# reset the drag information
+		self._drag_data["item"] = None
+		self._drag_data["label"] = None
+		self._drag_data["x"] = 0
+		self._drag_data["y"] = 0
+
+	def rec_drag(self, event):
+		# compute how much this object has moved
+		delta_x = event.x - self._drag_data["x"]
+		delta_y = event.y - self._drag_data["y"]
+		# move the object the appropriate amount
+		if self._drag_data["item"]:
+			[curx,cury] = self.canvas.coords(self._drag_data["item"])[0:2]
+			if curx + delta_x < 0:
+				delta_x = -curx
+			elif curx + delta_x > self.width:
+				delta_x = self.width - curx
+			if cury + delta_y < 0:
+				delta_y = -cury
+			elif cury + delta_y > self.height:
+				delta_y = self.height - cury	
+			self.canvas.move(self._drag_data["item"], delta_x, delta_y)
+			# for item in self.selected_recs:
+
+		# record the new position
+		self._drag_data["x"] = event.x
+		self._drag_data["y"] = event.y
+
+class HoverInfo(tk.Menu):
+	def __init__(self, parent, text, command=None):
+		self._com = command
+		super().__init__(parent, tearoff=0)
+		if not isinstance(text, str):
+			raise TypeError('Trying to initialise a Hover Menu with a non string type: ' + text.__class__.__name__)
+		toktext=re.split('\n', text)
+		for t in toktext:
+			self.add_command(label = t)
+		self._displayed=False
+		self.master.bind("<Enter>",self.Display )
+		self.master.bind("<Leave>",self.Remove )
+	
+	def __del__(self):
+		self.master.unbind("<Enter>")
+		self.master.unbind("<Leave>")
+	
+	def Display(self,event):
+		if not self._displayed:
+			self._displayed=True
+			self.post(event.x_root, event.y_root)
+		if self._com != None:
+			self.master.unbind_all("<Return>")
+			self.master.bind_all("<Return>", self.Click)
+	
+	def Remove(self, event):
+		if self._displayed:
+			self._displayed=False
+			self.unpost()
+		if self._com != None:
+			self.unbind_all("<Return>")
+	
+	def Click(self, event):
+		self._com()
 
 
 
