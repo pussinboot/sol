@@ -113,6 +113,7 @@ class Backend:
 				fname = last_save.read()
 				self.load_data(fname)
 				self.load_last_midi()
+				self.record.load_last()
 
 	def load_last_midi(self):
 		if os.path.exists('./savedata/last_midi'):
@@ -425,6 +426,7 @@ class RecordingObject:
 	"""
 	def __init__(self,clip,timestamp,activate=False):
 		self.clip = clip # what clip this object is for
+		self.fname = self.clip.fname
 		self.timestamp = timestamp # what time this happened
 		self.activate = activate # whether or not to activate the clip
 		self.seek_point = None # where to seek to in the clip
@@ -433,26 +435,20 @@ class RecordingObject:
 		self.lp_to_select = None # what loop points to select
 		self.lp_type = None # what kind of looping to set/turn on
 		# as in if you specify a type of looping it will activate it
-
-
-class RecordingPattern:
-	"""
-	special object that holds multiple recording objects
-	"""
-	def __init__(self):
-		self.recordings = []
+	def __str__(self):
+		return "{0} @ {1}".format(self.clip.name, self.timestamp)
 
 class RecordR:
 	"""
 	special thing used to record (certain) osc messages at specific times/play them back later
 	will communicate with controller, to keep track of /certain/ types of commands
-		for now just clip selection/activation of cues
 	"""
 	def __init__(self,backend):
 		# dictionary with frame no as key and the item will be a list of however many layers there are 
 		# containing the commands at that time : )
 		self.no_layers = C.NO_LAYERS
-		self.record = {}
+		self.record = {} # where everything is written to
+		self.record_keeper = {} # lookup to find where in record something is
 		self.recording = False
 		self.playing = False
 		self.backend = backend
@@ -472,9 +468,22 @@ class RecordR:
 		new_rec = RecordingObject(clip,fixed_time)
 		if fixed_time not in self.record:
 			self.record[fixed_time] = [None] * self.no_layers
-		self.record[fixed_time][layer] = new_rec.clip.fname # temp
+		self.record[fixed_time][layer] = new_rec
+		self.record_keeper[new_rec.fname] = [fixed_time, layer]
 		return new_rec
 		
+	def edit_clip_pos(self,rec_obj,new_time,new_layer=0):
+		if rec_obj.fname in self.record_keeper and new_layer < self.no_layers:
+			if new_time < 1:
+				new_time = int(new_time * self.backend.cur_song.vars['total_len'])
+			fixed_time = new_time - (new_time % 1024)
+			[old_time,old_layer] = self.record_keeper[rec_obj.fname]
+			if fixed_time not in self.record:
+				self.record[fixed_time] = [None] * self.no_layers
+			self.record[old_time][old_layer] = None
+			rec_obj.timestamp = fixed_time
+			self.record[fixed_time][new_layer] = rec_obj
+			self.record_keeper[rec_obj.fname] = [fixed_time,new_layer]
 
 	def add_command(self,command,layer=0):
 		if not self.recording:
@@ -488,12 +497,13 @@ class RecordR:
 		self.record[fixed_time][layer] = command
 		return True
 
-	def play_command(self,time,layer=0):
+	def play_command(self,time,layer=0): # change so it is all active layers
 		if time not in self.record:
 			return
-		# temp
-		print(self.record[time][layer])
-		self.backend.change_clip(self.backend.library.clips[self.record[time][layer]])
+		for layer in range(self.no_layers):
+			if self.record[time][layer]:
+				print(self.record[time][layer])
+				self.backend.change_clip(self.backend.library.clips[self.record[time][layer].fname])
 
 	def print_self(self):
 		print([item for item in self.record.items()])
@@ -544,6 +554,37 @@ class RecordR:
 
 		self.backend.osc_server.map_replace(osc_marker,"/pyaud/pos/float",map_float)
 		self.backend.osc_server.map_replace(osc_marker+"_","/pyaud/pos/frame",map_frame)
+
+	### save/loading recs
+
+	def save_data(self,filename):
+		if not os.path.exists('./savedata'): os.makedirs('./savedata')
+		savefile = "./savedata/{}".format(filename)
+		savedata = {'record':self.record,'lookup':self.record_keeper}
+		with open(savefile,'wb') as f:
+			dill.dump(savedata,f)
+			with open('./savedata/last_rec_save','w') as last_save:
+				last_save.write(savefile)
+			print('recording saved',savefile)
+			return savefile # success
+
+	def load_data(self,savefile):
+		if os.path.exists(savefile):
+			with open(savefile,'rb') as save:
+				savedata = dill.load(save)
+				loaddata = {'record':'self.record','lookup':'self.record_keeper'}
+				for key in loaddata:
+					if key in savedata:
+						exec("{} = savedata[key]".format(loaddata[key]))
+				print('recording loaded',savefile)
+
+	def load_last(self):
+		if os.path.exists('./savedata/last_rec_save'):
+			with open('./savedata/last_rec_save') as last_save:
+				fname = last_save.read()
+				self.load_data(fname)
+
+
 
 
 if __name__ == '__main__':
