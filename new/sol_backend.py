@@ -29,6 +29,7 @@ class Backend:
 		self.library = Library(xmlfile)
 		self.search = SearchR(self.library.clips)
 		self.record = RecordR(self)
+		self.last_save_file = None
 
 		self.cur_clip = Clip('',[-1,-1],"no clip loaded")
 		self.cur_song = None
@@ -51,7 +52,6 @@ class Backend:
 		self.osc_server.map("/pyaud/pos/frame",update_time)
 		def update_song_info(_,msg):
 			if self.cur_song:
-				print('got song info',msg) #
 				self.cur_song.vars['total_len'] = int(msg)
 		self.osc_server.map("/pyaud/pos/frame",update_time)
 		self.osc_server.map("/pyaud/info/song_len",update_song_info)
@@ -73,15 +73,15 @@ class Backend:
 		self.midi_control = MidiControl(self)
 		self.load_last()
 
-	def update_save_data(self):
-		self.savedata = {'xmlfile':self.xmlfile,'library':self.library}
-
 	def save_data(self,savefile=None):
 		if not os.path.exists('./savedata'): os.makedirs('./savedata')
 		if not savefile:
-			filename = os.path.splitext(self.xmlfile)[0]
-			filename = filename.split('/')[-1]
-			savefile = "./savedata/{}".format(filename)
+			if not self.last_save_file:
+				filename = os.path.splitext(self.xmlfile)[0]
+				filename = filename.split('/')[-1]
+				savefile = "./savedata/{}".format(filename)
+			else:
+				savefile = self.last_save_file
 		########
 		savedata = {'xmlfile':self.xmlfile,'library':self.library,
 		 'current_clip':self.cur_clip,'current_collection':self.cur_col}
@@ -91,6 +91,7 @@ class Backend:
 			with open('./savedata/last_save','w') as last_save:
 				last_save.write(savefile)
 			print('successfully saved',savefile)
+			self.last_save_file = savefile
 			return savefile # success
 
 	def load_data(self,savefile):
@@ -106,6 +107,7 @@ class Backend:
 						exec("{} = savedata[key]".format(loaddata[key]))
 				self.search = SearchR(self.library.clips)
 				print('successfully loaded',savefile)
+				self.last_save_file = savefile
 
 	def load_last(self):
 		if os.path.exists('./savedata/last_save'):
@@ -452,6 +454,7 @@ class RecordR:
 		self.recording = False
 		self.playing = False
 		self.backend = backend
+		self.last_save_file = None
 
 	def set_playing(self,to_what):
 		self.playing = to_what
@@ -493,7 +496,6 @@ class RecordR:
 		self.record[find_t][find_l] = None
 		if not any(self.record[find_t]):
 			del self.record[find_t]
-		self.print_self()
 
 	def add_command(self,command,layer=0):
 		if not self.recording:
@@ -567,15 +569,23 @@ class RecordR:
 
 	### save/loading recs
 
-	def save_data(self,filename):
+	def save_data(self,filename=None):
 		if not os.path.exists('./savedata'): os.makedirs('./savedata')
-		savefile = "./savedata/{}".format(filename)
+		if not filename:
+			if not self.last_save_file:
+				filename = os.path.splitext(self.backend.cur_song.fname)[0]
+				savefile = "./savedata/{}".format(filename)
+			else:
+				savefile = self.last_save_file
+		else:
+			savefile = filename
 		savedata = {'record':self.record,'lookup':self.record_keeper}
 		with open(savefile,'wb') as f:
 			dill.dump(savedata,f)
 			with open('./savedata/last_rec_save','w') as last_save:
 				last_save.write(savefile)
 			print('recording saved',savefile)
+			self.last_save_file = savefile
 			return savefile # success
 
 	def load_data(self,savefile):
@@ -587,6 +597,7 @@ class RecordR:
 					if key in savedata:
 						exec("{} = savedata[key]".format(loaddata[key]))
 				print('recording loaded',savefile)
+				self.last_save_file = savefile
 
 	def load_last(self):
 		if os.path.exists('./savedata/last_rec_save'):
