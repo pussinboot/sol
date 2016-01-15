@@ -179,8 +179,8 @@ class AudioBar:
 		self.progress_var.set("--:--")
 		self.progress_time = tk.Label(self.audio_frame,textvariable=self.progress_var)
 		self.progress_time.pack(side=tk.LEFT)
-		self.open_but = tk.Button(self.audio_frame,text='open',command=self.open_file)
-		self.open_but.pack(side=tk.LEFT)
+		# self.open_but = tk.Button(self.audio_frame,text='open',command=self.open_file)
+		# self.open_but.pack(side=tk.LEFT)
 		self.audio_frame.pack()
 
 		# looping/recording control # spaghetti code needs to be rewritten to be similar to clip_control ok
@@ -303,7 +303,8 @@ class AudioBar:
 
 	def open_file(self,*args):
 
-		filename = tkfd.askopenfilename(parent=self.root,title='Choose your WAV file')
+		filename = tkfd.askopenfilename(parent=self.root,title='Choose your wav file',defaultextension='.wav',
+                  filetypes=[('Wav file','*.wav')])
 		splitname = os.path.splitext(filename)
 		if splitname[1] == '.wav' or splitname[1] == '.WAV':
 			self.osc_client.build_n_send('/pyaud/open',filename)
@@ -592,7 +593,6 @@ class RecordingBar(ProgressBar):
 		self.canvas.tag_bind("rec","<B3-Motion>",self.rec_drag)
 		self.canvas.tag_bind("rec","<ButtonRelease-2>",self.remove_rec)
 		#self.canvas.tag_bind("rec","<ButtonPress-1>",self.find_rec)
-
 
 	def remove_rec(self,event):
 		i = self.find_rec(event)
