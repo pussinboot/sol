@@ -602,6 +602,18 @@ class RecordingBar(ProgressBar):
 			del self.recordings[i]
 			del self.recording_boxes[i]
 
+	def clear_recs(self):
+		for box in self.recording_boxes:
+			self.canvas.delete(box)
+		self.recording_boxes = []
+		self.recordings = []
+
+	def reload(self):
+		self.clear_recs()
+		for _, rec_layer in self.recordr.record.items():
+			for i,rec_obj in enumerate(rec_layer):
+				if rec_obj: self.add_recording(rec_obj,i)
+
 	def find_rec(self,event):
 		item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y),halo=5)[0]
 		if 'rec' not in self.canvas.gettags(item):

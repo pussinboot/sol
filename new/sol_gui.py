@@ -50,6 +50,7 @@ class MainGui:
 
 	def quit(self):
 		self.backend.save_data()
+		self.backend.record.save_data()
 
 	def gen_file_selector(self,fun,s_o_l):
 		# presents file selection and then passes the filename to fun
@@ -63,6 +64,7 @@ class MainGui:
 			if filename:
 				try:
 					fun(filename)
+					return filename
 				except Exception as e:
 					print(e)
 		return fun_tor
@@ -79,12 +81,17 @@ class MainGui:
 		self.library_menu.add_command(label="load",command=self.gen_file_selector(self.backend.load_data,'load'))
 		self.filemenu.add_cascade(label='library',menu=self.library_menu)
 
+		def load_rec():
+			load_fun = self.gen_file_selector(self.backend.record.load_data,'load')
+			res = load_fun()
+			if res: self.audio_bar.progress_bar.reload()
+
 		self.rec_menu = tk.Menu(self.filemenu, tearoff=0)
 		self.rec_menu.add_command(label="save",command=self.backend.record.save_data)
 		self.rec_menu.add_command(label="save as",command=self.gen_file_selector(self.backend.record.save_data,'save'))
-		self.rec_menu.add_command(label="load",command=self.gen_file_selector(self.backend.record.load_data,'load'))
+		self.rec_menu.add_command(label="load",command=load_rec)
 		self.filemenu.add_cascade(label='recording',menu=self.rec_menu)
-		
+
 		self.menubar.add_cascade(label='file',menu=self.filemenu)
 		self.root.config(menu=self.menubar)
 
@@ -95,9 +102,11 @@ def test():
 	root.title('sol_test')
 
 	testgui = MainGui(root)
+	# for testing only
 	testgui.audio_bar.osc_client.build_n_send('/pyaud/open','./test.wav')
+	testgui.backend.record.load_last()
+	testgui.audio_bar.progress_bar.reload()
 	root.mainloop()
-	testgui.backend.record.save_data('test_rec')
 	testgui.quit()
 	#testgui.backend.osc_client.build_n_send("/activelayer/clear",1)
 
