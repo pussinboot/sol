@@ -455,6 +455,7 @@ class RecordR:
 		self.playing = False
 		self.backend = backend
 		self.last_save_file = None
+		self.playback_layers = [False] * self.no_layers
 
 	def set_playing(self,to_what):
 		self.playing = to_what
@@ -487,6 +488,8 @@ class RecordR:
 			rec_obj.timestamp = fixed_time
 			self.record[fixed_time][new_layer] = rec_obj
 			self.record_keeper[rec_obj.fname] = [fixed_time,new_layer]
+			if not any(self.record[old_time]):
+				del self.record[old_time]
 
 	def remove_rec(self,rec_obj):
 		if rec_obj.fname not in self.record_keeper:
@@ -509,13 +512,14 @@ class RecordR:
 		self.record[fixed_time][layer] = command
 		return True
 
-	def play_command(self,time,layer=0): # change so it is all active layers
+	def play_command(self,time): 
 		if time not in self.record:
 			return
-		for layer in range(self.no_layers):
-			if self.record[time][layer]:
-				print(self.record[time][layer])
-				self.backend.change_clip(self.backend.library.clips[self.record[time][layer].fname])
+		for layer, truth_val in enumerate(self.playback_layers):
+			if truth_val:
+				if self.record[time][layer]:
+					print(self.record[time][layer])
+					self.backend.change_clip(self.backend.library.clips[self.record[time][layer].fname])
 
 	def print_self(self):
 		print([item for item in self.record.items()])
@@ -573,7 +577,10 @@ class RecordR:
 		if not os.path.exists('./savedata'): os.makedirs('./savedata')
 		if not filename:
 			if not self.last_save_file:
-				filename = os.path.splitext(self.backend.cur_song.fname)[0]
+				if not self.backend.cur_song.fname:
+					filename = 'last_rec'
+				else:
+					filename = os.path.splitext(self.backend.cur_song.fname)[0]
 				savefile = "./savedata/{}".format(filename)
 			else:
 				savefile = self.last_save_file

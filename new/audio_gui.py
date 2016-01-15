@@ -565,6 +565,40 @@ class RecordingBar(ProgressBar):
 		self.hoverinfo = self.canvas.create_text(-100,-100,anchor=tk.SW,fill='white')
 		self.hoverinfo_bg = self.canvas.create_rectangle(-100,-100,-100,-100,fill='black')
 		self.canvas.bind("<Motion>", Follower(self))
+		self.setup_toggles()
+
+	def setup_toggles(self):
+		# these checkbuttons determine if a layer is active for playback
+		self.toggle_frame = tk.Frame(self.frame)
+		
+		def gen_updater(index):
+			def fun_tor(*args):
+				self.recordr.playback_layers[index] = bool(self.toggle_layer_vars[index].get())
+			return fun_tor
+
+		def toggle_rest(*args):
+			for pbt in self.toggle_layer_buts:
+				pbt.toggle()
+
+		self.toggle_layer_vars = [None] * C.NO_LAYERS
+		self.toggle_layer_buts = [None] * C.NO_LAYERS
+
+		for i in range(C.NO_LAYERS):
+			loop_var = tk.StringVar()
+			loop_var.set('')
+			loop_var.trace('w',gen_updater(i))
+			self.toggle_layer_vars[i] = loop_var
+			pb_layer_toggle = tk.Checkbutton(self.toggle_frame,text='',variable=self.toggle_layer_vars[i],
+										 onvalue='T',offvalue='',pady=3) 
+			pb_layer_toggle.bind("<ButtonPress-3>",toggle_rest)
+			pb_layer_toggle.pack()
+			self.toggle_layer_buts[i] = pb_layer_toggle
+
+
+		self.control_frame.pack_forget()
+		self.toggle_frame.pack(side=tk.LEFT,anchor=tk.NE)
+		self.control_frame.pack(side=tk.LEFT,anchor=tk.E)
+
 
 	def rescale(self):
 		wscale = super().rescale()
@@ -601,6 +635,8 @@ class RecordingBar(ProgressBar):
 			self.canvas.delete(self.recording_boxes[i])
 			del self.recordings[i]
 			del self.recording_boxes[i]
+			print(self.recordings)
+			print(self.recordr.record)
 
 	def clear_recs(self):
 		for box in self.recording_boxes:
