@@ -115,7 +115,7 @@ class Backend:
 				fname = last_save.read()
 				self.load_data(fname)
 				self.load_last_midi()
-				self.record.load_last()
+				#self.record.load_last() dangerous (have to implement dependency on audio track 2 do this)
 
 	def load_last_midi(self):
 		if os.path.exists('./savedata/last_midi'):
