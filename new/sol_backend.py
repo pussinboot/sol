@@ -487,9 +487,13 @@ class RecordR:
 
 	def remove_rec(self,rec_obj):
 		if rec_obj.fname not in self.record_keeper:
+			print(rec_obj,'not found')
 			return
 		[find_t,find_l] = self.record_keeper[rec_obj.fname]
 		self.record[find_t][find_l] = None
+		if not any(self.record[find_t]):
+			del self.record[find_t]
+		self.print_self()
 
 	def add_command(self,command,layer=0):
 		if not self.recording:

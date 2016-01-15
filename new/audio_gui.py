@@ -590,21 +590,22 @@ class RecordingBar(ProgressBar):
 		self.canvas.tag_bind("rec","<ButtonPress-3>",self.rec_drag_begin)
 		self.canvas.tag_bind("rec","<ButtonRelease-3>",self.rec_drag_end)
 		self.canvas.tag_bind("rec","<B3-Motion>",self.rec_drag)
-		self.canvas.tag_bind("rec","<ButtonPress-2>",self.remove_rec)
+		self.canvas.tag_bind("rec","<ButtonRelease-2>",self.remove_rec)
+		#self.canvas.tag_bind("rec","<ButtonPress-1>",self.find_rec)
+
 
 	def remove_rec(self,event):
 		i = self.find_rec(event)
-		print(i)
-		if i:
+		if i >= 0:
 			self.recordr.remove_rec(self.recordings[i])
+			self.canvas.delete(self.recording_boxes[i])
 			del self.recordings[i]
 			del self.recording_boxes[i]
-
 
 	def find_rec(self,event):
 		item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y),halo=5)[0]
 		if 'rec' not in self.canvas.gettags(item):
-			return
+			return -1
 		return self.recording_boxes.index(item)
 
 	def rec_drag_begin(self, event):
