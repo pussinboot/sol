@@ -462,7 +462,7 @@ class RecordR:
 		if self.playing:
 			self.recording = False
 
-	def add_new_clip(self,clip,layer=0):
+	def add_new_clip(self,clip,layer=0): 
 		if not self.recording:
 			return
 		cur_time = self.backend.cur_time.value
@@ -470,12 +470,38 @@ class RecordR:
 			return
 		fixed_time = cur_time - (cur_time % 1024)
 		new_rec = RecordingObject(clip,fixed_time)
+		self.check_fname(new_rec)
 		if fixed_time not in self.record:
 			self.record[fixed_time] = [None] * self.no_layers
 		self.record[fixed_time][layer] = new_rec
 		self.record_keeper[new_rec.fname] = [fixed_time, layer]
 		return new_rec
 		
+	def add_rec(self,rec_obj,layer=0):
+		self.check_fname(rec_obj)
+		timestamp = rec_obj.timestamp
+		if timestamp < 1: 
+			timestamp = int(timestamp * self.backend.cur_song.vars['total_len'])
+		fixed_timestamp = timestamp - (timestamp % 1024)
+		rec_obj.timestamp = fixed_timestamp
+		if fixed_timestamp not in self.record:
+			self.record[fixed_timestamp] = [None] * self.no_layers
+		self.record[fixed_timestamp][layer] = rec_obj
+		self.record_keeper[rec_obj.fname] = [fixed_timestamp, layer]
+		return rec_obj
+
+	def check_fname(self,rec_obj):
+		fname = rec_obj.fname
+		if fname not in self.record_keeper: return
+		split_fname = fname.split("_")
+		if split_fname[-1].isdigit():
+			newnum = int(split_fname[-1]) + 1
+			new_fname = "_".join(split_name[:-1]) + "_" + str(newnum)
+		else:
+			new_fname = fname + "_1"
+		rec_obj.fname = new_fname
+
+
 	def edit_clip_pos(self,rec_obj,new_time,new_layer=0):
 		if rec_obj.fname in self.record_keeper and new_layer < self.no_layers:
 			if new_time < 1:
@@ -499,18 +525,7 @@ class RecordR:
 		self.record[find_t][find_l] = None
 		if not any(self.record[find_t]):
 			del self.record[find_t]
-
-	def add_command(self,command,layer=0):
-		if not self.recording:
-			return
-		cur_time = self.backend.cur_time.value
-		if not cur_time:
-			return
-		fixed_time = cur_time - (cur_time % 1024)
-		if fixed_time not in self.record:
-			self.record[fixed_time] = [None] * self.no_layers
-		self.record[fixed_time][layer] = command
-		return True
+		del self.record_keeper[rec_obj.fname]
 
 	def play_command(self,time): 
 		if time not in self.record:
@@ -523,13 +538,6 @@ class RecordR:
 
 	def print_self(self):
 		print([item for item in self.record.items()])
-
-	def fix_osc(self): # probably wont be used.. 
-		curfun = self.backend.osc_client.build_n_send
-		def newfun(addr,msg):
-			ret_val = curfun(addr,msg)
-			self.add_command(ret_val)
-		self.backend.osc_client.build_n_send = newfun
 
 	### reecording behavior
 
