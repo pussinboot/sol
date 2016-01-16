@@ -22,8 +22,7 @@ class LibraryGui:
 	def __init__(self,maingui,root):
 		self.maingui = maingui
 		self.backend = maingui.backend
-		self.containers = []
-		self.container_labels = []
+		
 		# tk
 		self.root = root
 		self.mainframe = tk.Frame(root)#,height=500,width=600)
@@ -32,15 +31,7 @@ class LibraryGui:
 		self.collectionlabelframe = tk.Frame(self.clipframe)
 		self.searchframe = tk.Frame(self.mainframe,padx=2,pady=1)
 
-		for collection in self.backend.library.clip_collections:
-			new_cont = ContainerCollection(self,self.collectionframe,len(self.containers),collection)
-			self.containers.append(new_cont)
-			self.add_collection_label(new_cont,len(self.containers)-1)
-		if self.backend.cur_col < len(self.containers):
-			self.highlight_col(self.backend.cur_col)
-		else:
-			self.highlight_col()
-			self.backend.cur_col = len(self.containers)-1
+		self.init_cols()
 
 		self.add_col_but = tk.Button(self.collectionlabelframe,text='+',command=self.add_collection)
 		self.go_l_but = tk.Button(self.collectionlabelframe,text='<',command=self.go_left)
@@ -56,6 +47,24 @@ class LibraryGui:
 		self.clipframe.pack(side=tk.LEFT,anchor=tk.E)
 		self.searchframe.pack(expand=True,fill=tk.Y)
 		self.mainframe.pack()
+
+	def init_cols(self):
+		self.containers = []
+		self.container_labels = []
+		for collection in self.backend.library.clip_collections:
+			new_cont = ContainerCollection(self,self.collectionframe,len(self.containers),collection)
+			self.containers.append(new_cont)
+			self.add_collection_label(new_cont,len(self.containers)-1)
+		if self.backend.cur_col < len(self.containers):
+			self.highlight_col(self.backend.cur_col)
+		else:
+			self.highlight_col()
+			self.backend.cur_col = len(self.containers)-1
+
+	def refresh(self):
+		self.init_cols()
+		self.search_or_browse.tree_reset()
+
 
 	def highlight_col(self,index=-1):
 		for cl in self.container_labels:

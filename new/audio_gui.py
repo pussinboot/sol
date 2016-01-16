@@ -550,6 +550,7 @@ class RecordingBar(ProgressBar):
 	def __init__(self,parent,cliporsong,root,recordr,width=1000,height=100):
 		super().__init__(parent,cliporsong,root,width,height)
 
+		self.canvas_frame.dnd_accept = self.dnd_accept
 		self.rec_drag_release_action = None
 
 		self.recordr = recordr
@@ -619,6 +620,23 @@ class RecordingBar(ProgressBar):
 		self.recordings.append(recording_object)
 		self.recording_boxes.append(new_rec)
 
+	def add_recording_from_drop(self,fname,event):
+		relative_y = event.y_root - self.canvas.winfo_rooty()
+		new_layer = min(self.canvas.canvasy(relative_y) // self.layer_height,C.NO_LAYERS-1)
+		new_layer = int(new_layer)
+		new_y = new_layer*self.layer_height
+		new_x = event.x_root - self.canvas.winfo_rootx()
+		if new_x < 0:
+			new_x = 0
+		elif new_x > self.width:
+			new_x = self.width
+		if not fname in self.parent.backend.library.clips: return
+		clip = self.parent.backend.library.clips[fname]
+		new_rec = RecordingObject(clip,new_x/self.width)
+		new_rec = self.recordr.add_rec(new_rec,new_layer)
+		if new_rec:
+			self.add_recording(new_rec,new_layer)
+
 	## rec_obj moving around
 	def actions_binding(self):
 		super().actions_binding()
@@ -635,8 +653,6 @@ class RecordingBar(ProgressBar):
 			self.canvas.delete(self.recording_boxes[i])
 			del self.recordings[i]
 			del self.recording_boxes[i]
-			print(self.recordings)
-			print(self.recordr.record)
 
 	def clear_recs(self):
 		for box in self.recording_boxes:
@@ -712,6 +728,25 @@ class RecordingBar(ProgressBar):
 		self._drag_data["x"] = event.x
 		self._drag_data["y"] = event.y
 
+	def dnd_accept(self, source, event):
+		return self
+
+	def dnd_enter(self, source, event):
+		pass
+
+	def dnd_motion(self, source, event):
+		pass
+		
+	def dnd_leave(self, source, event):
+		pass
+		
+	def dnd_commit(self, source, event):
+		if not source.fname:
+			return
+		self.add_recording_from_drop(source.fname,event) 
+
+	def dnd_end(self,target,event):
+		pass
 class Follower:
 	def __init__(self,parent):
 		self.parent = parent
@@ -733,6 +768,9 @@ class Follower:
 			canvas.itemconfig(self.to_config, text='')
 			canvas.coords(self.to_config,-100,-100)
 			canvas.coords(self.to_config_bg,-100,-100,-100,-100)
+			self.parent._drag_data["item"] = None
+			self.parent._drag_data["x"] = 0
+			self.parent._drag_data["y"] = 0
 		else:
 			rec_obj =self.parent.recordings[self.parent.recording_boxes.index(item)]
 			canvas.itemconfig(self.to_config, text=rec_obj.clip.name)
@@ -742,7 +780,15 @@ class Follower:
 			canvas.coords(self.to_config_bg, *bbox)
 			canvas.tag_raise(self.to_config_bg)
 			canvas.tag_raise(self.to_config)
+			self.parent._drag_data["item"] = item
+			self.parent._drag_data["x"] = event.x
+			self.parent._drag_data["y"] = event.y
 
+### TO DO ###
+# class for editable recording popup
+# get inspo from here
+# https://github.com/pussinboot/sol/blob/master/old/gui_clip_view.py#L191
+# (except make it so changing params changes le clip obj)
 
 class ConnectionSelect:
 	# to-do: 

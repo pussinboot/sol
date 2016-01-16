@@ -75,10 +75,15 @@ class MainGui:
 		self.filemenu = tk.Menu(self.menubar,tearoff=0)
 		self.filemenu.add_command(label='open audio',command=self.audio_bar.open_file)
 
+		def load_lib():
+			load_fun = self.gen_file_selector(self.backend.load_data,'load')
+			res = load_fun()
+			if res: self.library_gui.refresh()
+
 		self.library_menu = tk.Menu(self.filemenu, tearoff=0)
 		self.library_menu.add_command(label="save",command=self.backend.save_data)
 		self.library_menu.add_command(label="save as",command=self.gen_file_selector(self.backend.save_data,'save'))
-		self.library_menu.add_command(label="load",command=self.gen_file_selector(self.backend.load_data,'load'))
+		self.library_menu.add_command(label="load",command=load_lib)
 		self.filemenu.add_cascade(label='library',menu=self.library_menu)
 
 		def load_rec():
