@@ -39,9 +39,8 @@ then can activate patterns with button press or put them @ qp for audio : )
 > not sure
 ===============================
 new to-do
-> dont forget rec_obj editable params ! <- do this 1st i think
+> dont forget rec_obj editable params ! <- do this next :v)
 	gud 2 kno, recorder/the recordbar both hold refs to same rec_objs
 besides writing posts : )
-> fix loading of library so it updates gui
 > add multiple selection stuff so can move multiple clips @ once
 > copy pasta?
