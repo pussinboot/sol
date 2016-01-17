@@ -220,7 +220,7 @@ class ClipControl:
 							   orient=tk.HORIZONTAL, showvalue = 0)
 		speed_box = tk.Spinbox(self.playback_speed_frame,from_=0.0,to=10.0,increment=0.1,format="%.2f",
 							   textvariable=self.looping_vars['speed'], width=4)
-		def send_speed(*args):
+		def send_speed(*args): #### TO-DO add global speedvar
 			speed = float(self.looping_vars['speed'].get())/10.0
 			self.osc_client.build_n_send('/activeclip/video/position/speed',speed)
 		speed_scale.config(command=send_speed)
