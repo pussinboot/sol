@@ -1,10 +1,10 @@
 > add audio server part
 	 combine audio gui with sol_gui
-	 (kinda done)
+	 (kinda done) -> needs to look baller 
 > add recording part
 	so that can represent all the various things 
 	like clip/qp activation and copy pasta patterns : )
-	(kinda done)
+	(y)
 > make sure time variable is properly updating (so that things can be synced to clock of audio)
 	(y)
 ------------------
@@ -39,8 +39,9 @@ then can activate patterns with button press or put them @ qp for audio : )
 > not sure
 ===============================
 new to-do
-> dont forget rec_obj editable params ! <- do this next :v)
-	gud 2 kno, recorder/the recordbar both hold refs to same rec_objs
 besides writing posts : )
+> change in backend -> update the gui
+> complete midi control..
+> find mysterious mem leak :^)
 > add multiple selection stuff so can move multiple clips @ once
 > copy pasta?
