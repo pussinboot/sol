@@ -27,17 +27,17 @@ class Backend:
 	def __init__(self,xmlfile=None,gui=None,ports=(7007,7008)):
 		self.xmlfile = xmlfile
 		self.library = Library(xmlfile)
-		self.search = SearchR(self.library.clips)
-		self.record = RecordR(self)
-		self.last_save_file = None
-
 		self.cur_clip = Clip('',[-1,-1],"no clip loaded")
 		self.cur_song = None
 		self.cur_col = -1
-
+		self.search = SearchR(self.library.clips)
 		self.osc_client = ControlR(self,port=ports[0]) 
 		# self.record.fix_osc() #
 		self.osc_server = ServeR(gui,port=ports[1])
+		self.record = RecordR(self)
+		self.last_save_file = None
+
+
 
 		self.cur_time = RefObj("cur_time")
 		self.cur_clip_pos = RefObj("cur_clip_pos")
@@ -346,8 +346,8 @@ class ControlR:
 		# 	return dt <= factor*single_frame
 
 		def default_loop(time):
-			if not self.current_clip.vars['loopon']:
-				return
+			if not self.current_clip.vars['loopon']: return
+			if self.current_clip.vars['lp'][0] < 0 or self.current_clip.vars['lp'][1] < 0: return
 			playdir = self.current_clip.vars['playdir']
 			if playdir == 0 or playdir == -2:
 				return
@@ -458,7 +458,11 @@ class RecordR:
 		self.backend = backend
 		self.last_save_file = None
 		self.playback_layers = [False] * self.no_layers
-
+		self.pbc_to_command = {">" : self.backend.osc_client.play,
+							  "||" : self.backend.osc_client.pause,
+							   "<" : self.backend.osc_client.reverse,
+							   "*" : self.backend.osc_client.random_play}
+	 
 	def set_playing(self,to_what):
 		self.playing = to_what
 		if self.playing:
@@ -534,9 +538,27 @@ class RecordR:
 			return
 		for layer, truth_val in enumerate(self.playback_layers):
 			if truth_val:
-				if self.record[time][layer]:
-					print(self.record[time][layer])
-					self.backend.change_clip(self.backend.library.clips[self.record[time][layer].fname])
+				cur_rec = self.record[time][layer]
+				if cur_rec:
+					print(cur_rec)
+					rec_clip = self.backend.library.clips[cur_rec.clip_fname]
+					if cur_rec.activate:
+						self.backend.change_clip(rec_clip)
+					if cur_rec.qp_to_activate >= 0:
+						self.backend.osc_client.get_q(rec_clip,cur_rec.qp_to_activate)
+					if cur_rec.playback_control in self.pbc_to_command:
+						self.pbc_to_command[cur_rec.playback_control](rec_clip)
+					if cur_rec.lp_type == 'off':
+						rec_clip.vars['loopon'] = False
+					else:
+						rec_clip.vars['loopon'] = True
+						rec_clip.vars['looptype'] = cur_rec.lp_type
+						rec_clip.vars['lp'] = cur_rec.lp_to_select
+					if cur_rec.speed >= 0:
+						rec_clip.vars['playback_speed'] = cur_rec.speed # doesnt actually do anything yet
+					# to-do figure out how exactly to make sure gui is accurately updated
+
+
 
 	def print_self(self):
 		print([item for item in self.record.items()])
