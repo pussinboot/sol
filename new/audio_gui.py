@@ -656,7 +656,6 @@ class RecordingBar(ProgressBar):
 		if i < 0: return
 		self.last_rec_popup = RecPopUp(self.recordings[i],self)
 
-
 	def remove_rec(self,event):
 		i = self.find_rec(event)
 		if i >= 0:
@@ -836,6 +835,9 @@ class RecPopUp:
 		self.qp_var = tk.StringVar()
 		self.qp_choices = [str(i) for i in range(-1,C.NO_Q)]
 		self.qp_chooser = tk.OptionMenu(self.activate_frame,self.qp_var,*self.qp_choices)
+		def update_qpa(*args):
+			self.rec.qp_to_activate = int(self.qp_var.get())
+		self.qp_var.trace('w',update_qpa)
 		self.qp_label = tk.Label(self.activate_frame,text='qp_act')
 		self.qp_label.grid(row=1,column=0)
 		self.qp_chooser.grid(row=1,column=1)
@@ -843,6 +845,9 @@ class RecPopUp:
 		self.playback_var = tk.StringVar()
 		pb_choices = ["-",">","||","<","*"]
 		self.pb_chooser = tk.OptionMenu(self.activate_frame,self.playback_var,*pb_choices)
+		def update_pb(*args):
+			self.rec.playback_control = self.playback_var.get()
+		self.playback_var.trace('w',update_pb)
 		self.pb_label = tk.Label(self.activate_frame,text='pb_dir')
 		self.pb_label.grid(row=2,column=0)
 		self.pb_chooser.grid(row=2,column=1)
@@ -851,6 +856,9 @@ class RecPopUp:
 		self.loop_type_var = tk.StringVar()
 		loop_choices = ['off','default','bounce']
 		self.loop_chooser = tk.OptionMenu(self.loop_frame,self.loop_type_var,*loop_choices)
+		def update_loop_choice(*args):
+			self.rec.lp_type = self.loop_type_var.get()
+		self.loop_type_var.trace('w',update_loop_choice)
 		self.loop_label = tk.Label(self.loop_frame,text='loop?')
 		self.loop_label.grid(row=0,column=0)
 		self.loop_chooser.grid(row=0,column=1)
@@ -864,10 +872,19 @@ class RecPopUp:
 		self.lp_chooser_r = tk.OptionMenu(self.loop_frame,self.lp_var_r,*self.qp_choices)
 		self.lp_chooser_l.grid(row=1,column=1)
 		self.lp_chooser_r.grid(row=1,column=2)
+		def update_qp_l(*args):
+			self.rec.lp_to_select[0] = int(self.lp_var_l.get())
+		self.lp_var_l.trace('w',update_qp_l)
+		def update_qp_r(*args):
+			self.rec.lp_to_select[1] = int(self.lp_var_r.get())
+		self.lp_var_r.trace('w',update_qp_r)
 
 		self.speed_var = tk.StringVar()
-		self.speed_box = tk.Spinbox(self.loop_frame,from_=-0.1,to=10.0,increment=0.1,format="%.2f",
+		self.speed_box = tk.Spinbox(self.loop_frame,from_=-0.1,to=10.0,increment=0.1,format="%.1f",
 							   textvariable=self.speed_var, width=4)
+		def update_speed(*args):
+			self.rec.speed = float(self.speed_var.get())
+		self.speed_var.trace('w',update_speed)
 		# self.speed_box.config(command=?) # to-do
 		self.speed_label = tk.Label(self.loop_frame,text='speed')
 		self.speed_label.grid(row=2,column=0)
