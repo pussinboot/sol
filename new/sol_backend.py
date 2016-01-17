@@ -427,15 +427,18 @@ class RecordingObject:
 	special object that holds recorded messages	with their timestamps
 	"""
 	def __init__(self,clip,timestamp,activate=False):
-		self.clip = clip # what clip this object is for
-		self.fname = self.clip.fname
+		self.clip_fname = clip.fname # what clip this object is for
+		self.clip_name = clip.name
+		self.fname = self.clip_fname
 		self.timestamp = timestamp # what time this happened
 		self.activate = activate # whether or not to activate the clip
 		self.qp_to_activate = -1 # what cue point to activate @ start (none will do default resolume action)
-		self.playback_control = None # what direction to play the clip in (reverse, paused, play, random)
-		self.lp_to_select = None # what loop points to select
-		self.lp_type = None # what kind of looping to set/turn on
+		self.playback_control = "-" # what direction to play the clip in (default, play, paused, reverse, random)
+		self.lp_to_select = [-1,-1] # what loop points to select
+		self.lp_type = 'off' # what kind of looping to set/turn on
 		# as in if you specify a type of looping it will activate it
+		self.speed = -0.1
+	
 	def __str__(self):
 		return "{0} @ {1}".format(self.clip.name, self.timestamp)
 
@@ -468,7 +471,7 @@ class RecordR:
 		if not cur_time:
 			return
 		fixed_time = cur_time - (cur_time % 1024)
-		new_rec = RecordingObject(clip,fixed_time)
+		new_rec = RecordingObject(clip,fixed_time,activate=True)
 		self.check_fname(new_rec)
 		if fixed_time not in self.record:
 			self.record[fixed_time] = [None] * self.no_layers

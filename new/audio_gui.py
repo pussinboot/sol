@@ -785,7 +785,7 @@ class Follower:
 			#self.parent._drag_data["y"] = 0
 		else:
 			rec_obj =self.parent.recordings[self.parent.recording_boxes.index(item)]
-			canvas.itemconfig(self.to_config, text=rec_obj.clip.name)
+			canvas.itemconfig(self.to_config, text=rec_obj.clip_name)
 			item_coords = canvas.coords(item)
 			canvas.coords(self.to_config, item_coords[0] + 12,item_coords[3])
 			bbox = canvas.bbox(self.to_config)
@@ -798,8 +798,9 @@ class Follower:
 
 class RecPopUp:
 	def __init__(self,rec_obj,record_gui):
-		self.rec = rec_obj
 		self.main_gui = record_gui
+		self.rec = rec_obj
+		self.rec.clip = self.main_gui.recordr.backend.library.clips[self.rec.clip_fname]
 		self.top = tk.Toplevel()
 		self.top.title(self.rec.fname)
 		self.frame = tk.Frame(self.top)
@@ -828,6 +829,9 @@ class RecPopUp:
 		self.activate_cb = tk.Checkbutton(self.activate_frame,text='activate?',variable=self.activate_var,
 									 	  onvalue='T',offvalue='',pady=5) 
 		self.activate_cb.grid(row=0,column=0)
+		def update_activate(*args):
+			self.rec.activate = bool(self.activate_var.get())
+		self.activate_var.trace('w',update_activate)
 
 		self.qp_var = tk.StringVar()
 		self.qp_choices = [str(i) for i in range(-1,C.NO_Q)]
@@ -837,7 +841,7 @@ class RecPopUp:
 		self.qp_chooser.grid(row=1,column=1)
 
 		self.playback_var = tk.StringVar()
-		pb_choices = ["dflt",">","||","<","*"]
+		pb_choices = ["-",">","||","<","*"]
 		self.pb_chooser = tk.OptionMenu(self.activate_frame,self.playback_var,*pb_choices)
 		self.pb_label = tk.Label(self.activate_frame,text='pb_dir')
 		self.pb_label.grid(row=2,column=0)
@@ -851,12 +855,13 @@ class RecPopUp:
 		self.loop_label.grid(row=0,column=0)
 		self.loop_chooser.grid(row=0,column=1)
 
-		self.qp_var = tk.StringVar()
+		self.lp_var_l = tk.StringVar()
+		self.lp_var_r = tk.StringVar()
 		self.lp_choices = [str(i) for i in range(-1,C.NO_Q)]
 		self.lp_label = tk.Label(self.loop_frame,text='loop_p')
 		self.lp_label.grid(row=1,column=0)
-		self.lp_chooser_l = tk.OptionMenu(self.loop_frame,self.qp_var,*self.qp_choices)
-		self.lp_chooser_r = tk.OptionMenu(self.loop_frame,self.qp_var,*self.qp_choices)
+		self.lp_chooser_l = tk.OptionMenu(self.loop_frame,self.lp_var_l,*self.qp_choices)
+		self.lp_chooser_r = tk.OptionMenu(self.loop_frame,self.lp_var_r,*self.qp_choices)
 		self.lp_chooser_l.grid(row=1,column=1)
 		self.lp_chooser_r.grid(row=1,column=2)
 
@@ -872,12 +877,28 @@ class RecPopUp:
 	def update_vars_from_rec(self):
 		# for each tk var set it to current rec_obj var value
 		self.timestamp_label.config(text="timestamp: {}".format(self.rec.timestamp))
-		self.qp_choices = [-1] + [str(i) for i,x in enumerate(self.rec.clip.vars['qp']) if x is not None]
 
+		if self.rec.activate:
+			self.activate_cb.select()
+		else:
+			self.activate_cb.deselect()
+
+		self.playback_var.set(self.rec.playback_control)
+
+		self.loop_type_var.set(self.rec.lp_type)
+		self.speed_var.set(str(self.rec.speed))
+
+		self.qp_choices = [-1] + [str(i) for i,x in enumerate(self.rec.clip.vars['qp']) if x is not None]
 		self.qp_var.set(str(self.rec.qp_to_activate))
-		self.qp_chooser['menu'].delete(0,'end')
+		self.lp_var_l.set(str(self.rec.lp_to_select[0]))
+		self.lp_var_r.set(str(self.rec.lp_to_select[1]))
+		for chooser in [self.qp_chooser,self.lp_chooser_l,self.lp_chooser_r]:
+			chooser['menu'].delete(0,'end')
 		for choice in self.qp_choices:
 			self.qp_chooser['menu'].add_command(label=choice, command=tk._setit(self.qp_var, choice))
+			self.lp_chooser_l['menu'].add_command(label=choice, command=tk._setit(self.lp_var_l, choice))
+			self.lp_chooser_r['menu'].add_command(label=choice, command=tk._setit(self.lp_var_r, choice))
+
 
 
 class ConnectionSelect:
