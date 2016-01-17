@@ -552,6 +552,7 @@ class RecordingBar(ProgressBar):
 
 		self.canvas_frame.dnd_accept = self.dnd_accept
 		self.rec_drag_release_action = None
+		self.last_rec_popup = None
 
 		self.recordr = recordr
 		self.recordings = []
@@ -614,7 +615,10 @@ class RecordingBar(ProgressBar):
 			self.canvas.move(rec_b,deltax,0)
 
 	def add_recording(self,recording_object,i=0):
-		x_coord = recording_object.timestamp / self.parent.backend.cur_song.vars['total_len'] * self.width
+		try:
+			x_coord = recording_object.timestamp / self.parent.backend.cur_song.vars['total_len'] * self.width
+		except:
+			return
 		new_rec = self.canvas.create_rectangle(x_coord,i*self.layer_height,x_coord+self.rec_width,
 			(i+1)*self.layer_height,tags='rec',activefill='#aaa',fill='white')
 		self.recordings.append(recording_object)
@@ -650,7 +654,7 @@ class RecordingBar(ProgressBar):
 	def open_rec_popup(self,event):
 		i = self.find_rec(event)
 		if i < 0: return
-		RecPopUp(self.recordings[i],self)
+		self.last_rec_popup = RecPopUp(self.recordings[i],self)
 
 
 	def remove_rec(self,event):
@@ -797,14 +801,84 @@ class RecPopUp:
 		self.rec = rec_obj
 		self.main_gui = record_gui
 		self.top = tk.Toplevel()
+		self.top.title(self.rec.fname)
 		self.frame = tk.Frame(self.top)
-		self.frame.pack()
+		self.activate_frame = tk.LabelFrame(self.frame,text='activation')
+		self.loop_frame = tk.LabelFrame(self.frame,text='clip params')
+
 
 		self.setup_tk()
+		self.update_vars_from_rec()
+
+		self.frame.pack()
+		self.activate_frame.pack(side=tk.LEFT)
+		self.loop_frame.pack(side=tk.LEFT)
+		# need to make quit/close to set self.main_gui.last_rec_popup = None
+
 
 	def setup_tk(self):
-		self.name_label = tk.Label(self.frame,text=self.rec.clip.name)
+		# top part
+		self.name_label = tk.Label(self.frame,text=self.rec.clip.name,relief='sunken')
+		self.timestamp_label = tk.Label(self.frame,text="",relief='sunken')
 		self.name_label.pack(side=tk.TOP)
+		self.timestamp_label.pack(side=tk.TOP)
+
+		# activate part
+		self.activate_var = tk.StringVar()
+		self.activate_cb = tk.Checkbutton(self.activate_frame,text='activate?',variable=self.activate_var,
+									 	  onvalue='T',offvalue='',pady=5) 
+		self.activate_cb.grid(row=0,column=0)
+
+		self.qp_var = tk.StringVar()
+		self.qp_choices = [str(i) for i in range(-1,C.NO_Q)]
+		self.qp_chooser = tk.OptionMenu(self.activate_frame,self.qp_var,*self.qp_choices)
+		self.qp_label = tk.Label(self.activate_frame,text='qp_act')
+		self.qp_label.grid(row=1,column=0)
+		self.qp_chooser.grid(row=1,column=1)
+
+		self.playback_var = tk.StringVar()
+		pb_choices = ["dflt",">","||","<","*"]
+		self.pb_chooser = tk.OptionMenu(self.activate_frame,self.playback_var,*pb_choices)
+		self.pb_label = tk.Label(self.activate_frame,text='pb_dir')
+		self.pb_label.grid(row=2,column=0)
+		self.pb_chooser.grid(row=2,column=1)
+
+		#loop part
+		self.loop_type_var = tk.StringVar()
+		loop_choices = ['off','default','bounce']
+		self.loop_chooser = tk.OptionMenu(self.loop_frame,self.loop_type_var,*loop_choices)
+		self.loop_label = tk.Label(self.loop_frame,text='loop?')
+		self.loop_label.grid(row=0,column=0)
+		self.loop_chooser.grid(row=0,column=1)
+
+		self.qp_var = tk.StringVar()
+		self.lp_choices = [str(i) for i in range(-1,C.NO_Q)]
+		self.lp_label = tk.Label(self.loop_frame,text='loop_p')
+		self.lp_label.grid(row=1,column=0)
+		self.lp_chooser_l = tk.OptionMenu(self.loop_frame,self.qp_var,*self.qp_choices)
+		self.lp_chooser_r = tk.OptionMenu(self.loop_frame,self.qp_var,*self.qp_choices)
+		self.lp_chooser_l.grid(row=1,column=1)
+		self.lp_chooser_r.grid(row=1,column=2)
+
+		self.speed_var = tk.StringVar()
+		self.speed_box = tk.Spinbox(self.loop_frame,from_=-0.1,to=10.0,increment=0.1,format="%.2f",
+							   textvariable=self.speed_var, width=4)
+		# self.speed_box.config(command=?) # to-do
+		self.speed_label = tk.Label(self.loop_frame,text='speed')
+		self.speed_label.grid(row=2,column=0)
+		self.speed_box.grid(row=2,column=1)
+
+
+	def update_vars_from_rec(self):
+		# for each tk var set it to current rec_obj var value
+		self.timestamp_label.config(text="timestamp: {}".format(self.rec.timestamp))
+		self.qp_choices = [-1] + [str(i) for i,x in enumerate(self.rec.clip.vars['qp']) if x is not None]
+
+		self.qp_var.set(str(self.rec.qp_to_activate))
+		self.qp_chooser['menu'].delete(0,'end')
+		for choice in self.qp_choices:
+			self.qp_chooser['menu'].add_command(label=choice, command=tk._setit(self.qp_var, choice))
+
 
 class ConnectionSelect:
 	# to-do: 

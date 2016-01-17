@@ -431,9 +431,8 @@ class RecordingObject:
 		self.fname = self.clip.fname
 		self.timestamp = timestamp # what time this happened
 		self.activate = activate # whether or not to activate the clip
-		self.seek_point = None # where to seek to in the clip
+		self.qp_to_activate = -1 # what cue point to activate @ start (none will do default resolume action)
 		self.playback_control = None # what direction to play the clip in (reverse, paused, play, random)
-		self.qp_to_activate = None # what cue point to activate
 		self.lp_to_select = None # what loop points to select
 		self.lp_type = None # what kind of looping to set/turn on
 		# as in if you specify a type of looping it will activate it
