@@ -565,7 +565,7 @@ class RecordingBar(ProgressBar):
 			self.layer_lines.append(self.canvas.create_line(0,i*self.layer_height,self.width,i*self.layer_height,fill='gray'))
 		self.hoverinfo = self.canvas.create_text(-100,-100,anchor=tk.SW,fill='white')
 		self.hoverinfo_bg = self.canvas.create_rectangle(-100,-100,-100,-100,fill='black')
-		self.canvas.bind("<Motion>", Follower(self))
+		self.canvas.bind("<Motion>", Follower(self)) #tag_
 		self.setup_toggles()
 
 	def setup_toggles(self):
@@ -589,7 +589,7 @@ class RecordingBar(ProgressBar):
 			loop_var.set('')
 			loop_var.trace('w',gen_updater(i))
 			self.toggle_layer_vars[i] = loop_var
-			pb_layer_toggle = tk.Checkbutton(self.toggle_frame,text='',variable=self.toggle_layer_vars[i],
+			pb_layer_toggle = tk.Checkbutton(self.toggle_frame,text=str(i),variable=self.toggle_layer_vars[i],
 										 onvalue='T',offvalue='',pady=3) 
 			pb_layer_toggle.bind("<ButtonPress-3>",toggle_rest)
 			pb_layer_toggle.pack()
@@ -644,7 +644,14 @@ class RecordingBar(ProgressBar):
 		self.canvas.tag_bind("rec","<ButtonRelease-3>",self.rec_drag_end)
 		self.canvas.tag_bind("rec","<B3-Motion>",self.rec_drag)
 		self.canvas.tag_bind("rec","<ButtonRelease-2>",self.remove_rec)
+		self.canvas.tag_bind("rec","<Double-Button-1>",self.open_rec_popup)
 		#self.canvas.tag_bind("rec","<ButtonPress-1>",self.find_rec)
+
+	def open_rec_popup(self,event):
+		i = self.find_rec(event)
+		if i < 0: return
+		RecPopUp(self.recordings[i],self)
+
 
 	def remove_rec(self,event):
 		i = self.find_rec(event)
@@ -747,6 +754,7 @@ class RecordingBar(ProgressBar):
 
 	def dnd_end(self,target,event):
 		pass
+
 class Follower:
 	def __init__(self,parent):
 		self.parent = parent
@@ -768,9 +776,9 @@ class Follower:
 			canvas.itemconfig(self.to_config, text='')
 			canvas.coords(self.to_config,-100,-100)
 			canvas.coords(self.to_config_bg,-100,-100,-100,-100)
-			self.parent._drag_data["item"] = None
-			self.parent._drag_data["x"] = 0
-			self.parent._drag_data["y"] = 0
+			#self.parent._drag_data["item"] = None
+			#self.parent._drag_data["x"] = 0
+			#self.parent._drag_data["y"] = 0
 		else:
 			rec_obj =self.parent.recordings[self.parent.recording_boxes.index(item)]
 			canvas.itemconfig(self.to_config, text=rec_obj.clip.name)
@@ -784,11 +792,19 @@ class Follower:
 			self.parent._drag_data["x"] = event.x
 			self.parent._drag_data["y"] = event.y
 
-### TO DO ###
-# class for editable recording popup
-# get inspo from here
-# https://github.com/pussinboot/sol/blob/master/old/gui_clip_view.py#L191
-# (except make it so changing params changes le clip obj)
+class RecPopUp:
+	def __init__(self,rec_obj,record_gui):
+		self.rec = rec_obj
+		self.main_gui = record_gui
+		self.top = tk.Toplevel()
+		self.frame = tk.Frame(self.top)
+		self.frame.pack()
+
+		self.setup_tk()
+
+	def setup_tk(self):
+		self.name_label = tk.Label(self.frame,text=self.rec.clip.name)
+		self.name_label.pack(side=tk.TOP)
 
 class ConnectionSelect:
 	# to-do: 

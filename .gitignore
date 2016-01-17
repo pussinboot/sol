@@ -132,3 +132,4 @@ pythonosc/
 pygame/
 new/*.wav
 new/scrot/
+new/savedata/
