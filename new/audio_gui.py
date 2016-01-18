@@ -219,6 +219,13 @@ class AudioBar:
 		### QQ ###
 
 		self.cue_frame = tk.Frame(self.control_frame)
+		self.rec_layer_choice = tk.StringVar()
+		choices = [str(i) for i in range(C.NO_LAYERS)]
+		self.rec_layer_chooser = tk.OptionMenu(self.cue_frame,self.rec_layer_choice,*choices)
+		def update_rec_layer(*args):
+			self.backend.record.recording_layer = int(self.rec_layer_choice.get())
+		self.rec_layer_choice.trace('w',update_rec_layer)
+		self.rec_layer_chooser.pack(side=tk.LEFT)
 		self.cue_buttons = []
 		
 		def gen_activate(i):
@@ -624,11 +631,12 @@ class RecordingBar(ProgressBar):
 			deltax = newx - oldx
 			self.canvas.move(rec_b,deltax,0)
 
-	def add_recording(self,recording_object,i=0):
+	def add_recording(self,recording_object):
 		try:
 			x_coord = recording_object.timestamp / self.parent.backend.cur_song.vars['total_len'] * self.width
 		except:
 			return
+		i = recording_object.layer
 		new_rec = self.canvas.create_rectangle(x_coord,i*self.layer_height,x_coord+self.rec_width,
 			(i+1)*self.layer_height,tags='rec',activefill='#aaa',fill='white')
 		self.recordings.append(recording_object)
@@ -921,8 +929,10 @@ class RecPopUp:
 		# top part
 		self.name_label = tk.Label(self.frame,text=self.rec.clip.name,relief='sunken')
 		self.timestamp_label = tk.Label(self.frame,text="",relief='sunken')
+		self.layer_label = tk.Label(self.frame,text="",relief='sunken')
 		self.name_label.pack(side=tk.TOP)
 		self.timestamp_label.pack(side=tk.TOP)
+		self.layer_label.pack(side=tk.TOP)
 
 		# activate part
 		self.activate_var = tk.StringVar()
@@ -995,6 +1005,7 @@ class RecPopUp:
 	def update_vars_from_rec(self):
 		# for each tk var set it to current rec_obj var value
 		self.timestamp_label.config(text="timestamp: {}".format(self.rec.timestamp))
+		self.layer_label.config(text="layer: {}".format(self.rec.layer))
 
 		if self.rec.activate:
 			self.activate_cb.select()
