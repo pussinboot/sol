@@ -440,7 +440,7 @@ class RecordingObject:
 		self.speed = -0.1
 	
 	def __str__(self):
-		return "{0} @ {1}".format(self.clip.name, self.timestamp)
+		return "{0} @ {1}".format(self.clip_name, self.timestamp)
 
 class RecordR:
 	"""
@@ -516,7 +516,7 @@ class RecordR:
 			[old_time,old_layer] = self.record_keeper[rec_obj.fname]
 			if fixed_time not in self.record:
 				self.record[fixed_time] = [None] * self.no_layers
-			self.record[old_time][old_layer] = None
+			if old_time in self.record: self.record[old_time][old_layer] = None
 			rec_obj.timestamp = fixed_time
 			self.record[fixed_time][new_layer] = rec_obj
 			self.record_keeper[rec_obj.fname] = [fixed_time,new_layer]
