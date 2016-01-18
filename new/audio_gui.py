@@ -570,7 +570,8 @@ class RecordingBar(ProgressBar):
 			self.layer_lines.append(self.canvas.create_line(0,i*self.layer_height,self.width,i*self.layer_height,fill='gray'))
 		self.hoverinfo = self.canvas.create_text(-100,-100,anchor=tk.SW,fill='white')
 		self.hoverinfo_bg = self.canvas.create_rectangle(-100,-100,-100,-100,fill='black')
-		self.canvas.bind("<Motion>", Follower(self)) #tag_
+		self.canvas.bind("<Motion>", Follower(self))
+		self.canvas.bind("<Delete>",self.remove_selected)
 		self.setup_toggles()
 
 	def setup_toggles(self):
@@ -657,6 +658,7 @@ class RecordingBar(ProgressBar):
 		self.canvas.tag_bind("rec","<Control-ButtonPress-1>",self.open_rec_popup)
 
 	def select_rec(self,event):
+		self.canvas.focus_set()
 		i = self.find_rec(event)
 		if i < 0: return
 		for i in self.selected_recs:
@@ -677,6 +679,7 @@ class RecordingBar(ProgressBar):
 		self.canvas.itemconfig(self.recording_boxes[i],width=new_w,outline=new_c)
 
 	def add_select_rec(self,event):
+		self.canvas.focus_set()
 		i = self.find_rec(event)
 		if i < 0: return
 		if i in self.selected_recs:
@@ -698,6 +701,18 @@ class RecordingBar(ProgressBar):
 			self.canvas.delete(self.recording_boxes[i])
 			del self.recordings[i]
 			del self.recording_boxes[i]
+
+	def remove_selected(self,event):
+		for i in self.selected_recs:
+			try:
+				self.recordr.remove_rec(self.recordings[i])
+				self.canvas.delete(self.recording_boxes[i])
+				del self.recordings[i]
+				del self.recording_boxes[i]
+			except:
+				pass
+		self.selected_recs = []
+
 
 	def clear_recs(self):
 		for box in self.recording_boxes:
