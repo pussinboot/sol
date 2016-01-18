@@ -395,6 +395,7 @@ class ProgressBar:
 	def move_bar(self,new_x):
 		self.canvas.coords(self.pbar,new_x,0,new_x,self.height)
 
+
 	# drag n drop
 	def drag_begin(self, event):
 		# record the item and its location
@@ -463,11 +464,12 @@ class ProgressBar:
 
 	def map_osc(self,addr):
 		def mapfun(_,msg):
-			try:
-				float_perc = float(msg)
-				self.move_bar(float_perc*self.width)
-			except:
-				self.move_bar(0)
+			self.move_bar(float(msg)*self.width)
+			# try:
+			# 	float_perc = float(msg)
+			# 	self.move_bar(float_perc*self.width)
+			# except:
+			# 	self.move_bar(0)
 		self.parent.osc_server.map(addr,mapfun)
 
 	def loop_update(self):
@@ -806,14 +808,17 @@ class RecPopUp:
 		self.activate_frame = tk.LabelFrame(self.frame,text='activation')
 		self.loop_frame = tk.LabelFrame(self.frame,text='clip params')
 
-
 		self.setup_tk()
 		self.update_vars_from_rec()
 
 		self.frame.pack()
 		self.activate_frame.pack(side=tk.LEFT)
 		self.loop_frame.pack(side=tk.LEFT)
-		# need to make quit/close to set self.main_gui.last_rec_popup = None
+
+		def close_win(*args):
+			self.main_gui.last_rec_popup = None
+			self.top.destroy()
+		self.top.protocol("WM_DELETE_WINDOW",close_win)
 
 
 	def setup_tk(self):
