@@ -431,6 +431,7 @@ class RecordingObject:
 		self.clip_name = clip.name
 		self.fname = self.clip_fname
 		self.timestamp = timestamp # what time this happened
+		self.layer = 0
 		self.activate = activate # whether or not to activate the clip
 		self.qp_to_activate = -1 # what cue point to activate @ start (none will do default resolume action)
 		self.playback_control = "-" # what direction to play the clip in (default, play, paused, reverse, random)
@@ -452,7 +453,6 @@ class RecordR:
 		# containing the commands at that time : )
 		self.no_layers = C.NO_LAYERS
 		self.record = {} # where everything is written to
-		self.record_keeper = {} # lookup to find where in record something is
 		self.recording = False
 		self.playing = False
 		self.backend = backend
@@ -476,62 +476,47 @@ class RecordR:
 			return
 		fixed_time = cur_time - (cur_time % 1024)
 		new_rec = RecordingObject(clip,fixed_time,activate=True)
-		self.check_fname(new_rec)
+		new_rec.layer = layer
 		if fixed_time not in self.record:
 			self.record[fixed_time] = [None] * self.no_layers
 		self.record[fixed_time][layer] = new_rec
-		self.record_keeper[new_rec.fname] = [fixed_time, layer]
 		return new_rec
 		
 	def add_rec(self,rec_obj,layer=0):
-		self.check_fname(rec_obj)
 		timestamp = rec_obj.timestamp
 		if timestamp < 1: 
 			timestamp = int(timestamp * self.backend.cur_song.vars['total_len'])
 		fixed_timestamp = timestamp - (timestamp % 1024)
 		rec_obj.timestamp = fixed_timestamp
+		rec_obj.layer = layer
 		if fixed_timestamp not in self.record:
 			self.record[fixed_timestamp] = [None] * self.no_layers
 		self.record[fixed_timestamp][layer] = rec_obj
-		self.record_keeper[rec_obj.fname] = [fixed_timestamp, layer]
 		return rec_obj
 
-	def check_fname(self,rec_obj):
-		fname = rec_obj.fname
-		if fname not in self.record_keeper: return
-		split_fname = fname.split("_")
-		if split_fname[-1].isdigit():
-			newnum = int(split_fname[-1]) + 1
-			new_fname = "_".join(split_name[:-1]) + "_" + str(newnum)
-		else:
-			new_fname = fname + "_1"
-		rec_obj.fname = new_fname
-
-
 	def edit_clip_pos(self,rec_obj,new_time,new_layer=0):
-		if rec_obj.fname in self.record_keeper and new_layer < self.no_layers:
+		if rec_obj.timestamp in self.record and new_layer < self.no_layers:
 			if new_time < 1:
 				new_time = int(new_time * self.backend.cur_song.vars['total_len'])
 			fixed_time = new_time - (new_time % 1024)
-			[old_time,old_layer] = self.record_keeper[rec_obj.fname]
+			old_time,old_layer = rec_obj.timestamp, rec_obj.layer
 			if fixed_time not in self.record:
 				self.record[fixed_time] = [None] * self.no_layers
 			if old_time in self.record: self.record[old_time][old_layer] = None
 			rec_obj.timestamp = fixed_time
 			self.record[fixed_time][new_layer] = rec_obj
-			self.record_keeper[rec_obj.fname] = [fixed_time,new_layer]
 			if not any(self.record[old_time]):
 				del self.record[old_time]
 
 	def remove_rec(self,rec_obj):
-		if rec_obj.fname not in self.record_keeper:
+		if rec_obj.timestamp not in self.record:
 			print(rec_obj,'not found')
+			print(self.record)
 			return
-		[find_t,find_l] = self.record_keeper[rec_obj.fname]
+		find_t,find_l = rec_obj.timestamp, rec_obj.layer
 		self.record[find_t][find_l] = None
 		if not any(self.record[find_t]):
 			del self.record[find_t]
-		del self.record_keeper[rec_obj.fname]
 
 	def play_command(self,time): 
 		if time not in self.record:
@@ -618,7 +603,7 @@ class RecordR:
 				savefile = self.last_save_file
 		else:
 			savefile = filename
-		savedata = {'record':self.record,'lookup':self.record_keeper}
+		savedata = {'record':self.record}
 		with open(savefile,'wb') as f:
 			dill.dump(savedata,f)
 			with open('./savedata/last_rec_save','w') as last_save:
@@ -631,7 +616,7 @@ class RecordR:
 		if os.path.exists(savefile):
 			with open(savefile,'rb') as save:
 				savedata = dill.load(save)
-				loaddata = {'record':'self.record','lookup':'self.record_keeper'}
+				loaddata = {'record':'self.record'}
 				for key in loaddata:
 					if key in savedata:
 						exec("{} = savedata[key]".format(loaddata[key]))
