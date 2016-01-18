@@ -394,6 +394,8 @@ class ProgressBar:
 
 	def move_bar(self,new_x):
 		self.canvas.coords(self.pbar,new_x,0,new_x,self.height)
+		### WHY DOES THIS LEAK MEMORY NOBODY KNOWS ###
+		#self.root.update_idletasks() # doesnt fix
 
 
 	# drag n drop
@@ -650,8 +652,39 @@ class RecordingBar(ProgressBar):
 		self.canvas.tag_bind("rec","<ButtonRelease-3>",self.rec_drag_end)
 		self.canvas.tag_bind("rec","<B3-Motion>",self.rec_drag)
 		self.canvas.tag_bind("rec","<ButtonRelease-2>",self.remove_rec)
-		self.canvas.tag_bind("rec","<Double-Button-1>",self.open_rec_popup)
-		#self.canvas.tag_bind("rec","<ButtonPress-1>",self.find_rec)
+		self.canvas.tag_bind("rec","<ButtonPress-1>",self.select_rec)
+		self.canvas.tag_bind("rec","<Shift-ButtonPress-1>",self.add_select_rec)
+		self.canvas.tag_bind("rec","<Control-ButtonPress-1>",self.open_rec_popup)
+
+	def select_rec(self,event):
+		i = self.find_rec(event)
+		if i < 0: return
+		for i in self.selected_recs:
+			self.select_appearance(i,False)
+		if i in self.selected_recs:
+			self.selected_recs = []
+		else:
+			self.selected_recs = [i]
+			self.select_appearance(i,True)
+
+	def select_appearance(self,i,on_off):
+		if on_off:
+			new_w = 3
+			new_c = 'white'
+		else:
+			new_w = 1
+			new_c = 'black'
+		self.canvas.itemconfig(self.recording_boxes[i],width=new_w,outline=new_c)
+
+	def add_select_rec(self,event):
+		i = self.find_rec(event)
+		if i < 0: return
+		if i in self.selected_recs:
+			self.selected_recs.remove(i)
+			self.select_appearance(i,False)
+		else:
+			self.selected_recs.append(i)
+			self.select_appearance(i,True)
 
 	def open_rec_popup(self,event):
 		i = self.find_rec(event)
@@ -679,7 +712,7 @@ class RecordingBar(ProgressBar):
 				if rec_obj: self.add_recording(rec_obj,i)
 
 	def find_rec(self,event):
-		item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y),halo=5)[0]
+		item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y),halo=1)[0]
 		if 'rec' not in self.canvas.gettags(item):
 			return -1
 		return self.recording_boxes.index(item)
@@ -687,8 +720,7 @@ class RecordingBar(ProgressBar):
 	def rec_drag_begin(self, event):
 		# record the item and its location
 		item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y),halo=5)[0]
-		if 'rec' not in self.canvas.gettags(item):
-			return
+		if 'rec' not in self.canvas.gettags(item): return			
 		self._drag_data["item"] = item
 		self._drag_data["x"] = event.x
 		self._drag_data["y"] = event.y
@@ -702,16 +734,21 @@ class RecordingBar(ProgressBar):
 		new_layer = int(new_layer)
 		new_y = new_layer*self.layer_height
 		delta_y = new_y - cury
-		self.canvas.move(self._drag_data["item"], 0, delta_y)
 
-		if self.rec_drag_release_action:
-			newx = self.canvas.canvasx(event.x)
-			if newx < 0:
-				newx = 0
-			elif newx > self.width:
-				newx = self.width
-			i = self.recording_boxes.index(self._drag_data["item"])
-			self.rec_drag_release_action(self.recordings[i],newx/self.width,new_layer)
+		things_to_move = self.selected_recs
+		if self.recording_boxes.index(self._drag_data["item"]) not in things_to_move:
+			things_to_move = [self.recording_boxes.index(self._drag_data["item"])]
+		for i in things_to_move: # replace self._drag_data["item"] w/  self.recording_boxes[i]
+			self.canvas.move(self.recording_boxes[i], 0, delta_y)
+	
+			if self.rec_drag_release_action:
+				newx = self.canvas.coords(self.recording_boxes[i])[0]
+				if newx < 0:
+					newx = 0
+				elif newx > self.width:
+					newx = self.width
+				
+				self.rec_drag_release_action(self.recordings[i],newx/self.width,new_layer)
 		# reset the drag information
 		self._drag_data["item"] = None
 		self._drag_data["label"] = None
@@ -722,8 +759,12 @@ class RecordingBar(ProgressBar):
 		# compute how much this object has moved
 		delta_x = event.x - self._drag_data["x"]
 		delta_y = event.y - self._drag_data["y"]
-		# move the object the appropriate amount
+		# move the object(s) the appropriate amount
+		
 		if self._drag_data["item"]:
+			things_to_move = self.selected_recs
+			if self.recording_boxes.index(self._drag_data["item"]) not in things_to_move:
+				things_to_move = [self.recording_boxes.index(self._drag_data["item"])]
 			[curx,cury] = self.canvas.coords(self._drag_data["item"])[0:2]
 			if curx + delta_x < 0:
 				delta_x = -curx
@@ -733,8 +774,8 @@ class RecordingBar(ProgressBar):
 				delta_y = -cury
 			elif cury + delta_y > self.height:
 				delta_y = self.height - cury	
-			self.canvas.move(self._drag_data["item"], delta_x, delta_y)
-			# for item in self.selected_recs:
+			for i in things_to_move:
+				self.canvas.move(self.recording_boxes[i], delta_x, delta_y)
 
 		# record the new position
 		self._drag_data["x"] = event.x

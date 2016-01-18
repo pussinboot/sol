@@ -200,7 +200,7 @@ class ClipContainer:
 
 	# tkdnd stuff here
 	def press(self, event):
-		if dnd_start(self, event):
+		if dnd_start(TreeClip(self.fname,self.active,self), event):
 			pass
 			#print(self.clip.name,"selected")
 			#print(self.clip.name == self.label['text']) # it has correct name after change
@@ -228,7 +228,7 @@ class ClipContainer:
 		if source.active: self.activate()
 
 	def dnd_end(self,target,event):
-		#print('target:',target)
+		print('target:',target)
 		if target is not None and target != self:
 			self.remove_clip()
 
@@ -243,8 +243,7 @@ class ClipContainer:
 			self.change_text(self.clip.name)
 			# change image, if clip_name is empty / our clip is none, set the img to default img -.-
 			self.label.bind("<ButtonPress-3>", self.press,add="+") # now we can drag it around
-			self.label.bind('<ButtonPress-2>',self.remove_clip) # rightclick 2 remove clip
-			#self.label.bind("<ButtonPress-1>",self.select_clip) # release to select clip # testing
+			self.label.bind('<ButtonPress-2>',self.remove_clip) # middle click 2 remove clip
 
 class ContainerCollection:
 	# gui element that holds multiple clips
@@ -359,14 +358,16 @@ class TreeClip:
 	this is what can be dragged : )
 	needs to be created when you press on a clip in the treeview
 	"""
-	def __init__(self,fname):
+	def __init__(self,fname,active=False,source=None):
 		# note clip is just name of clip, that is used only once dropped 
 		self.fname = fname
-		self.active = False
+		self.active = active
+		self.source = source
 
 	def dnd_end(self,target,event):
-		#print('target:',target)
-		pass
+		if self.source and type(target)==type(self.source):
+			self.source.remove_clip()
+		
 
 if __name__ == '__main__':
 
