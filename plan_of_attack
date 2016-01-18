@@ -43,5 +43,5 @@ besides writing posts : )
 > change in backend -> update the gui
 > complete midi control..
 > find mysterious mem leak :^)
-> add multiple selection stuff so can move multiple clips @ once
-> copy pasta?
+	found, but impossible to fix w/o abandoning tkinter (or can just make gui not show current audio/clip position :v[ )
+
