@@ -458,6 +458,7 @@ class RecordR:
 		self.backend = backend
 		self.last_save_file = None
 		self.playback_layers = [False] * self.no_layers
+		self.recording_layer = 0
 		self.pbc_to_command = {">" : self.backend.osc_client.play,
 							  "||" : self.backend.osc_client.pause,
 							   "<" : self.backend.osc_client.reverse,
@@ -468,7 +469,9 @@ class RecordR:
 		if self.playing:
 			self.recording = False
 
-	def add_new_clip(self,clip,layer=0): 
+	def add_new_clip(self,clip,layer=None): 
+		if not layer:
+			layer = self.recording_layer
 		if not self.recording:
 			return
 		cur_time = self.backend.cur_time.value
