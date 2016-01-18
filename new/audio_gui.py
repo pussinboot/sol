@@ -561,6 +561,8 @@ class RecordingBar(ProgressBar):
 		self.recordr = recordr
 		self.recordings = []
 		self.selected_recs = []
+		self.to_copy = []
+		self.to_cut = []
 		self.recording_boxes = []
 		self.rec_width = 10
 		# self.total_len = self.parent.backend.cur_song.vars['total_len']
@@ -572,6 +574,9 @@ class RecordingBar(ProgressBar):
 		self.hoverinfo_bg = self.canvas.create_rectangle(-100,-100,-100,-100,fill='black')
 		self.canvas.bind("<Motion>", Follower(self))
 		self.canvas.bind("<Delete>",self.remove_selected)
+		self.canvas.bind("<Control-c>",self.copy_begin)
+		self.canvas.bind("<Control-x>",self.cut_begin)
+		self.canvas.bind("<Control-v>",self.paste)		
 		self.setup_toggles()
 
 	def setup_toggles(self):
@@ -713,6 +718,41 @@ class RecordingBar(ProgressBar):
 				pass
 		self.selected_recs = []
 
+	def copy_begin(self,*args):
+		self.to_cut = []
+		self.to_copy = [rec for rec in self.selected_recs]
+
+	def cut_begin(self,*args):
+		self.to_copy = []
+		self.to_cut  = [rec for rec in self.selected_recs]
+
+	def paste(self,*args):
+		def find_leftmost_coords(cut_copy):
+			x_coords = [self.canvas.coords(self.recording_boxes[cc])[0] for cc in cut_copy]
+			return min(x_coords)
+		to_where_x = self.canvas.coords(self.pbar)[0]
+		if self.to_cut != []:
+			dx = to_where_x - find_leftmost_coords(self.to_cut)
+			for cut_me in self.to_cut: # just move them all lol
+				self.canvas.move(self.recording_boxes[cut_me],dx,0)
+				newx = self.canvas.coords(self.recording_boxes[cut_me])[0]
+				if newx < 0: newx = 0
+				elif newx > self.width:	newx = self.width
+				self.rec_drag_release_action(self.recordings[cut_me],newx/self.width)
+			self.to_cut = []
+		elif self.to_copy != []:
+			dx = to_where_x - find_leftmost_coords(self.to_copy)
+			for copy_me in self.to_copy:
+				newx = self.canvas.coords(self.recording_boxes[copy_me])[0] + dx
+				if newx < 0: newx = 0
+				elif newx > self.width:	newx = self.width
+				new_rec, uh_oh = self.recordr.copy_rec(self.recordings[copy_me],newx/self.width)
+				if uh_oh is not None and uh_oh in self.recordings:
+					i = self.recordings.index(uh_oh)
+					self.canvas.delete(self.recording_boxes[i])
+					del self.recordings[i]
+					del self.recording_boxes[i]
+				self.add_recording(new_rec,new_rec.layer)
 
 	def clear_recs(self):
 		for box in self.recording_boxes:
