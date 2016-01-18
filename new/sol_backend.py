@@ -494,7 +494,29 @@ class RecordR:
 		self.record[fixed_timestamp][layer] = rec_obj
 		return rec_obj
 
-	def edit_clip_pos(self,rec_obj,new_time,new_layer=0):
+	def copy_rec(self,rec_obj,new_time):
+		uh_oh = None
+		if new_time < 1:
+			new_time = int(new_time * self.backend.cur_song.vars['total_len'])
+		rec_obj.name = rec_obj.clip_name
+		new_rec = RecordingObject(rec_obj,new_time)
+		new_rec.layer = rec_obj.layer 
+		new_rec.activate =  rec_obj.activate  
+		new_rec.qp_to_activate =  rec_obj.qp_to_activate  
+		new_rec.playback_control = rec_obj.playback_control 
+		new_rec.lp_to_select = rec_obj.lp_to_select 
+		new_rec.lp_type = rec_obj.lp_type 
+		new_rec.speed = rec_obj.speed 
+		if new_time not in self.record:
+			self.record[new_time] = [None] * self.no_layers
+		if self.record[new_time][new_rec.layer] is not None:
+			uh_oh = self.record[new_time][new_rec.layer]
+		self.record[new_time][new_rec.layer] = new_rec
+		return new_rec, uh_oh
+
+	def edit_clip_pos(self,rec_obj,new_time,new_layer=None):
+		if not new_layer:
+			new_layer = rec_obj.layer
 		if rec_obj.timestamp in self.record and new_layer < self.no_layers:
 			if new_time < 1:
 				new_time = int(new_time * self.backend.cur_song.vars['total_len'])
