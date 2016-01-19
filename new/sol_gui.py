@@ -52,7 +52,7 @@ class MainGui:
 		self.setup_menubar()
 
 	# update clip control to reflect changes in clip params or whatever
-	# 
+	# self.clipcontrol.update_info()
 
 	def change_clip(self,newclip):
 		self.backend.change_clip(newclip)

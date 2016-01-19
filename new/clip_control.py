@@ -41,10 +41,7 @@ class ClipControl:
 			self.clip = newclip
 			self.progress_bar.cliporsong = newclip
 		self.update_info()
-		self.update_cue_buttons()
-		self.update_looping()
-		self.update_pbar()
-		self.update_mapping()
+		
 
 	def update_mapping(self):
 		self.osc_client.map_loop()
@@ -105,7 +102,12 @@ class ClipControl:
 
 	def update_info(self): # update me
 		try:
-			if self.clip: self.name_var.set(self.clip.name)
+			if self.clip: 
+				self.name_var.set(self.clip.name)
+				self.update_cue_buttons()
+				self.update_looping()
+				self.update_pbar()
+				self.update_mapping()
 		except:
 			pass
 
