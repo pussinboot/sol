@@ -1,6 +1,6 @@
 > add audio server part
 	 combine audio gui with sol_gui
-	 (kinda done) -> needs to look baller 
+	 (kinda done) -> needs to look baller (y)
 > add recording part
 	so that can represent all the various things 
 	like clip/qp activation and copy pasta patterns : )
@@ -41,19 +41,21 @@ then can activate patterns with button press or put them @ qp for audio : )
 new to-do
 besides writing posts : )
 > change in backend -> update the gui 
-	(kinda done)
+	(y)
 > complete midi control..
 	(needs work lol)
 	still to-do
 	clip_control
 		playback/speedup changing (important that this is reflected in gui)
-		collection paging
+		collection paging (y)
 	looping/cues
-		qp activate
+		qp activate (y)
 		lp select (tricky)
 		loop on/off
+		looping type
 	rec control
-		rec, playback, loop (?)
+		rec, playback (y)
+		, loop (?)
 		channel ????
 
 
@@ -61,3 +63,4 @@ besides writing posts : )
 	found, but impossible to fix w/o abandoning tkinter (or can just make gui not show current audio/clip position :v[ )
 
 > on clip change need to send what is current pos to our timeline control hax otherwise will get crazy jump
+> update config_midi so that it knows what values to expect and can layout the little boxes better than just all in one giant vertical list...
