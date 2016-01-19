@@ -158,7 +158,7 @@ class AudioBar:
 		self.osc_server = self.backend.osc_server
 		self.cur_clip_pos = self.backend.cur_time
 
-		self.control_frame = tk.Frame(self.root)
+		self.control_frame = tk.Frame(self.root,padx=2)
 		self.progress_frame = tk.Frame(self.root)
 		self.progress_bar = RecordingBar(self,self.backend.cur_song,self.progress_frame,self.backend.record)
 		def move_cue(i,x):
@@ -167,9 +167,9 @@ class AudioBar:
 		self.progress_bar.rec_drag_release_action = self.backend.record.edit_clip_pos
 
 		self.progress_frame.pack(side=tk.LEFT,fill=tk.X)
-		self.control_frame.pack(side=tk.LEFT,anchor=tk.E)
+		self.control_frame.pack(side=tk.LEFT,anchor=tk.NE)
 		self.setup_control()
-		
+
 	def start(self):
 		self.osc_map()
 		self.osc_client.build_n_send('/pyaud/querystatus',1)
@@ -177,59 +177,47 @@ class AudioBar:
 
 	def setup_control(self):
 		self.audio_frame = tk.Frame(self.control_frame)
-		self.progress_var = tk.StringVar()
-		self.progress_var.set("--:--")
-		self.progress_time = tk.Label(self.audio_frame,textvariable=self.progress_var)
-		self.progress_time.pack(side=tk.LEFT)
-		# self.open_but = tk.Button(self.audio_frame,text='open',command=self.open_file)
-		# self.open_but.pack(side=tk.LEFT)
 		self.audio_frame.pack()
 
-		# looping/recording control # spaghetti code needs to be rewritten to be similar to clip_control ok
-		self.ugly_frame = tk.Frame(self.control_frame)
-		self.rec_var = tk.StringVar()
-		self.rec_var.set('')
-		self.rec_on_off = tk.Checkbutton(self.ugly_frame,text='rec',variable=self.rec_var,
-									 onvalue='T',offvalue='') 
-		def update_recorder(*args):
-			self.backend.record.recording = bool(self.rec_var.get())
-		self.rec_var.trace('w',update_recorder)
-		self.rec_on_off.pack(side=tk.LEFT)
+		self.vars = {}
 
-		self.playback_var = tk.StringVar()
-		self.playback_var.set('')
-		self.pb_on_off = tk.Checkbutton(self.ugly_frame,text='pb r',variable=self.playback_var,
-									 onvalue='T',offvalue='') 
-		def update_playback(*args):
-			new_pb = bool(self.playback_var.get())
-			self.backend.record.set_playing(new_pb)
-			if new_pb: self.rec_on_off.deselect()
-		self.playback_var.trace('w',update_playback)
-		self.pb_on_off.pack(side=tk.LEFT)
+		self.vars['progress'] = tk.StringVar()
+		self.vars['progress'].set("--:--")
+		self.vars['rec_layer'] = tk.StringVar()
+		self.vars['rec_layer'].set('0')
 
-		self.loop_var = tk.StringVar()
-		self.loop_var.set('')
-		self.loop_on_off = tk.Checkbutton(self.ugly_frame,text='loop',variable=self.loop_var,
-									 onvalue='T',offvalue='') 
-		def update_looper(*args):
-			self.backend.cur_song.vars['loopon'] = bool(self.loop_var.get())
-		self.loop_var.trace('w',update_looper)
-		self.loop_on_off.pack(side=tk.LEFT)
-
-		self.ugly_frame.pack()
-
-		### QQ ###
-
-		self.cue_frame = tk.Frame(self.control_frame)
-		self.rec_layer_choice = tk.StringVar()
-		choices = [str(i) for i in range(C.NO_LAYERS)]
-		self.rec_layer_chooser = tk.OptionMenu(self.cue_frame,self.rec_layer_choice,*choices)
-		def update_rec_layer(*args):
-			self.backend.record.recording_layer = int(self.rec_layer_choice.get())
-		self.rec_layer_choice.trace('w',update_rec_layer)
-		self.rec_layer_chooser.pack(side=tk.LEFT)
-		self.cue_buttons = []
+		def gen_updater(fun):
+			def fun_tor():
+				fun()
+				self.update_rpl()
+			return fun_tor
 		
+		# rec control
+
+		def update_rec_layer(*args):
+			self.backend.record.recording_layer = int(self.vars['rec_layer'].get())
+		self.vars['rec_layer'].trace('w',update_rec_layer)
+
+		self.pb_on_off = tk.Button(self.audio_frame,text='plb',command=gen_updater(self.backend.record.toggle_playing),padx=5,pady=2) 
+		self.rec_on_off = tk.Button(self.audio_frame,text='rec',command=gen_updater(self.backend.record.toggle_recording),padx=5,pady=2) 
+		choices = [str(i) for i in range(C.NO_LAYERS)]
+		self.rec_layer_chooser = tk.OptionMenu(self.audio_frame,self.vars['rec_layer'],*choices)
+
+		self.pb_on_off.grid(row=0,column=0)
+		self.rec_on_off.grid(row=0,column=1)
+		self.rec_layer_chooser.grid(row=0,column=2)
+
+		# loop control
+
+		self.cue_buttons = []
+
+		def toggle_looping():
+			if self.backend.cur_song is not None:
+				self.backend.cur_song.vars['loopon'] = not self.backend.cur_song.vars['loopon']
+
+		self.loop_on_off = tk.Button(self.audio_frame,text='loop',command=gen_updater(toggle_looping),padx=10,pady=6) 
+		self.loop_on_off.grid(row=1,column=2)
+
 		def gen_activate(i):
 			def tor():
 				new = self.osc_client.activate(self.backend.cur_song,i,scale=self.backend.cur_song.vars['total_len']) # add return value
@@ -246,37 +234,47 @@ class AudioBar:
 			return tor
 
 		for i in range(2):
-			but = tk.Button(self.cue_frame,text=str(i),padx=10,pady=10,relief='flat') 
-			but.pack(side=tk.LEFT)
+			but = tk.Button(self.audio_frame,text=str(i),padx=10,pady=10,relief='flat') 
 			but.config(command=gen_activate(i),state='active')
 			but.bind("<ButtonPress-3>",gen_deactivate(i))
+			but.grid(row=1,column=i)
 			self.cue_buttons.append(but)
-		self.cue_frame.pack()
 
-		############ end yuck ############
+		# audio control
 
 		play = self.osc_client.build_msg('/pyaud/pps',1)
 		pause = self.osc_client.build_msg('/pyaud/pps',0)
 		stop = self.osc_client.build_msg('/pyaud/pps',-1)
+		progress_time = tk.Label(self.audio_frame,textvariable=self.vars['progress'],relief='raised',pady=6,padx=10)
 
 		def gen_osc_send(msg):
 			def sender():
 				self.osc_client.send(msg)
 			return sender
 
-		self.playbut =  tk.Button(self.control_frame,text=">",padx=8,pady=4,
+		self.playbut =  tk.Button(self.audio_frame,text=">",padx=8,pady=4,
 							command = gen_osc_send(play),state='disabled')
-		self.pausebut =  tk.Button(self.control_frame,text="||",padx=8,pady=4,
+		self.pausebut =  tk.Button(self.audio_frame,text="||",padx=8,pady=4,
 							command = gen_osc_send(pause),state='disabled')
-		# def stopfun():
-		# 	osc_send = gen_osc_send(stop)
-		# 	osc_send()
-		# 	self.progress_var.set("--:--")
-		# self.stopbut =  tk.Button(self.control_frame,text="[]",padx=8,pady=4,
-		# 					command = stopfun)
-		self.playbut.pack(side=tk.LEFT)
-		self.pausebut.pack(side=tk.LEFT)
-		#self.stopbut.pack(side=tk.LEFT)
+
+		self.playbut.grid(row=2,column=0)
+		self.pausebut.grid(row=2,column=1)
+		progress_time.grid(row=2,column=2)
+
+	def update_rpl(self):
+		if self.backend.record.recording:
+			self.rec_on_off.config(relief='sunken')
+		else:
+			self.rec_on_off.config(relief='raised')
+		if self.backend.record.playing:
+			self.pb_on_off.config(relief='sunken')
+		else:
+			self.pb_on_off.config(relief='raised')
+		if self.backend.cur_song is not None:
+			if self.backend.cur_song.vars['loopon']:
+				self.loop_on_off.config(relief='sunken')
+			else:
+				self.loop_on_off.config(relief='raised')
 
 	def buttons_enabler(self,_,osc_msg):
 		if osc_msg == 'loaded' or osc_msg == 'paused':
@@ -294,9 +292,9 @@ class AudioBar:
 		def sec_to_str(_,osc_msg):
 			try:
 				time_sec = float(osc_msg)
-				self.progress_var.set("%d:%02d"  %  (time_sec // 60.0 , time_sec % 60.0))
+				self.vars['progress'].set("%d:%02d"  %  (time_sec // 60.0 , time_sec % 60.0))
 			except:
-				self.progress_var.set("--:--")
+				self.vars['progress'].set("--:--")
 		def float_to_prog(_,osc_msg):
 			try:
 				float_perc = float(osc_msg)
