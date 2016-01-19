@@ -174,7 +174,6 @@ class AudioBar:
 		self.osc_map()
 		self.osc_client.build_n_send('/pyaud/querystatus',1)
 
-
 	def setup_control(self):
 		self.audio_frame = tk.Frame(self.control_frame)
 		self.audio_frame.pack()
@@ -185,12 +184,6 @@ class AudioBar:
 		self.vars['progress'].set("--:--")
 		self.vars['rec_layer'] = tk.StringVar()
 		self.vars['rec_layer'].set('0')
-
-		def gen_updater(fun):
-			def fun_tor():
-				fun()
-				self.update_rpl()
-			return fun_tor
 		
 		# rec control
 
@@ -198,8 +191,8 @@ class AudioBar:
 			self.backend.record.recording_layer = int(self.vars['rec_layer'].get())
 		self.vars['rec_layer'].trace('w',update_rec_layer)
 
-		self.pb_on_off = tk.Button(self.audio_frame,text='plb',command=gen_updater(self.backend.record.toggle_playing),padx=5,pady=2) 
-		self.rec_on_off = tk.Button(self.audio_frame,text='rec',command=gen_updater(self.backend.record.toggle_recording),padx=5,pady=2) 
+		self.pb_on_off = tk.Button(self.audio_frame,text='plb',command=self.gen_updater(self.backend.record.toggle_playing),padx=5,pady=2) 
+		self.rec_on_off = tk.Button(self.audio_frame,text='rec',command=self.gen_updater(self.backend.record.toggle_recording),padx=5,pady=2) 
 		choices = [str(i) for i in range(C.NO_LAYERS)]
 		self.rec_layer_chooser = tk.OptionMenu(self.audio_frame,self.vars['rec_layer'],*choices)
 
@@ -215,7 +208,7 @@ class AudioBar:
 			if self.backend.cur_song is not None:
 				self.backend.cur_song.vars['loopon'] = not self.backend.cur_song.vars['loopon']
 
-		self.loop_on_off = tk.Button(self.audio_frame,text='loop',command=gen_updater(toggle_looping),padx=10,pady=6) 
+		self.loop_on_off = tk.Button(self.audio_frame,text='loop',command=self.gen_updater(toggle_looping),padx=10,pady=6) 
 		self.loop_on_off.grid(row=1,column=2)
 
 		def gen_activate(i):
@@ -260,6 +253,12 @@ class AudioBar:
 		self.playbut.grid(row=2,column=0)
 		self.pausebut.grid(row=2,column=1)
 		progress_time.grid(row=2,column=2)
+
+	def gen_updater(self,fun):
+		def fun_tor():
+			fun()
+			self.update_rpl()
+		return fun_tor
 
 	def update_rpl(self):
 		if self.backend.record.recording:

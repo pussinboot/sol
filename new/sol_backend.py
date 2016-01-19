@@ -32,7 +32,6 @@ class Backend:
 		self.cur_col = -1
 		self.search = SearchR(self.library.clips)
 		self.osc_client = ControlR(self,port=ports[0]) 
-		# self.record.fix_osc() #
 		self.osc_server = ServeR(gui,port=ports[1])
 		self.record = RecordR(self)
 		self.last_save_file = None
@@ -68,6 +67,7 @@ class Backend:
 
 		}
 		# can also auto-gen some of these for cue select etc
+
 		def gen_selector(i):
 			index = i
 			def fun_tor():
