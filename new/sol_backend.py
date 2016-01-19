@@ -485,10 +485,15 @@ class RecordR:
 							   "*" : self.backend.osc_client.random_play}
 		self.gui_update_command = None
 	 
-	def set_playing(self,to_what):
-		self.playing = to_what
+	def toggle_playing(self):
+		self.playing = not self.playing
 		if self.playing:
 			self.recording = False
+
+	def toggle_recording(self):
+		self.recording = not self.recording
+		if self.recording:
+			self.playing = False
 
 	def add_new_clip(self,clip,layer=None): 
 		if not layer:
