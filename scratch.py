@@ -90,3 +90,6 @@
 # 	print(item)
 # print(1 in test_dict)
 
+for i in range(3):
+	pass
+print(i)

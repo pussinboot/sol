@@ -30,22 +30,34 @@ class MainGui:
 
 		# sol
 		self.backend = Backend(fname,self,ports=(7000,7001))
+		# self.backend.setup_midi()
+		self.backend.load_last() #
 		self.backend.select_clip = self.change_clip
 		self.library_gui = LibraryGui(self,self.library_frame)
 		self.clipcontrol = ClipControl(self.cc_frame,self.backend)
+
+		def update_gui_clip(clip):
+			self.clipcontrol.change_clip(clip)
+			self.library_gui.select_active()
+
+		self.backend.record.gui_update_command = update_gui_clip
 		self.backend.osc_server.start()
 		self.backend.osc_client.map_loop()
 		self.backend.osc_client.map_timeline()
-
 		self.change_clip(self.backend.cur_clip)
 		# audio stuff
 		self.audio_bar = AudioBar(self,self.bot_frame,self.backend)
+		self.audio_bar.start()
 		# menu
 		self.setup_menubar()
+
+	# update clip control to reflect changes in clip params or whatever
+	# 
 
 	def change_clip(self,newclip):
 		self.backend.change_clip(newclip)
 		self.clipcontrol.change_clip(newclip)
+		self.library_gui.select_if_cur()
 		rec_obj = self.backend.record.add_new_clip(newclip)
 		if rec_obj: self.audio_bar.progress_bar.add_recording(rec_obj)
 
@@ -61,7 +73,7 @@ class MainGui:
 		else:
 			ask_fun = tkfd.askopenfilename
 		def fun_tor():
-			filename = ask_fun(parent=self.root,title='Choose a file')
+			filename = ask_fun(parent=self.root,title='Choose a file',initialdir='./savedata')
 			if filename:
 				try:
 					fun(filename)

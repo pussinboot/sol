@@ -3,8 +3,8 @@
 """
 ______________________________
 | [    clip name            ]|
-| [    lil #s       (canvas)]|
 | [    timeline w/ lines    ]| top half - progress frame
+| [    lil #s       (canvas)]|
 |____________________________|
 | [0, 1, 2, 3]|   play ctrl  |
 | [cue points]|    params    | bottom half - control frame
@@ -103,7 +103,7 @@ class ClipControl:
 
 		self.frame.pack()
 
-	def update_info(self):
+	def update_info(self): # update me
 		try:
 			if self.clip: self.name_var.set(self.clip.name)
 		except:

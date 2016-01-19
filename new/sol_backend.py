@@ -37,8 +37,6 @@ class Backend:
 		self.record = RecordR(self)
 		self.last_save_file = None
 
-
-
 		self.cur_time = RefObj("cur_time")
 		self.cur_clip_pos = RefObj("cur_clip_pos")
 
@@ -46,7 +44,6 @@ class Backend:
 			try:				# add going through log file and redoing it in playback mode
 								# plus making of the log file in record mode
 				self.cur_time.value = int(msg)
-				#print(self.cur_time)
 			except:
 				pass
 		self.osc_server.map("/pyaud/pos/frame",update_time)
@@ -55,7 +52,6 @@ class Backend:
 				self.cur_song.vars['total_len'] = int(msg)
 		self.osc_server.map("/pyaud/pos/frame",update_time)
 		self.osc_server.map("/pyaud/info/song_len",update_song_info)
-		# self.osc_server.map("/midi",print)
 		self.osc_server.map("/activeclip/video/position/values",self.cur_clip_pos.update_generator('float'))
 		### MIDI CONTROL
 		# basically, here are the descriptions that map to functions
@@ -80,9 +76,11 @@ class Backend:
 		for i in range(C.NO_Q):
 			self.desc_to_fun['clip_{}'.format(i)] = gen_selector(i)
 		# no clue how im going to add midi out.. for now
+		self.midi_control = None
+		#self.load_last()
 
+	def setup_midi(self):
 		self.midi_control = MidiControl(self)
-		self.load_last()
 
 	def save_data(self,savefile=None):
 		if not os.path.exists('./savedata'): os.makedirs('./savedata')
@@ -125,7 +123,7 @@ class Backend:
 			with open('./savedata/last_save') as last_save:
 				fname = last_save.read()
 				self.load_data(fname)
-				self.load_last_midi()
+				if self.midi_control is not None: self.load_last_midi()
 				#self.record.load_last() dangerous (have to implement dependency on audio track 2 do this)
 
 	def load_last_midi(self):
@@ -485,6 +483,7 @@ class RecordR:
 							  "||" : self.backend.osc_client.pause,
 							   "<" : self.backend.osc_client.reverse,
 							   "*" : self.backend.osc_client.random_play}
+		self.gui_update_command = None
 	 
 	def set_playing(self,to_what):
 		self.playing = to_what
@@ -571,6 +570,7 @@ class RecordR:
 	def play_command(self,time): 
 		if time not in self.record:
 			return
+		rec_clip = None
 		for layer, truth_val in enumerate(self.playback_layers):
 			if truth_val:
 				cur_rec = self.record[time][layer]
@@ -592,6 +592,8 @@ class RecordR:
 					if cur_rec.speed >= 0:
 						rec_clip.vars['playback_speed'] = cur_rec.speed # doesnt actually do anything yet
 					# to-do figure out how exactly to make sure gui is accurately updated
+		if self.gui_update_command is not None and rec_clip is not None:
+			self.gui_update_command(rec_clip)
 
 
 
@@ -632,8 +634,8 @@ class RecordR:
 			try:
 				default_playback(curframe)
 			except Exception as e:
-				#print(e)
-				pass
+				print(e)
+				#pass
 
 		self.backend.osc_server.map_replace(osc_marker,"/pyaud/pos/float",map_float)
 		self.backend.osc_server.map_replace(osc_marker+"_","/pyaud/pos/frame",map_frame)

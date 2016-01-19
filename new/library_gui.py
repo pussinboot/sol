@@ -65,6 +65,24 @@ class LibraryGui:
 		self.init_cols()
 		self.search_or_browse.tree_reset()
 
+	def select_active(self):
+		for i, col in enumerate(self.containers):
+			if col.last_active is not None: # deactivate everything
+				col.last_active.deactivate()
+				col.last_active = None
+			clip_fnames = [clip.fname for clip in self.backend.library.clip_collections[i] if clip is not None]
+			if self.backend.cur_clip.fname in clip_fnames:
+				cont_i = clip_fnames.index(self.backend.cur_clip.fname)
+				col.clip_conts[cont_i].activate(pass_=True)
+				if i != self.backend.cur_col: self.highlight_col(i)
+				return
+
+	def select_if_cur(self):
+		col = self.containers[self.backend.cur_col]
+		clip_fnames = [clip.fname for clip in self.backend.library.clip_collections[self.backend.cur_col] if clip is not None]
+		if self.backend.cur_clip.fname in clip_fnames:
+			cont_i = clip_fnames.index(self.backend.cur_clip.fname)
+			col.clip_conts[cont_i].activate(pass_=True)
 
 	def highlight_col(self,index=-1):
 		for cl in self.container_labels:
