@@ -133,3 +133,7 @@ pygame/
 new/*.wav
 new/scrot/
 new/savedata/
+new/savedata/last_save
+new/savedata/last_rec_save
+new/savedata/last_rec
+old/sample_clip.PNG

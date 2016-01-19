@@ -40,8 +40,24 @@ then can activate patterns with button press or put them @ qp for audio : )
 ===============================
 new to-do
 besides writing posts : )
-> change in backend -> update the gui
+> change in backend -> update the gui 
+	(kinda done)
 > complete midi control..
+	(needs work lol)
+	still to-do
+	clip_control
+		playback/speedup changing (important that this is reflected in gui)
+		collection paging
+	looping/cues
+		qp activate
+		lp select (tricky)
+		loop on/off
+	rec control
+		rec, playback, loop (?)
+		channel ????
+
+
 > find mysterious mem leak :^)
 	found, but impossible to fix w/o abandoning tkinter (or can just make gui not show current audio/clip position :v[ )
 
+> on clip change need to send what is current pos to our timeline control hax otherwise will get crazy jump
