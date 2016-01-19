@@ -8,6 +8,8 @@ from sol_backend import Backend
 from clip_control import ClipControl
 from library_gui import LibraryGui
 from audio_gui import AudioBar
+import CONSTANTS as C
+
 class MainGui:
 	def __init__(self,root,fname=None):
 
@@ -30,18 +32,18 @@ class MainGui:
 
 		# sol
 		self.backend = Backend(fname,self,ports=(7000,7001))
-		# self.backend.setup_midi()
 		self.backend.load_last() #
 		self.backend.select_clip = self.change_clip
 		self.library_gui = LibraryGui(self,self.library_frame)
 		self.clipcontrol = ClipControl(self.cc_frame,self.backend)
 
+		# record -> update gui
 		def update_gui_clip(clip):
 			self.clipcontrol.change_clip(clip)
 			self.library_gui.select_active()
 
 		self.backend.record.gui_update_command = update_gui_clip
-		self.backend.osc_server.start()
+
 		self.backend.osc_client.map_loop()
 		self.backend.osc_client.map_timeline()
 		self.change_clip(self.backend.cur_clip)
@@ -50,9 +52,36 @@ class MainGui:
 		self.audio_bar.start()
 		# menu
 		self.setup_menubar()
+		# midi
+		self.add_midi_commands()
+		# self.backend.setup_midi()
+		self.backend.osc_server.start()
+
 
 	# update clip control to reflect changes in clip params or whatever
 	# self.clipcontrol.update_info()
+	def add_midi_commands(self):
+		# library gui related
+		self.backend.desc_to_fun['col_go_l'] = self.library_gui.go_left
+		self.backend.desc_to_fun['col_go_r'] = self.library_gui.go_right
+		# clip control related
+		def gen_q_selector(i):
+			index = i
+			def fun_tor():
+				self.backend.osc_client.activate(self.cur_clip,index) 
+				# self.clipcontrol.update_cue_buttons() # not sure if i should do it like this 
+				# or set the command to be just clicking on the gui part so as to not convolute further
+			return fun_tor
+		for i in range(C.NO_Q):
+			self.backend.desc_to_fun['cue_{}'.format(i)] = gen_q_selector(i)
+		# add looping toggle (may need to change loop thing to be a button that toggles like in audiobar)
+		# add looping type toggle
+		# add loop point selector # this will b tricky..
+		# add the various speedup increment/decrement binds ... this will prob have to go thru gui, easiest way tbh
+		# recording related
+		self.backend.desc_to_fun['record_playback'] = self.audio_bar.gen_updater(self.backend.record.toggle_playing)
+		self.backend.desc_to_fun['record_record'] = self.audio_bar.gen_updater(self.backend.record.toggle_recording)
+
 
 	def change_clip(self,newclip):
 		self.backend.change_clip(newclip)
