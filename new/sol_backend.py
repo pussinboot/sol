@@ -64,10 +64,21 @@ class Backend:
 		# which are then mapped thru the osc server to figure out 
 		# what to do with the note value (different types of notes)
 		self.desc_to_fun = {
-			'clip_play'  : self.osc_client.play  ,
-			'clip_pause' : self.osc_client.pause
+			'clip_play'    : self.osc_client.play         ,
+			'clip_pause'   : self.osc_client.pause        ,
+			'clip_reverse' : self.osc_client.reverse      ,
+			'clip_random'  : self.osc_client.random_play  ,
+			'clip_clear'   : self.osc_client.clear        ,
+
 		}
 		# can also auto-gen some of these for cue select etc
+		def gen_selector(i):
+			index = i
+			def fun_tor():
+				self.select_clip(self.library.clip_collections[self.cur_col][index])
+			return fun_tor
+		for i in range(C.NO_Q):
+			self.desc_to_fun['clip_{}'.format(i)] = gen_selector(i)
 		# no clue how im going to add midi out.. for now
 
 		self.midi_control = MidiControl(self)
@@ -126,6 +137,9 @@ class Backend:
 	def change_clip(self,newclip):
 		self.cur_clip = newclip
 		self.osc_client.select_clip(newclip)
+
+	def select_clip(self,newclip): # function to be overwritten : )
+		self.change_clip(newclip)
 		#check_it = self.record.add_command(newclip.fname)
 		#if check_it: 
 		#	print('changed clip @',self.cur_time.value)
@@ -279,6 +293,14 @@ class ControlR:
 		self.reverse = gen_control_sender('/activeclip/video/position/direction',0,-1)
 		self.pause = gen_control_sender('/activeclip/video/position/direction',2,0)
 		self.random_play = gen_control_sender('/activeclip/video/position/direction',3,-2)
+
+		def clear_clip():
+			self.build_n_send('/activelayer/clear', 1)# depends 
+			# if activating clip activates on own layer or on activelayer..
+			# '/layer{}/clear'.format(self.clip.loc[0])
+			self.backend.cur_clip = Clip('',[-1,-1],"no clip loaded")
+		self.clear = clear_clip
+
 
 	### REAL CONTROL HAX
 	# change effect1 to bypass
@@ -486,6 +508,7 @@ class RecordR:
 		return new_rec
 		
 	def add_rec(self,rec_obj,layer=0):
+		if self.backend.cur_song is None or self.backend.cur_song.vars['total_len'] is None: return
 		timestamp = rec_obj.timestamp
 		if timestamp < 1: 
 			timestamp = int(timestamp * self.backend.cur_song.vars['total_len'])
@@ -498,6 +521,7 @@ class RecordR:
 		return rec_obj
 
 	def copy_rec(self,rec_obj,new_time):
+		if self.backend.cur_song is None or self.backend.cur_song.vars['total_len'] is None: return
 		uh_oh = None
 		if new_time < 1:
 			new_time = int(new_time * self.backend.cur_song.vars['total_len'])
@@ -518,6 +542,7 @@ class RecordR:
 		return new_rec, uh_oh
 
 	def edit_clip_pos(self,rec_obj,new_time,new_layer=None):
+		if self.backend.cur_song is None or self.backend.cur_song.vars['total_len'] is None: return
 		if not new_layer:
 			new_layer = rec_obj.layer
 		if rec_obj.timestamp in self.record and new_layer < self.no_layers:
@@ -662,7 +687,8 @@ if __name__ == '__main__':
 	# print(test_lib.clip_names)
 	# print(test_lib.clips['D:\\Downloads\\DJ\\vj\\vids\\organized\\gundam\\dxv\\Cca Amuro Vs Cute Gril.mov'].params)
 	import time
-	bb = Backend('./test_ex.avc')
+	bb = Backend('../old/test.avc')
+	#bb = Backend('./test_ex.avc')
 	bb.save_data()
 	#bb = Backend()
 	#print(bb.xmlfile)

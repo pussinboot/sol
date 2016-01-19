@@ -189,9 +189,7 @@ class ClipControl:
 		rndbut = tk.Button(self.control_button_frame,text="*",padx=8,pady=8,
 			command=lambda:self.osc_client.random_play(self.clip))
 		clearbut = tk.Button(self.control_button_frame,text="X",padx=8,pady=8,
-			command=self.gen_osc_sender('/activelayer/clear',1)) # depends 
-										# if activating clip activates on own layer or on activelayer..
-										# '/layer{}/clear'.format(self.clip.loc[0])
+			command=lambda:self.osc_client.clear())
 
 		for but in [playbut, pausebut, rvrsbut, rndbut, clearbut]:
 			but.pack(side=tk.LEFT)

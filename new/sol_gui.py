@@ -30,6 +30,7 @@ class MainGui:
 
 		# sol
 		self.backend = Backend(fname,self,ports=(7000,7001))
+		self.backend.select_clip = self.change_clip
 		self.library_gui = LibraryGui(self,self.library_frame)
 		self.clipcontrol = ClipControl(self.cc_frame,self.backend)
 		self.backend.osc_server.start()
