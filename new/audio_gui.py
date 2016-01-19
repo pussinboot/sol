@@ -169,6 +169,8 @@ class AudioBar:
 		self.progress_frame.pack(side=tk.LEFT,fill=tk.X)
 		self.control_frame.pack(side=tk.LEFT,anchor=tk.E)
 		self.setup_control()
+		
+	def start(self):
 		self.osc_map()
 		self.osc_client.build_n_send('/pyaud/querystatus',1)
 
@@ -266,15 +268,15 @@ class AudioBar:
 							command = gen_osc_send(play),state='disabled')
 		self.pausebut =  tk.Button(self.control_frame,text="||",padx=8,pady=4,
 							command = gen_osc_send(pause),state='disabled')
-		def stopfun():
-			osc_send = gen_osc_send(stop)
-			osc_send()
-			self.progress_var.set("--:--")
-		self.stopbut =  tk.Button(self.control_frame,text="[]",padx=8,pady=4,
-							command = stopfun)
+		# def stopfun():
+		# 	osc_send = gen_osc_send(stop)
+		# 	osc_send()
+		# 	self.progress_var.set("--:--")
+		# self.stopbut =  tk.Button(self.control_frame,text="[]",padx=8,pady=4,
+		# 					command = stopfun)
 		self.playbut.pack(side=tk.LEFT)
 		self.pausebut.pack(side=tk.LEFT)
-		self.stopbut.pack(side=tk.LEFT)
+		#self.stopbut.pack(side=tk.LEFT)
 
 	def buttons_enabler(self,_,osc_msg):
 		if osc_msg == 'loaded' or osc_msg == 'paused':
@@ -631,12 +633,15 @@ class RecordingBar(ProgressBar):
 			deltax = newx - oldx
 			self.canvas.move(rec_b,deltax,0)
 
-	def add_recording(self,recording_object):
+	def add_recording(self,recording_object,layer=None):
 		try:
 			x_coord = recording_object.timestamp / self.parent.backend.cur_song.vars['total_len'] * self.width
 		except:
 			return
-		i = recording_object.layer
+		if layer is None:
+			i = recording_object.layer
+		else:
+			i = layer
 		new_rec = self.canvas.create_rectangle(x_coord,i*self.layer_height,x_coord+self.rec_width,
 			(i+1)*self.layer_height,tags='rec',activefill='#aaa',fill='white')
 		self.recordings.append(recording_object)
