@@ -43,18 +43,19 @@ besides writing posts : )
 > change in backend -> update the gui 
 	(y)
 > complete midi control..
-	(needs work lol)
+	(y)
 	still to-do
 	clip_control
-		playback/speedup changing (important that this is reflected in gui)
+		playback/speedup changing (y)
 		collection paging (y)
 	looping/cues
 		qp activate (y)
-		lp select (tricky)
-		loop on/off
-		looping type
+		lp select (y)
+		loop on/off (y)
+		looping type (y)
 	rec control
 		rec, playback (y)
+	___ the below im not sure are needed ___
 		, loop (?)
 		channel ????
 
@@ -65,3 +66,4 @@ besides writing posts : )
 > on clip change need to send what is current pos to our timeline control hax otherwise will get crazy jump
 	(y)
 > update config_midi so that it knows what values to expect and can layout the little boxes better than just all in one giant vertical list...
+	(y)
