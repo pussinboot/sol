@@ -81,7 +81,7 @@ class ConfigGui:
 							 'pb_speed', 'pb_speed_0', 'ct_speed', 'ct_speed_0']
 		#rec_control_inps = ['record_playback', 'record_record']
 		clip_select_inps = ['clip_{}'.format(i) for i in range(C.NO_Q)] + ['clip_clear','col_go_l', 'col_go_r']
-		cue_select_inps = ['cue_{}'.format(i) for i in range(C.NO_Q)] #+ [loop controls?]
+		cue_select_inps = ['cue_{}'.format(i) for i in range(C.NO_Q)] + ['lp_select', 'qp_delete']
 		all_inps = [clip_control_inps, clip_select_inps, cue_select_inps]
 		for i,inp in enumerate(all_inps):
 			for x,desc in enumerate(inp):

@@ -158,14 +158,17 @@ class ClipControl:
 				self.progress_bar.remove_line(i)
 			return tor
 
+		self.activate_funs = [gen_activate(i) for i in range(C.NO_Q)]
+		self.deactivate_funs = [gen_deactivate(i) for i in range(C.NO_Q)]
+
 		for r in range(n_rows):
 			for c in range(4):
 				i = r*4 + c
 				but = self.cue_buttons[i]
 				# tie it to fxn of q_points
 				if i + 1 <= n_buts:
-					but.config(command=gen_activate(r*4+c),state='active')
-					but.bind("<ButtonPress-3>",gen_deactivate(r*4+c))
+					but.config(command=self.activate_funs[i],state='active')
+					but.bind("<ButtonPress-3>",self.deactivate_funs[i])
 					self.progress_bar.remove_line(i) # remove old shit
 				else:
 					but.config(state='disabled')
@@ -272,6 +275,10 @@ class ClipControl:
 				for _ in range(-1*n): self.speedup_decrease()
 		else:
 			self.looping_vars['control_speed'].set("%.2f" % C.MAX_SPEEDUP * n)
+
+	def change_lp(self,new_lp):
+		self.looping_vars['loop_a'].set(str(new_lp[0]))
+		self.looping_vars['loop_b'].set(str(new_lp[1]))
 
 	def update_looping(self):
 		# set all variables to their current values

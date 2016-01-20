@@ -53,6 +53,9 @@ class MainGui:
 		# menu
 		self.setup_menubar()
 		# midi
+		self.setting_lp = False
+		self.delete_q = False
+		self.last_lp = []
 		self.add_midi_commands()
 		if midi_on:
 			self.backend.setup_midi()
@@ -70,9 +73,8 @@ class MainGui:
 		def gen_q_selector(i):
 			index = i
 			def fun_tor():
-				self.backend.osc_client.activate(self.cur_clip,index) 
-				# self.clipcontrol.update_cue_buttons() # not sure if i should do it like this 
-				# or set the command to be just clicking on the gui part so as to not convolute further
+				# self.backend.osc_client.activate(self.cur_clip,index) 
+				self.cue_handler(index)
 			return fun_tor
 		for i in range(C.NO_Q):
 			self.backend.desc_to_fun['cue_{}'.format(i)] = gen_q_selector(i)
@@ -80,6 +82,9 @@ class MainGui:
 		self.backend.desc_to_fun['loop_i/o'] = self.clipcontrol.toggle_looping
 		self.backend.desc_to_fun['loop_type'] = self.clipcontrol.toggle_loop_type
 		# add loop point selector # this will b tricky..
+		self.backend.desc_to_fun['lp_select'] = self.toggle_setting_lp
+		self.backend.desc_to_fun['qp_delete'] = self.toggle_delete_q
+
 		# add the various speedup increment/decrement binds ... this will prob have to go thru gui, easiest way tbh
 		self.backend.desc_to_fun['pb_speed'] = self.clipcontrol.change_speed
 		self.backend.desc_to_fun['pb_speed_0'] = lambda: self.clipcontrol.change_speed(1.0)
@@ -99,6 +104,26 @@ class MainGui:
 			if rec_obj: self.audio_bar.progress_bar.add_recording(rec_obj)
 		else:
 			self.library_gui.deselect_last()
+
+	def toggle_setting_lp(self):
+		self.setting_lp = not self.setting_lp
+
+	def toggle_delete_q(self):
+		self.delete_q = True
+
+	def cue_handler(self,i):
+		if self.setting_lp:
+			self.last_lp.append(i)
+			if len(self.last_lp) == 2:
+				self.clipcontrol.change_lp(self.last_lp) # update lp points
+				self.setting_lp = False
+				self.last_lp = []
+		else:
+			if self.delete_q:
+				self.clipcontrol.deactivate_funs(i)
+				self.delete_q = False
+			else:
+				self.clipcontrol.activate_funs(i)
 
 	def quit(self):
 		self.backend.save_data()
