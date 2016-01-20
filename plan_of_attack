@@ -67,3 +67,14 @@ besides writing posts : )
 	(y)
 > update config_midi so that it knows what values to expect and can layout the little boxes better than just all in one giant vertical list...
 	(y)
+====================================
+ultra updated new and improved to-do
+====================================
+> load library from avc (xml) file
+> update library on load of above
+> recording trick to abuse resolume built-in recording.. 
+	> will have to look @ folder for new file.. but it takes some time...
+> record next loop
+	> cycle thru the layers as you loop then can compare the layers
+> FX as pseudo-clips
+> add tags to library/clip-control (under clip name)
