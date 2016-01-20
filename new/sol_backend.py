@@ -52,6 +52,7 @@ class Backend:
 		self.osc_server.map("/pyaud/pos/frame",update_time)
 		self.osc_server.map("/pyaud/info/song_len",update_song_info)
 		self.osc_server.map("/activeclip/video/position/values",self.cur_clip_pos.update_generator('float'))
+
 		### MIDI CONTROL
 		# basically, here are the descriptions that map to functions
 		# then in the midi config it reads the keys and figures out 
@@ -133,6 +134,7 @@ class Backend:
 				self.midi_control.map_midi(fname)
 
 	def change_clip(self,newclip):
+		self.cur_clip.last_pos = self.cur_clip_pos.value
 		self.cur_clip = newclip
 		self.osc_client.select_clip(newclip)
 
@@ -253,7 +255,15 @@ class ControlR:
 	def select_clip(self,clip):
 		addr = "/layer{0}/clip{1}/connect".format(*clip.loc)
 		self.build_n_send(addr,1)
+		# in case activating clip does not jump to start this needs to be always
+		# for now can only control if paused anyways
+		print(clip.vars['playdir'],clip.last_pos)
+		if clip.vars['playdir'] == 0:
+			if clip.last_pos is not None:
+				self.ignore_last = True
+				self.build_n_send('/composition/video/effect1/opacity/values',clip.last_pos/clip.vars['speedup_factor'])
 		self.current_clip = clip
+		
 
 	### CUE POINTS ###
 
@@ -284,12 +294,12 @@ class ControlR:
 			osc_msg = self.build_msg(addr,msg)
 			def fun_tor(clip=None):
 				self.send(osc_msg)
-				if clip:
-					clip.vars['playdir'] = direction
+				if clip is None: clip = self.current_clip
+				clip.vars['playdir'] = direction
 			return fun_tor
 		self.play = gen_control_sender('/activeclip/video/position/direction',1,1)
 		self.reverse = gen_control_sender('/activeclip/video/position/direction',0,-1)
-		self.pause = gen_control_sender('/activeclip/video/position/direction',2,0)
+		#self.pause = gen_control_sender('/activeclip/video/position/direction',2,0)
 		self.random_play = gen_control_sender('/activeclip/video/position/direction',3,-2)
 
 		def clear_clip():
@@ -299,6 +309,12 @@ class ControlR:
 			self.backend.cur_clip = Clip('',[-1,-1],"no clip loaded")
 		self.clear = clear_clip
 
+	def pause(self,clip=None): # let control take over >:)
+		if not clip: clip = self.current_clip
+		clip.vars['playdir'] = 0
+		self.build_n_send('/activeclip/video/position/direction',2)
+		self.ignore_last = True
+		self.build_n_send('/composition/video/effect1/opacity/values',clip.last_pos/clip.vars['speedup_factor'])
 
 	### REAL CONTROL HAX
 	# change effect1 to bypass
@@ -585,7 +601,11 @@ class RecordR:
 					if cur_rec.activate:
 						self.backend.change_clip(rec_clip)
 					if cur_rec.qp_to_activate >= 0:
-						self.backend.osc_client.get_q(rec_clip,cur_rec.qp_to_activate)
+						qp = self.backend.osc_client.get_q(rec_clip,cur_rec.qp_to_activate)
+						# control fix
+						self.backend.osc_client.ignore_last = True
+						self.backend.osc_client.build_n_send('/composition/video/effect1/opacity/values',qp/rec_clip.vars['speedup_factor'])
+
 					if cur_rec.playback_control in self.pbc_to_command:
 						self.pbc_to_command[cur_rec.playback_control](rec_clip)
 					if cur_rec.lp_type == 'off':
@@ -596,7 +616,6 @@ class RecordR:
 						rec_clip.vars['lp'] = cur_rec.lp_to_select
 					if cur_rec.speed >= 0:
 						rec_clip.vars['playback_speed'] = cur_rec.speed # doesnt actually do anything yet
-					# to-do figure out how exactly to make sure gui is accurately updated
 		if self.gui_update_command is not None and rec_clip is not None:
 			self.gui_update_command(rec_clip)
 

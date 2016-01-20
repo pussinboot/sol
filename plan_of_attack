@@ -63,4 +63,5 @@ besides writing posts : )
 	found, but impossible to fix w/o abandoning tkinter (or can just make gui not show current audio/clip position :v[ )
 
 > on clip change need to send what is current pos to our timeline control hax otherwise will get crazy jump
+	(y)
 > update config_midi so that it knows what values to expect and can layout the little boxes better than just all in one giant vertical list...

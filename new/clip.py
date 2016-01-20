@@ -25,19 +25,12 @@ class Clip:
 					'speedup_factor':1.0, 'playback_speed':1.0, # speedup factor is how fast control is
 					'playdir': 1 # 1 forward, 0 paused, -1 back, -2 random
 		}
+		self.last_pos = None
 		if 'speed' in self.params:
 			self.vars['playback_speed'] = self.params['speed']
-		# get rid of all this shit
 
-		# self.qp = [None] * C.NO_Q # for better cue points
-		# self.lp = [0,-1] # loop points >:)
-		# self.looptype = 'default' 
-		# self.loopon = False
 		self.control_addr = '/activeclip/video/position/values' # where to send osc 
-		# self.speedup_factor = 1.0 # for better timeline control
-		# self.playback_speed = 1.0
-		# self.playdir = 1 # 1 forward, 0 paused, -1 back, -2 random
-		
+			
 		for tag in tags:
 			self.add_tag(tag)
 		
