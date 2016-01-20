@@ -37,7 +37,7 @@ class Backend:
 		self.last_save_file = None
 
 		self.cur_time = RefObj("cur_time")
-		self.cur_clip_pos = RefObj("cur_clip_pos")
+		self.cur_clip_pos = RefObj("cur_clip_pos",0.0)
 
 		def update_time(_,msg): # this is the driving force behind the backend :o)
 			try:				# add going through log file and redoing it in playback mode
@@ -257,7 +257,6 @@ class ControlR:
 		self.build_n_send(addr,1)
 		# in case activating clip does not jump to start this needs to be always
 		# for now can only control if paused anyways
-		print(clip.vars['playdir'],clip.last_pos)
 		if clip.vars['playdir'] == 0:
 			if clip.last_pos is not None:
 				self.ignore_last = True
@@ -306,7 +305,8 @@ class ControlR:
 			self.build_n_send('/activelayer/clear', 1)# depends 
 			# if activating clip activates on own layer or on activelayer..
 			# '/layer{}/clear'.format(self.clip.loc[0])
-			self.backend.cur_clip = Clip('',[-1,-1],"no clip loaded")
+			#self.backend.cur_clip = Clip('',[-1,-1],"no clip loaded")
+			self.backend.select_clip(Clip('',[-1,-1],"no clip loaded"))
 		self.clear = clear_clip
 
 	def pause(self,clip=None): # let control take over >:)
@@ -314,7 +314,8 @@ class ControlR:
 		clip.vars['playdir'] = 0
 		self.build_n_send('/activeclip/video/position/direction',2)
 		self.ignore_last = True
-		self.build_n_send('/composition/video/effect1/opacity/values',clip.last_pos/clip.vars['speedup_factor'])
+		if clip.last_pos is not None:
+			self.build_n_send('/composition/video/effect1/opacity/values',clip.last_pos/clip.vars['speedup_factor'])
 
 	### REAL CONTROL HAX
 	# change effect1 to bypass
