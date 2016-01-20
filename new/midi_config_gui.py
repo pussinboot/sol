@@ -76,9 +76,11 @@ class ConfigGui:
 
 	def setup_inputs(self):
 		# various inputs
-		clip_control_inps = ['clip_play', 'clip_pause', 'clip_reverse', 'clip_random', 'clip_clear','record_pb', 'record_rec']
+		clip_control_inps = ['clip_play', 'clip_pause', 'clip_reverse', 'clip_random', 
+							 'loop_i/o','loop_type','record_pb', 'record_rec',
+							 'pb_speed', 'pb_speed_0', 'ct_speed', 'ct_speed_0']
 		#rec_control_inps = ['record_playback', 'record_record']
-		clip_select_inps = ['clip_{}'.format(i) for i in range(C.NO_Q)] + ['col_go_l', 'col_go_r']
+		clip_select_inps = ['clip_{}'.format(i) for i in range(C.NO_Q)] + ['clip_clear','col_go_l', 'col_go_r']
 		cue_select_inps = ['cue_{}'.format(i) for i in range(C.NO_Q)] #+ [loop controls?]
 		all_inps = [clip_control_inps, clip_select_inps, cue_select_inps]
 		for i,inp in enumerate(all_inps):

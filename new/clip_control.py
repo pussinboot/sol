@@ -208,7 +208,7 @@ class ClipControl:
 		loop_poss = [str(i) for i in range(C.NO_Q)]
 		
 		self.loop_to_clip_var = {'loop_a':['lp',0],'loop_b':['lp',1],
-								 'enabled': ['loopon'], 'loop_type' : ['looptype'],
+								 'loop_type' : ['looptype'],
 								 'speed':['playback_speed'],'control_speed':['speedup_factor']}
 
 		for key in self.loop_to_clip_var:
@@ -228,27 +228,50 @@ class ClipControl:
 		speed_box.bind("<Return>",send_speed)
 		self.looping_controls.append(speed_scale)
 		self.looping_controls.append(speed_box)
+		self.speed_increase = lambda: speed_box.invoke("buttonup")
+		self.speed_decrease = lambda: speed_box.invoke("buttondown")
 
 		# speedup of control?
-		control_speed_scale = tk.Scale(self.control_speed_frame,from_=1.0,to=6.66,resolution=0.01,variable=self.looping_vars['control_speed'],
+		control_speed_scale = tk.Scale(self.control_speed_frame,from_=1.0,to=C.MAX_SPEEDUP,resolution=0.01,variable=self.looping_vars['control_speed'],
 							   orient=tk.HORIZONTAL, showvalue = 0)
-		control_speed_box = tk.Spinbox(self.control_speed_frame,from_=1.0,to=6.66,increment=0.03,format="%.2f",
+		control_speed_box = tk.Spinbox(self.control_speed_frame,from_=1.0,to=C.MAX_SPEEDUP,increment=0.03,format="%.2f",
 							   textvariable=self.looping_vars['control_speed'], width=4)
 		self.looping_controls.append(control_speed_scale)
 		self.looping_controls.append(control_speed_box)
+		self.speedup_increase = lambda: control_speed_box.invoke("buttonup")
+		self.speedup_decrease = lambda: control_speed_box.invoke("buttondown")
+
 		# loop selection
 		loop_select_a = tk.OptionMenu(self.loop_ctrl_frame,self.looping_vars['loop_a'],*loop_poss)
 		loop_select_b = tk.OptionMenu(self.loop_ctrl_frame,self.looping_vars['loop_b'],*loop_poss)
 		self.looping_controls.append(loop_select_a)
 		self.looping_controls.append(loop_select_b)
 	
-		self.loop_on_off = tk.Checkbutton(self.loop_ctrl_frame,text='loop',variable=self.looping_vars['enabled'],
-									 onvalue='T',offvalue='') # empty string equates to false..
+		self.loop_on_off = tk.Button(self.loop_ctrl_frame,text='loop',command=self.toggle_looping) 
 		self.looping_controls.append(self.loop_on_off)
+
 		loop_select_type = tk.OptionMenu(self.loop_param_frame,self.looping_vars['loop_type'],'default','bounce')
 		self.looping_controls.append(loop_select_type)
 		for control in self.looping_controls:
 			control.pack(side=tk.LEFT)
+
+	def change_speed(self,n):
+		if isinstance(n, int):
+			if n > 0:
+				for _ in range(n):	self.speed_increase()
+			else:
+				for _ in range(-1*n): self.speed_decrease()
+		else:
+			self.looping_vars['speed'].set("%.2f" % 10.0 * n)
+
+	def change_speedup(self,n):
+		if isinstance(n, int):
+			if n > 0:
+				for _ in range(n):	self.speedup_increase()
+			else:
+				for _ in range(-1*n): self.speedup_decrease()
+		else:
+			self.looping_vars['control_speed'].set("%.2f" % C.MAX_SPEEDUP * n)
 
 	def update_looping(self):
 		# set all variables to their current values
@@ -264,7 +287,7 @@ class ClipControl:
 				print('{} failed to update'.format(which_one))
 
 		for key in self.loop_to_clip_var:
-			if key != 'enabled': update_loop_var(key)
+			update_loop_var(key)
 
 		def gen_update_clip_var(which_one): # depends on the clipvar to be set to proper type ahead of time :)
 			lookup = self.loop_to_clip_var[which_one]
@@ -286,17 +309,30 @@ class ClipControl:
 			return fun_tor
 
 		for key in self.loop_to_clip_var:
-			if key in ['loop_a','loop_b','enabled']:
+			if key in ['loop_a','loop_b']:
 				self.looping_vars[key].trace('w', gen_update_pbar_related_var(key))
 			else:
 				self.looping_vars[key].trace('w', gen_update_clip_var(key))
 
-		# stupid checkbox :^)
-		if self.clip.vars['loopon']:
-			self.loop_on_off.select()
-		else:
-			self.loop_on_off.deselect()
+		self.looping_but_check()
 
+	def toggle_looping(self):
+		self.clip.vars['loopon'] = not self.clip.vars['loopon']
+		self.progress_bar.refresh()
+		self.looping_but_check()
+
+	def looping_but_check(self):
+		if self.clip.vars['loopon']:
+			self.loop_on_off.config(relief='sunken')
+		else:
+			self.loop_on_off.config(relief='raised')
+
+	def toggle_loop_type(self):
+		if self.looping_vars['loop_type'].get() == 'default': 
+			self.looping_vars['loop_type'].set('bounce')
+		else:
+			self.looping_vars['loop_type'].set('default')
+		# because of the trace do not have to go into self.clip.vars etc
 
 
 if __name__ == '__main__':

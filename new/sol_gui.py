@@ -11,7 +11,7 @@ from audio_gui import AudioBar
 import CONSTANTS as C
 
 class MainGui:
-	def __init__(self,root,fname=None):
+	def __init__(self,root,fname=None,midi_on=True):
 
 		# tk
 		self.root = root
@@ -54,8 +54,9 @@ class MainGui:
 		self.setup_menubar()
 		# midi
 		self.add_midi_commands()
-		self.backend.setup_midi()
-		self.backend.load_last_midi()
+		if midi_on:
+			self.backend.setup_midi()
+			self.backend.load_last_midi()
 		self.backend.osc_server.start()
 
 
@@ -75,10 +76,15 @@ class MainGui:
 			return fun_tor
 		for i in range(C.NO_Q):
 			self.backend.desc_to_fun['cue_{}'.format(i)] = gen_q_selector(i)
-		# add looping toggle (may need to change loop thing to be a button that toggles like in audiobar)
-		# add looping type toggle
+		# add looping toggle 
+		self.backend.desc_to_fun['loop_i/o'] = self.clipcontrol.toggle_looping
+		self.backend.desc_to_fun['loop_type'] = self.clipcontrol.toggle_loop_type
 		# add loop point selector # this will b tricky..
 		# add the various speedup increment/decrement binds ... this will prob have to go thru gui, easiest way tbh
+		self.backend.desc_to_fun['pb_speed'] = self.clipcontrol.change_speed
+		self.backend.desc_to_fun['pb_speed_0'] = lambda: self.clipcontrol.change_speed(1.0)
+		self.backend.desc_to_fun['ct_speed'] = self.clipcontrol.change_speedup
+		self.backend.desc_to_fun['ct_speed_0'] = lambda: self.clipcontrol.change_speedup(1.0)
 		# recording related
 		self.backend.desc_to_fun['record_pb'] = self.audio_bar.gen_updater(self.backend.record.toggle_playing)
 		self.backend.desc_to_fun['record_rec'] = self.audio_bar.gen_updater(self.backend.record.toggle_recording)
@@ -87,9 +93,12 @@ class MainGui:
 	def change_clip(self,newclip):
 		self.backend.change_clip(newclip)
 		self.clipcontrol.change_clip(newclip)
-		self.library_gui.select_if_cur()
-		rec_obj = self.backend.record.add_new_clip(newclip)
-		if rec_obj: self.audio_bar.progress_bar.add_recording(rec_obj)
+		if newclip.fname != '':
+			self.library_gui.select_if_cur()
+			rec_obj = self.backend.record.add_new_clip(newclip)
+			if rec_obj: self.audio_bar.progress_bar.add_recording(rec_obj)
+		else:
+			self.library_gui.deselect_last()
 
 	def quit(self):
 		self.backend.save_data()
@@ -149,7 +158,7 @@ def test():
 	root = tk.Tk()
 	root.title('sol_test')
 
-	testgui = MainGui(root)
+	testgui = MainGui(root,midi_on=False)
 	# for testing only
 	testgui.audio_bar.osc_client.build_n_send('/pyaud/open','./test.wav')
 	testgui.backend.record.load_last()

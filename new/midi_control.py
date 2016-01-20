@@ -169,9 +169,18 @@ class MidiControl:
 
 	def gen_midi_fun(self,desc,type):
 		fun = self.backend.desc_to_fun[desc]
-		def funtor(n):
-			if n > 0: # for now assume all are simple
-				fun()
+		if type == 'i/o': # simple on/off
+			def funtor(n):
+				if n > 0:
+					fun()
+		elif type == 'knob': # +/- n at a time (relative control)
+			def funtor(n):
+				if n > 64: n = n - 128
+				fun(n)
+		elif type == 'sldr': # send new value (absolute control)
+			def funtor(n):
+				fun(n/127) # 0 to 127 translates to 0.0 - 1.0
+
 		return funtor
 
 	def map_midi(self,fname):

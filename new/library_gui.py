@@ -77,6 +77,13 @@ class LibraryGui:
 				if i != self.backend.cur_col: self.highlight_col(i)
 				return
 
+	def deselect_last(self,col=-1):
+		if col < 0: col = self.backend.cur_col
+		last_act = self.containers[col].last_active
+		if last_act is not None:
+			self.containers[col].last_active.deactivate()
+			self.containers[col].last_active = None
+
 	def select_if_cur(self):
 		col = self.containers[self.backend.cur_col]
 		clip_fnames = [clip.fname for clip in self.backend.library.clip_collections[self.backend.cur_col] if clip is not None]
