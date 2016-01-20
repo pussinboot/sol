@@ -1,4 +1,5 @@
 from midi_control import ConfigMidi
+import CONSTANTS as C
 
 import tkinter as tk
 from tkinter import ttk
@@ -32,6 +33,17 @@ class ConfigGui:
 		self.configbook = ttk.Notebook(self.configframe)
 		self.configbook.bind_all('<<NotebookTabChanged>>',self.deviceselect.switch_test)
 		self.inputtab = ttk.Frame(self.configbook)
+
+		input_clip_control_frame = tk.Frame(self.inputtab)
+		input_rec_control_frame = tk.Frame(self.inputtab)
+		input_clip_select_frame = tk.Frame(self.inputtab)
+		input_cue_select_frame = tk.Frame(self.inputtab)
+		input_clip_control_frame.pack(side=tk.TOP)
+		input_rec_control_frame.pack(side=tk.TOP)
+		input_clip_select_frame.pack(side=tk.TOP)
+		input_cue_select_frame.pack(side=tk.TOP)
+		self.input_frames = [input_clip_control_frame, input_rec_control_frame, input_clip_select_frame, input_cue_select_frame]
+
 		self.inputs = []
 		self.outputtab = ttk.Frame(self.configbook)
 		self.outputs = []
@@ -63,8 +75,19 @@ class ConfigGui:
 		self.root.destroy()
 
 	def setup_inputs(self):
-		for desc in self.backend.desc_to_fun:
-			self.inputs.append(InputBox(self,self.inputtab,desc))
+		# various inputs
+		clip_control_inps = ['clip_play', 'clip_pause', 'clip_reverse', 'clip_random', 'clip_clear','record_pb', 'record_rec']
+		#rec_control_inps = ['record_playback', 'record_record']
+		clip_select_inps = ['clip_{}'.format(i) for i in range(C.NO_Q)] + ['col_go_l', 'col_go_r']
+		cue_select_inps = ['cue_{}'.format(i) for i in range(C.NO_Q)] #+ [loop controls?]
+		all_inps = [clip_control_inps, clip_select_inps, cue_select_inps]
+		for i,inp in enumerate(all_inps):
+			for x,desc in enumerate(inp):
+				new_inp_b = InputBox(self,self.input_frames[i],desc)
+				r = x // 4
+				c = x % 4
+				new_inp_b.topframe.grid(row=r,column=c)
+				self.inputs.append(new_inp_b)
 		# for inp in [str(i) for i in range(8)]:
 			#self.outputs.append(OutputBox(self,self.outputtab,inp))
 
@@ -126,7 +149,7 @@ class ConfigGui:
 		return -1
 
 
-class InputBox:
+class InputBox: 
 
 	def __init__(self,configgui,frame,input_name):
 		"""
@@ -145,7 +168,7 @@ class InputBox:
 		self.label.pack(side=tk.TOP)
 		self.valuelabel.pack(anchor=tk.E)
 		self.typeselect.pack(anchor=tk.E)
-		self.topframe.pack()
+		#self.topframe.pack() # don't do this, instead grid from setup_inputs
 
 		def id_midi(*args):
 			res = self.parent.configmidi.id_midi()
@@ -361,6 +384,6 @@ if __name__ == '__main__':
 	from sol_backend import Backend
 	root = tk.Tk()
 	root.title('test midi config')
-	bb = Backend('../old/test.avc')
+	bb = Backend()
 	test_configgui = ConfigGui(root,bb)
 	root.mainloop()
