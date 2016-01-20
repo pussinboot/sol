@@ -54,7 +54,8 @@ class MainGui:
 		self.setup_menubar()
 		# midi
 		self.add_midi_commands()
-		# self.backend.setup_midi()
+		self.backend.setup_midi()
+		self.backend.load_last_midi()
 		self.backend.osc_server.start()
 
 
