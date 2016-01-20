@@ -80,8 +80,8 @@ class MainGui:
 		# add loop point selector # this will b tricky..
 		# add the various speedup increment/decrement binds ... this will prob have to go thru gui, easiest way tbh
 		# recording related
-		self.backend.desc_to_fun['record_playback'] = self.audio_bar.gen_updater(self.backend.record.toggle_playing)
-		self.backend.desc_to_fun['record_record'] = self.audio_bar.gen_updater(self.backend.record.toggle_recording)
+		self.backend.desc_to_fun['record_pb'] = self.audio_bar.gen_updater(self.backend.record.toggle_playing)
+		self.backend.desc_to_fun['record_rec'] = self.audio_bar.gen_updater(self.backend.record.toggle_recording)
 
 
 	def change_clip(self,newclip):

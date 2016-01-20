@@ -556,7 +556,7 @@ class RecordR:
 		new_rec.speed = rec_obj.speed 
 		if new_time not in self.record:
 			self.record[new_time] = [None] * self.no_layers
-		if self.record[new_time][new_rec.layer] is not None:
+		elif self.record[new_time][new_rec.layer] is not None:
 			uh_oh = self.record[new_time][new_rec.layer]
 		self.record[new_time][new_rec.layer] = new_rec
 		return new_rec, uh_oh
