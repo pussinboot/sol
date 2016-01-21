@@ -1,4 +1,5 @@
 NO_Q = 8 # number of cue points, basically how many pads you have
 NO_LAYERS = 4 # number of recording layers
 THUMB_W = 125 # width of thumbnail for clip previews
-MAX_SPEEDUP = 6.66
+MAX_SPEEDUP = 9.99
+MIN_SPEEDUP = 3.33

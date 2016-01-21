@@ -22,7 +22,7 @@ class Clip:
 		self.vars = {'qp':[None] * C.NO_Q, # for better cuepoints
 					'lp':[0,-1], 'loopon':False, # loop points
 					'looptype':'default',# 'default' or 'bounce'
-					'speedup_factor':1.0, 'playback_speed':1.0, # speedup factor is how fast control is
+					'speedup_factor':C.MIN_SPEEDUP, 'playback_speed':1.0, # speedup factor is how fast control is
 					'playdir': 1 # 1 forward, 0 paused, -1 back, -2 random
 		}
 		self.last_pos = None

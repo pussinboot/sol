@@ -89,7 +89,7 @@ class MainGui:
 		self.backend.desc_to_fun['pb_speed'] = self.clipcontrol.change_speed
 		self.backend.desc_to_fun['pb_speed_0'] = lambda: self.clipcontrol.change_speed(0.1)
 		self.backend.desc_to_fun['ct_speed'] = self.clipcontrol.change_speedup
-		self.backend.desc_to_fun['ct_speed_0'] = lambda: self.clipcontrol.change_speedup(1.0/C.MAX_SPEEDUP)
+		self.backend.desc_to_fun['ct_speed_0'] = lambda: self.clipcontrol.change_speedup(C.MIN_SPEEDUP/C.MAX_SPEEDUP)
 		# recording related
 		self.backend.desc_to_fun['record_pb'] = self.audio_bar.gen_updater(self.backend.record.toggle_playing)
 		self.backend.desc_to_fun['record_rec'] = self.audio_bar.gen_updater(self.backend.record.toggle_recording)

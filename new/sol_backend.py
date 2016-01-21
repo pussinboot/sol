@@ -45,7 +45,6 @@ class Backend:
 				self.cur_time.value = int(msg)
 			except:
 				pass
-		self.osc_server.map("/pyaud/pos/frame",update_time)
 		def update_song_info(_,msg):
 			if self.cur_song:
 				self.cur_song.vars['total_len'] = int(msg)
@@ -316,8 +315,9 @@ class ControlR:
 		clip.vars['playdir'] = 0
 		self.build_n_send('/activeclip/video/position/direction',2)
 		self.ignore_last = True
-		if clip.last_pos is not None:
-			self.build_n_send('/composition/video/effect1/opacity/values',clip.last_pos/clip.vars['speedup_factor'])
+		self.build_n_send('/composition/video/effect1/opacity/values',self.backend.cur_clip_pos.value/clip.vars['speedup_factor'])
+		#if clip.last_pos is not None:
+		#	self.build_n_send('/composition/video/effect1/opacity/values',clip.last_pos/clip.vars['speedup_factor'])
 
 	### REAL CONTROL HAX
 	# change effect1 to bypass
