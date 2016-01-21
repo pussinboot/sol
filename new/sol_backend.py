@@ -508,7 +508,7 @@ class Pattern:
 	"""
 	def __init__(self,osc_client):
 		self.events = []
-		self.osc_client = osc.client
+		self.osc_client = osc_client
 		self.last_time = time.time()
 		self.pause_time = 0
 		self.scheduler = sched.scheduler()
@@ -534,8 +534,9 @@ class Pattern:
 
 	def start(self):
 		# if not self.scheduler.empty(): self.stop()
-		for event in self.events:
-			self.scheduler.enter(event[0],1,self.osc_client.build_n_send,argument=('/activeclip/video/position/values',event[1],))
+		if self.scheduler.empty:
+			for event in self.events:
+				self.scheduler.enter(event[0],1,self.osc_client.build_n_send,argument=('/activeclip/video/position/values',event[1],))
 		self.run()
 
 	def stop(self):
@@ -607,6 +608,17 @@ class RecordR:
 			self.record[fixed_timestamp] = [None] * self.no_layers
 		self.record[fixed_timestamp][layer] = rec_obj
 		return rec_obj
+
+	def add_pat(self):
+		self.patterns.append(Pattern(self.backend.osc_client))
+
+	def play_pat(self):
+		if self.cur_pat < 0: return
+		self.patterns[self.cur_pat].start()
+	def stop_pat(self):
+		if self.cur_pat < 0: return
+		self.patterns[self.cur_pat].stop()
+
 
 	def copy_rec(self,rec_obj,new_time):
 		if self.backend.cur_song is None or self.backend.cur_song.vars['total_len'] is None: return
