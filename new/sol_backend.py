@@ -118,6 +118,20 @@ class Backend:
 				print('successfully loaded',savefile)
 				self.last_save_file = savefile
 
+	def load_composition(self,fname):
+		if fname == self.xmlfile:
+			# add any new clips
+			self.library.update_from_xml(fname)
+			print('updated library from',fname)
+		else:
+			self.xmlfile = fname
+			self.library = Library(fname)
+			self.cur_clip = Clip('',[-1,-1],"no clip loaded")
+			self.cur_col = -1
+			print('loaded library from',fname)
+		self.search = SearchR(self.library.clips)
+
+
 	def load_last(self):
 		if os.path.exists('./savedata/last_save'):
 			with open('./savedata/last_save') as last_save:

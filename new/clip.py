@@ -111,6 +111,15 @@ class Library:
 		for clip in parsed.clips:
 			self.add_clip(clip)
 
+	def update_from_xml(self,xmlfile):
+		from file_io import SavedXMLParse
+		parsed = SavedXMLParse(xmlfile)
+		for clip in parsed.clips:
+			if clip.fname not in self.clips:
+				self.add_clip(clip)
+			else:
+				self.clips[clip.fname].loc = clip.loc
+
 	@property
 	def clip_names(self):
 	    return [clip.name for _,clip in self.clips.items()]

@@ -3,6 +3,7 @@ the main gui : )
 """
 import tkinter as tk
 import tkinter.filedialog as tkfd
+import os
 
 from sol_backend import Backend
 from clip_control import ClipControl
@@ -153,6 +154,14 @@ class MainGui:
 		self.menubar = tk.Menu(self.root)
 		self.filemenu = tk.Menu(self.menubar,tearoff=0)
 		self.filemenu.add_command(label='open audio',command=self.audio_bar.open_file)
+		def load_avc():
+			default_save_path = "{0}{1}".format(os.environ['USERPROFILE'],C.RESOLUME_SAVE_DIR)
+			filename = tkfd.askopenfilename(parent=self.root,title='Choose a file',initialdir=default_save_path)
+			if filename:
+				self.backend.load_composition(filename)
+				
+				self.library_gui.refresh()
+		self.filemenu.add_command(label='open comp',command=load_avc)
 
 		def load_lib():
 			load_fun = self.gen_file_selector(self.backend.load_data,'load')
@@ -185,7 +194,7 @@ def test():
 	root = tk.Tk()
 	root.title('sol_test')
 
-	testgui = MainGui(root)#,midi_on=False)
+	testgui = MainGui(root,midi_on=False)
 	# for testing only
 	testgui.audio_bar.osc_client.build_n_send('/pyaud/open','./test.wav')
 	testgui.backend.record.load_last()
