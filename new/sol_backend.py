@@ -509,15 +509,14 @@ class Pattern:
 	def __init__(self,osc_client):
 		self.events = []
 		self.osc_client = osc_client
-		self.last_time = time.time()
+		self.start_time = time.time()
 		self.pause_time = 0
-		self.scheduler = sched.scheduler()
+		self.scheduler = sched.scheduler(time.time, time.sleep)
 		self.running = False
-		self.t = None
 
 	def add_event(self,osc_msg):
 		new_time = time.time()
-		time_elapsed = new_time - self.last_time
+		time_elapsed = new_time - self.start_time
 	#	self.scheduler.enter(time_elapsed,1,self.osc_client.build_n_send,argument=('/activeclip/video/position/values',osc_msg,))
 	# 	self.scheduler.enter(time_elapsed,1,self.osc_client.send_msg,argument=(osc_msg,))
 		self.events.append((time_elapsed,osc_msg))
@@ -528,19 +527,20 @@ class Pattern:
 		print(time.time(),timestamp,msg)
 
 	def pause_rec(self):
-		self.pause_time = time.time() - self.last_time
+		self.pause_time = time.time() - self.start_time
 
 	def resume_rec(self):
-		self.last_time = time.time() - self.pause_time
+		self.start_time = time.time() - self.pause_time
 
 	def run(self):
 		self.running = True
-		self.t = threading.Thread(target=self.scheduler.run)
-		self.t.start()
+		self.scheduler.run()#blocking=False)
 
 	def start(self):
 		# if not self.scheduler.empty(): self.stop()
 		if self.scheduler.empty:
+			now = time.time()
+			print(now,self.events)
 			for event in self.events:
 				self.scheduler.enter(event[0],1,self.test_event,argument=(event[0],'/activeclip/video/position/values',event[1],))
 		self.run()
@@ -550,7 +550,6 @@ class Pattern:
 		if not self.scheduler.empty(): # restart the playback
 			for event in self.scheduler.queue:
 				self.scheduler.cancel(event)
-		if self.t is not None: self.t.join()
 		
 class RecordR:
 	"""

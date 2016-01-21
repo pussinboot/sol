@@ -1064,8 +1064,6 @@ class PatternControl:
 		pattern_choices = [-1] + [str(i) for i in range(len(self.recordr.patterns))]
 		for choice in pattern_choices:
 			self.pattern_selector['menu'].add_command(label=choice, command=tk._setit(self.pattern_choice, choice))
-		
-
 
 class ConnectionSelect:
 	# to-do: 
