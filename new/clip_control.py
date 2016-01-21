@@ -265,7 +265,7 @@ class ClipControl:
 			else:
 				for _ in range(-1*n): self.speed_decrease()
 		else:
-			self.looping_vars['speed'].set("%.2f" % 10.0 * n)
+			self.looping_vars['speed'].set("%.2f" % (10.0 * n))
 
 	def change_speedup(self,n):
 		if isinstance(n, int):
@@ -274,7 +274,7 @@ class ClipControl:
 			else:
 				for _ in range(-1*n): self.speedup_decrease()
 		else:
-			self.looping_vars['control_speed'].set("%.2f" % C.MAX_SPEEDUP * n)
+			self.looping_vars['control_speed'].set("%.2f" % (C.MAX_SPEEDUP * n))
 
 	def change_lp(self,new_lp):
 		self.looping_vars['loop_a'].set(str(new_lp[0]))

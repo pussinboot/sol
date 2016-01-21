@@ -87,9 +87,9 @@ class MainGui:
 
 		# add the various speedup increment/decrement binds ... this will prob have to go thru gui, easiest way tbh
 		self.backend.desc_to_fun['pb_speed'] = self.clipcontrol.change_speed
-		self.backend.desc_to_fun['pb_speed_0'] = lambda: self.clipcontrol.change_speed(1.0)
+		self.backend.desc_to_fun['pb_speed_0'] = lambda: self.clipcontrol.change_speed(0.1)
 		self.backend.desc_to_fun['ct_speed'] = self.clipcontrol.change_speedup
-		self.backend.desc_to_fun['ct_speed_0'] = lambda: self.clipcontrol.change_speedup(1.0)
+		self.backend.desc_to_fun['ct_speed_0'] = lambda: self.clipcontrol.change_speedup(1.0/C.MAX_SPEEDUP)
 		# recording related
 		self.backend.desc_to_fun['record_pb'] = self.audio_bar.gen_updater(self.backend.record.toggle_playing)
 		self.backend.desc_to_fun['record_rec'] = self.audio_bar.gen_updater(self.backend.record.toggle_recording)
@@ -98,7 +98,7 @@ class MainGui:
 	def change_clip(self,newclip):
 		self.backend.change_clip(newclip)
 		self.clipcontrol.change_clip(newclip)
-		if newclip.fname != '':
+		if newclip is not None and newclip.fname != '':
 			self.library_gui.select_if_cur()
 			rec_obj = self.backend.record.add_new_clip(newclip)
 			if rec_obj: self.audio_bar.progress_bar.add_recording(rec_obj)
@@ -107,11 +107,13 @@ class MainGui:
 
 	def toggle_setting_lp(self):
 		self.setting_lp = not self.setting_lp
+		print('setting_lp',self.setting_lp)
 
 	def toggle_delete_q(self):
 		self.delete_q = True
 
 	def cue_handler(self,i):
+		print('q',i)
 		if self.setting_lp:
 			self.last_lp.append(i)
 			if len(self.last_lp) == 2:
@@ -120,10 +122,10 @@ class MainGui:
 				self.last_lp = []
 		else:
 			if self.delete_q:
-				self.clipcontrol.deactivate_funs(i)
+				self.clipcontrol.deactivate_funs[i]()
 				self.delete_q = False
 			else:
-				self.clipcontrol.activate_funs(i)
+				self.clipcontrol.activate_funs[i]()
 
 	def quit(self):
 		self.backend.save_data()
@@ -183,7 +185,7 @@ def test():
 	root = tk.Tk()
 	root.title('sol_test')
 
-	testgui = MainGui(root,midi_on=False)
+	testgui = MainGui(root)#,midi_on=False)
 	# for testing only
 	testgui.audio_bar.osc_client.build_n_send('/pyaud/open','./test.wav')
 	testgui.backend.record.load_last()
