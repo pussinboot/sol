@@ -51,7 +51,15 @@ class Backend:
 		self.osc_server.map("/pyaud/pos/frame",update_time)
 		self.osc_server.map("/pyaud/info/song_len",update_song_info)
 		# for recording patterns
-		self.osc_server.map("/activeclip/video/position/values",self.cur_clip_pos.update_generator('float'))
+		def pattern_record(_,msg):
+			if self.record.recording_patterns and self.record.cur_pat >= 0:
+				self.record.patterns[self.record.cur_pat].add_event(msg)
+			try:
+				self.cur_clip_pos.value = float(msg)
+			except:
+				pass
+
+		self.osc_server.map("/activeclip/video/position/values",pattern_record)
 
 		### MIDI CONTROL
 		# basically, here are the descriptions that map to functions
@@ -154,13 +162,6 @@ class Backend:
 
 	def select_clip(self,newclip): # function to be overwritten : )
 		self.change_clip(newclip)
-		#check_it = self.record.add_command(newclip.fname)
-		#if check_it: 
-		#	print('changed clip @',self.cur_time.value)
-		##if self.cur_song:
-		##	print(self.cur_time.value/self.cur_song.vars['total_len'])
-		#	self.record.print_self()
-
 
 class RefObj:
 	"""
@@ -502,7 +503,8 @@ class RecordingObject:
 
 class Pattern:
 	"""
-	special object that holds a pattern of osc_msgs which can be replayed
+	special object that holds a pattern of timeline positions which can be replayed
+	maybe will do any osc_msgs... not sure
 	"""
 	def __init__(self,osc_client):
 		self.events = []
@@ -514,7 +516,8 @@ class Pattern:
 
 	def add_event(self,osc_msg):
 		time_elapsed = time.time() - self.last_time
-		self.scheduler.enter(time_elapsed,1,self.osc_client.send_msg,argument=(osc_msg,))
+		self.scheduler.enter(time_elapsed,1,self.osc_client.build_n_send,argument=('/activeclip/video/position/values',osc_msg,))
+	# 	self.scheduler.enter(time_elapsed,1,self.osc_client.send_msg,argument=(osc_msg,))
 		self.events.append((time_elapsed,osc_msg))
 
 	def run(self):
@@ -524,7 +527,7 @@ class Pattern:
 	def start(self):
 		# if not self.scheduler.empty(): self.stop()
 		for event in self.events:
-			self.scheduler.enter(event[0],1,self.osc_client.send_msg,argument=(event[1],))
+			self.scheduler.enter(event[0],1,self.osc_client.build_n_send,argument=('/activeclip/video/position/values',event[1],))
 		self.run()
 
 	def stop(self):
