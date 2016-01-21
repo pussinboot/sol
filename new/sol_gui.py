@@ -8,7 +8,7 @@ import os
 from sol_backend import Backend
 from clip_control import ClipControl
 from library_gui import LibraryGui
-from audio_gui import AudioBar
+from audio_gui import AudioBar, PatternControl
 import CONSTANTS as C
 
 class MainGui:
@@ -51,6 +51,8 @@ class MainGui:
 		# audio stuff
 		self.audio_bar = AudioBar(self,self.bot_frame,self.backend)
 		self.audio_bar.start()
+		#### testing pattern recording
+		self.pattern_control = PatternControl(self.backend.record)
 		# menu
 		self.setup_menubar()
 		# midi
@@ -159,7 +161,7 @@ class MainGui:
 			filename = tkfd.askopenfilename(parent=self.root,title='Choose a file',initialdir=default_save_path)
 			if filename:
 				self.backend.load_composition(filename)
-				
+
 				self.library_gui.refresh()
 		self.filemenu.add_command(label='open comp',command=load_avc)
 

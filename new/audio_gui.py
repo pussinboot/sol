@@ -1030,6 +1030,41 @@ class RecPopUp:
 			self.lp_chooser_l['menu'].add_command(label=choice, command=tk._setit(self.lp_var_l, choice))
 			self.lp_chooser_r['menu'].add_command(label=choice, command=tk._setit(self.lp_var_r, choice))
 
+class PatternControl:
+	def __init__(self,recordr):
+		self.recordr = recordr
+		self.top = tk.Toplevel()
+		self.frame = tk.Frame(self.top)
+		self.frame.pack()
+		self.pattern_choice = tk.StringVar()
+		def update_cur_pat(*args):
+			self.recordr.cur_pat = int(self.pattern_choice.get())
+		self.pattern_choice.trace('w', update_cur_pat)
+		pattern_choices = [-1] + [str(i) for i in range(len(self.recordr.patterns))]
+		self.pattern_selector = tk.OptionMenu(self.frame,self.pattern_choice,*pattern_choices)
+		def add_pat(*args):
+			self.recordr.add_pat()
+			self.update_pat_choices()
+		self.add_pat_but = tk.Button(self.frame,text='+',command=add_pat) 
+
+		def toggle_rec(*args):
+			self.recordr.recording_patterns = not self.recordr.recording_patterns
+			print('recording patterns',self.recordr.recording_patterns)
+		self.rec_toggle = tk.Button(self.frame,text='O',command=toggle_rec)
+		self.play_but = tk.Button(self.frame,text='>',command=self.recordr.play_pat)
+		self.stop_but = tk.Button(self.frame,text='[]',command=self.recordr.stop_pat)
+		self.pattern_selector.grid(row=0,column=0)
+		self.add_pat_but.grid(row=1,column=0)
+		self.rec_toggle.grid(row=0,column=1)
+		self.play_but.grid(row=0,column=2)
+		self.stop_but.grid(row=1,column=1)
+
+	def update_pat_choices(self):
+		self.pattern_selector['menu'].delete(0,'end')
+		pattern_choices = [-1] + [str(i) for i in range(len(self.recordr.patterns))]
+		for choice in pattern_choices:
+			self.pattern_selector['menu'].add_command(label=choice, command=tk._setit(self.pattern_choice, choice))
+		
 
 
 class ConnectionSelect:
