@@ -89,18 +89,21 @@
 # for item in test_dict.items():
 # 	print(item)
 # print(1 in test_dict)
+import sched
+import time
 
-import sched, time
-s = sched.scheduler(time.time, time.sleep)
-def print_time(a='default'):
-	print("From print_time", time.time(), a)
+scheduler = sched.scheduler(time.time, time.sleep)
 
-def print_some_times():
-	print(time.time())
-	s.enter(1, 1, print_time)
-	s.enter(1, 1, print_time, argument=('positional',))
-	s.enter(1, 1, print_time, kwargs={'a': 'keyword'})
-	s.run()
-	print(time.time())
+def print_event(name, start):
+    now = time.time()
+    elapsed = int(now - start)
+    print ('EVENT: %s elapsed=%s name=%s' % (time.ctime(now),
+                                            elapsed,
+                                            name))
 
-print_some_times()
+start = time.time()
+print ('START:', time.ctime(start))
+scheduler.enter(2, 1, print_event, ('first', start))
+scheduler.enter(3, 1, print_event, ('second', start))
+
+scheduler.run()
