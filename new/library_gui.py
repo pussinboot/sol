@@ -120,6 +120,7 @@ class LibraryGui:
 
 	def remove_collection(self,index):
 		if len(self.containers) <= 1:
+			self.containers[0].clear()
 			return
 		del self.containers[index]
 		del self.backend.library.clip_collections[index]
@@ -324,6 +325,9 @@ class ContainerCollection:
 
 		self.frame.grid(row=0, column=0, sticky='news')
 		#self.frame.tkraise()
+	def clear(self):
+		for clip_cont in self.clip_conts:
+			clip_cont.remove_clip()
 
 
 

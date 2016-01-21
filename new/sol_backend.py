@@ -14,7 +14,7 @@ import CONSTANTS as C
 
 from pythonosc import dispatcher, osc_server, osc_message_builder, udp_client
 from bisect import bisect_left
-import threading, os, random, collections
+import threading, os, random, collections, time, sched
 try:
 	import dill
 except:
@@ -50,6 +50,7 @@ class Backend:
 				self.cur_song.vars['total_len'] = int(msg)
 		self.osc_server.map("/pyaud/pos/frame",update_time)
 		self.osc_server.map("/pyaud/info/song_len",update_song_info)
+		# for recording patterns
 		self.osc_server.map("/activeclip/video/position/values",self.cur_clip_pos.update_generator('float'))
 
 		### MIDI CONTROL
@@ -264,6 +265,9 @@ class ControlR:
 		msg = self.build_msg(addr,arg)
 		self.osc_client.send(msg)
 		return msg
+
+	def send_msg(self,msg):
+		self.osc_client.send(msg)
 
 	def select_clip(self,clip):
 		if clip is None:
@@ -496,6 +500,39 @@ class RecordingObject:
 	def __str__(self):
 		return "{0} @ {1}".format(self.clip_name, self.timestamp)
 
+class Pattern:
+	"""
+	special object that holds a pattern of osc_msgs which can be replayed
+	"""
+	def __init__(self,osc_client):
+		self.events = []
+		self.osc_client = osc.client
+		self.last_time = time.time()
+		self.time_offset = 0
+		self.scheduler = sched.scheduler()
+		self.running = False
+
+	def add_event(self,osc_msg):
+		time_elapsed = time.time() - self.last_time
+		self.scheduler.enter(time_elapsed,1,self.osc_client.send_msg,argument=(osc_msg,))
+		self.events.append((time_elapsed,osc_msg))
+
+	def run(self):
+		self.running = True
+		self.scheduler.run(blocking=False) # uhhh
+
+	def start(self):
+		# if not self.scheduler.empty(): self.stop()
+		for event in self.events:
+			self.scheduler.enter(event[0],1,self.osc_client.send_msg,argument=(event[1],))
+		self.run()
+
+	def stop(self):
+		self.running = False
+		if not self.scheduler.empty(): # restart the playback
+			for event in self.scheduler.queue:
+				self.scheduler.cancel(event)
+		
 class RecordR:
 	"""
 	special thing used to record (certain) osc messages at specific times/play them back later
@@ -506,7 +543,10 @@ class RecordR:
 		# containing the commands at that time : )
 		self.no_layers = C.NO_LAYERS
 		self.record = {} # where everything is written to
+		self.patterns = []
+		self.cur_pat = -1
 		self.recording = False
+		self.recording_patterns = False
 		self.playing = False
 		self.backend = backend
 		self.last_save_file = None
