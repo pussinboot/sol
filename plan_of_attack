@@ -71,10 +71,17 @@ besides writing posts : )
 ultra updated new and improved to-do
 ====================================
 > load library from avc (xml) file
+	(y)
 > update library on load of above
+	(y)
 > recording trick to abuse resolume built-in recording.. 
 	> will have to look @ folder for new file.. but it takes some time...
+	trick??? or legit recording >:)>
 > record next loop
 	> cycle thru the layers as you loop then can compare the layers
 > FX as pseudo-clips
 > add tags to library/clip-control (under clip name)
+> pattern record start recording when u press the record button etc (make it usable!!!!)
+	which also may mean synchronizing it with overall recording by means of comparing to cur song time ??
+	in which case can add this to existing recording system by setting it to only be recording from timeline_control
+> transparent clip control for next version of ui that werks as an overlay for resolume 

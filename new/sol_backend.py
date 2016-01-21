@@ -540,9 +540,8 @@ class Pattern:
 		# if not self.scheduler.empty(): self.stop()
 		if self.scheduler.empty:
 			now = time.time()
-			print(now,self.events)
 			for event in self.events:
-				self.scheduler.enter(event[0],1,self.test_event,argument=(event[0],'/activeclip/video/position/values',event[1],))
+				self.scheduler.enter(event[0],1,self.osc_client.build_n_send,argument=('/activeclip/video/position/values',event[1],))
 		self.run()
 
 	def stop(self):
