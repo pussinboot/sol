@@ -134,7 +134,7 @@ class Backend:
 				self.midi_control.map_midi(fname)
 
 	def change_clip(self,newclip):
-		self.cur_clip.last_pos = self.cur_clip_pos.value
+		if self.cur_clip is not None: self.cur_clip.last_pos = self.cur_clip_pos.value
 		self.cur_clip = newclip
 		self.osc_client.select_clip(newclip)
 
@@ -253,6 +253,8 @@ class ControlR:
 		return msg
 
 	def select_clip(self,clip):
+		if clip is None:
+			return
 		addr = "/layer{0}/clip{1}/connect".format(*clip.loc)
 		self.build_n_send(addr,1)
 		# in case activating clip does not jump to start this needs to be always
