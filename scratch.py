@@ -1,11 +1,11 @@
-# # import pyaudio    
+# # import pyaudio	
 # # p = pyaudio.PyAudio()
 
 # # for i in range(0,10):
-# #     try:
-# #         print(p.get_device_info_by_index(i))
-# #     except Exception as e:
-# #     	print (e)
+# #	 try:
+# #		 print(p.get_device_info_by_index(i))
+# #	 except Exception as e:
+# #	 	print (e)
 
 # import numpy as np
 # from tqdm import tqdm
@@ -90,6 +90,17 @@
 # 	print(item)
 # print(1 in test_dict)
 
-for i in range(3):
-	pass
-print(i)
+import sched, time
+s = sched.scheduler(time.time, time.sleep)
+def print_time(a='default'):
+	print("From print_time", time.time(), a)
+
+def print_some_times():
+	print(time.time())
+	s.enter(1, 1, print_time)
+	s.enter(1, 1, print_time, argument=('positional',))
+	s.enter(1, 1, print_time, kwargs={'a': 'keyword'})
+	s.run()
+	print(time.time())
+
+print_some_times()
