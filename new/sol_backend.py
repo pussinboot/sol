@@ -510,15 +510,23 @@ class Pattern:
 		self.events = []
 		self.osc_client = osc.client
 		self.last_time = time.time()
-		self.time_offset = 0
+		self.pause_time = 0
 		self.scheduler = sched.scheduler()
 		self.running = False
 
 	def add_event(self,osc_msg):
-		time_elapsed = time.time() - self.last_time
-		self.scheduler.enter(time_elapsed,1,self.osc_client.build_n_send,argument=('/activeclip/video/position/values',osc_msg,))
+		new_time = time.time()
+		time_elapsed = new_time - self.last_time
+	#	self.scheduler.enter(time_elapsed,1,self.osc_client.build_n_send,argument=('/activeclip/video/position/values',osc_msg,))
 	# 	self.scheduler.enter(time_elapsed,1,self.osc_client.send_msg,argument=(osc_msg,))
 		self.events.append((time_elapsed,osc_msg))
+		self.last_time = new_time
+
+	def pause_rec(self):
+		self.pause_time = time.time() - self.last_time
+
+	def resume_rec(self):
+		self.last_time = time.time() - self.pause_time
 
 	def run(self):
 		self.running = True
