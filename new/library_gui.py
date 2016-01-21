@@ -31,6 +31,8 @@ class LibraryGui:
 		self.collectionlabelframe = tk.Frame(self.clipframe)
 		self.searchframe = tk.Frame(self.mainframe,padx=2,pady=1)
 
+		self.containers = []
+		self.container_labels = []
 		self.init_cols()
 
 		self.add_col_but = tk.Button(self.collectionlabelframe,text='+',command=self.add_collection)
@@ -50,6 +52,8 @@ class LibraryGui:
 
 	def init_cols(self):
 		self.containers = []
+		for label in self.container_labels:
+			label.pack_forget()
 		self.container_labels = []
 		for collection in self.backend.library.clip_collections:
 			new_cont = ContainerCollection(self,self.collectionframe,len(self.containers),collection)
@@ -63,6 +67,8 @@ class LibraryGui:
 
 	def refresh(self):
 		self.init_cols()
+		self.search_or_browse.library = self.backend.library
+		self.search_or_browse.searcher = self.backend.search
 		self.search_or_browse.tree_reset()
 
 	def select_active(self):
@@ -113,19 +119,35 @@ class LibraryGui:
 		self.highlight_col()
 
 	def remove_collection(self,index):
+		if len(self.containers) <= 1:
+			return
 		del self.containers[index]
-		self.container_labels[index].pack_forget()
-		del self.container_labels[index]
 		del self.backend.library.clip_collections[index]
+		# everything to right of index needs to have their index moved
+		for i in range(index,len(self.containers)):
+			self.containers[i].index = i
+			next_text = self.container_labels[i+1]['text']
+			self.containers[i].clip_collection.name = next_text
+			self.container_labels[i].configure(text=next_text)
+		
+		self.container_labels[-1].pack_forget()
+		del self.container_labels[-1]
 		self.go_left()
 
 	def add_collection_label(self,collection,index):
 		newlabel = tk.Label(self.collectionlabelframe,text=collection.clip_collection.name,bd=4)
 		newlabel.bind('<ButtonPress-1>',lambda *args: self.highlight_col(index))
-		newlabel.bind("<Double-1>",collection.change_name_dialog)
+		newlabel.bind("<Double-1>",lambda *args: self.change_name_dialog(index))
 		newlabel.bind('<ButtonPress-2>',lambda *args: self.remove_collection(index))
 		newlabel.pack(side=tk.LEFT)
 		self.container_labels.append(newlabel)
+
+	def change_name_dialog(self,index):
+		new_name = tksimpledialog.askstring("rename collection",self.containers[index].clip_collection.name)
+		if new_name and new_name != self.containers[index].clip_collection.name:
+			# change name
+			self.containers[index].clip_collection.name = new_name
+			self.container_labels[index].configure(text=new_name)
 
 	def go_left(self,*args):
 		if self.backend.cur_col <= 0: self.backend.cur_col = len(self.containers)
@@ -282,8 +304,8 @@ class ContainerCollection:
 			self.clip_collection = clipcol
 		self.last_active = None
 		self.librarygui = librarygui
-		self.name = tk.StringVar()
-		self.name.set('..')
+		if self.clip_collection.name == 'new_col':
+			self.clip_collection.name = str(index)
 		self.frame = tk.Frame(parent_frame)
 
 		for i in range(C.NO_Q):
@@ -303,12 +325,7 @@ class ContainerCollection:
 		self.frame.grid(row=0, column=0, sticky='news')
 		#self.frame.tkraise()
 
-	def change_name_dialog(self,*args):
-		new_name = tksimpledialog.askstring("rename collection",self.clip_collection.name)
-		if new_name and new_name != self.clip_collection.name:
-			# change name
-			self.clip_collection.name = new_name
-			self.librarygui.container_labels[self.index].configure(text=new_name)
+
 
 
 class BrowseLibrary:
@@ -343,6 +360,8 @@ class BrowseLibrary:
 		#res = self.library.clip_names
 		#res.sort()
 		res = self.library.clips
+		if self.search_tree.exists("root"):
+			self.search_tree.delete("root")
 		self.tree_root = self.search_tree.insert('', 'end',iid="root", text='All',open=True,values=['category'])
 		for r in res:
 			self.search_tree.insert(self.tree_root, 'end', text=res[r].name,values=["clip",r])
