@@ -911,13 +911,17 @@ class RecPopUp:
 		self.top = tk.Toplevel()
 		self.top.title(self.rec.fname)
 		self.frame = tk.Frame(self.top)
-		self.activate_frame = tk.LabelFrame(self.frame,text='activation')
-		self.loop_frame = tk.LabelFrame(self.frame,text='clip params')
+		self.middle_frame = tk.Frame(self.top)
+		self.activate_frame = tk.LabelFrame(self.middle_frame,text='activation')
+		self.loop_frame = tk.LabelFrame(self.middle_frame,text='clip params')
+		self.pat_frame = tk.LabelFrame(self.frame,text='patterns')
 
 		self.setup_tk()
 		self.update_vars_from_rec()
 
-		self.frame.pack()
+		self.frame.pack(side=tk.LEFT)
+		self.pat_frame.pack(side=tk.LEFT)
+		self.middle_frame.pack(side=tk.TOP)
 		self.activate_frame.pack(side=tk.LEFT)
 		self.loop_frame.pack(side=tk.LEFT)
 
@@ -993,16 +997,64 @@ class RecPopUp:
 		self.lp_var_r.trace('w',update_qp_r)
 
 		self.speed_var = tk.StringVar()
+		self.control_speed_var = tk.StringVar()
 		self.speed_box = tk.Spinbox(self.loop_frame,from_=-0.1,to=10.0,increment=0.1,format="%.1f",
 							   textvariable=self.speed_var, width=4)
+		self.control_speed_box = tk.Spinbox(self.loop_frame,from_=-0.1,to=C.MAX_SPEEDUP,increment=0.1,format="%.1f",
+							   textvariable=self.control_speed_var, width=4)
 		def update_speed(*args):
 			self.rec.speed = float(self.speed_var.get())
+		def update_control_speed(*args):
+			self.rec.control_speed = float(self.control_speed_var.get())
 		self.speed_var.trace('w',update_speed)
+		self.control_speed_var.trace('w',update_control_speed)
+
 		# self.speed_box.config(command=?) # to-do
 		self.speed_label = tk.Label(self.loop_frame,text='speed')
 		self.speed_label.grid(row=2,column=0)
 		self.speed_box.grid(row=2,column=1)
+		self.control_speed_box.grid(row=2,column=2)
 
+		### pattern part
+		self.pattern_choice = tk.StringVar()
+		def update_cur_pat(*args):
+			self.rec.cur_pat = int(self.pattern_choice.get())
+		self.pattern_choice.trace('w', update_cur_pat)
+		pattern_choices = [-1] + [str(i) for i in range(len(self.rec.pats))]
+		self.pattern_selector = tk.OptionMenu(self.pat_frame,self.pattern_choice,*pattern_choices)
+		def add_pat(*args):
+			self.rec.add_pat()
+			self.update_pat_choices()
+		self.add_pat_but = tk.Button(self.pat_frame,text='+',command=add_pat) 
+
+		def toggle_rec(*args):
+			self.rec.recording_pats = not self.rec.recording_pats
+			print('recording pats',self.rec.recording_pats)
+			cur_pat = self.rec.cur_pat
+			if cur_pat < 0: return
+			if self.rec.recording_pats:
+				if self.rec.pats[cur_pat].start_time == 0:
+					self.rec.pats[cur_pat].start_rec()
+				else:
+					self.rec.pats[cur_pat].resume_rec()
+			else:
+				self.rec.pats[cur_pat].pause_rec()
+
+		def toggle_pb(*args):
+			self.rec.playing_pats = not self.rec.playing_pats
+			print('playing pats',self.rec.playing_pats)
+		self.rec_toggle = tk.Button(self.pat_frame,text='O',command=toggle_rec)
+		self.play_but = tk.Button(self.pat_frame,text='>',command=toggle_pb)
+		self.pattern_selector.pack(side=tk.LEFT)
+		self.add_pat_but.pack(side=tk.LEFT)
+		self.rec_toggle.pack(side=tk.LEFT)
+		self.play_but.pack(side=tk.LEFT)
+
+	def update_pat_choices(self):
+		self.pattern_selector['menu'].delete(0,'end')
+		pattern_choices = [-1] + [str(i) for i in range(len(self.rec.pats))]
+		for choice in pattern_choices:
+			self.pattern_selector['menu'].add_command(label=choice, command=tk._setit(self.pattern_choice, choice))
 
 	def update_vars_from_rec(self):
 		# for each tk var set it to current rec_obj var value
@@ -1018,6 +1070,7 @@ class RecPopUp:
 
 		self.loop_type_var.set(self.rec.lp_type)
 		self.speed_var.set(str(self.rec.speed))
+		self.control_speed_var.set(str(self.rec.control_speed))
 
 		self.qp_choices = [-1] + [str(i) for i,x in enumerate(self.rec.clip.vars['qp']) if x is not None]
 		self.qp_var.set(str(self.rec.qp_to_activate))
@@ -1029,41 +1082,9 @@ class RecPopUp:
 			self.qp_chooser['menu'].add_command(label=choice, command=tk._setit(self.qp_var, choice))
 			self.lp_chooser_l['menu'].add_command(label=choice, command=tk._setit(self.lp_var_l, choice))
 			self.lp_chooser_r['menu'].add_command(label=choice, command=tk._setit(self.lp_var_r, choice))
-
-class PatternControl:
-	def __init__(self,recordr):
-		self.recordr = recordr
-		self.top = tk.Toplevel()
-		self.frame = tk.Frame(self.top)
-		self.frame.pack()
-		self.pattern_choice = tk.StringVar()
-		def update_cur_pat(*args):
-			self.recordr.cur_pat = int(self.pattern_choice.get())
-		self.pattern_choice.trace('w', update_cur_pat)
-		pattern_choices = [-1] + [str(i) for i in range(len(self.recordr.patterns))]
-		self.pattern_selector = tk.OptionMenu(self.frame,self.pattern_choice,*pattern_choices)
-		def add_pat(*args):
-			self.recordr.add_pat()
-			self.update_pat_choices()
-		self.add_pat_but = tk.Button(self.frame,text='+',command=add_pat) 
-
-		def toggle_rec(*args):
-			self.recordr.recording_patterns = not self.recordr.recording_patterns
-			print('recording patterns',self.recordr.recording_patterns)
-		self.rec_toggle = tk.Button(self.frame,text='O',command=toggle_rec)
-		self.play_but = tk.Button(self.frame,text='>',command=self.recordr.play_pat)
-		self.stop_but = tk.Button(self.frame,text='[]',command=self.recordr.stop_pat)
-		self.pattern_selector.grid(row=0,column=0)
-		self.add_pat_but.grid(row=1,column=0)
-		self.rec_toggle.grid(row=0,column=1)
-		self.play_but.grid(row=0,column=2)
-		self.stop_but.grid(row=1,column=1)
-
-	def update_pat_choices(self):
-		self.pattern_selector['menu'].delete(0,'end')
-		pattern_choices = [-1] + [str(i) for i in range(len(self.recordr.patterns))]
-		for choice in pattern_choices:
-			self.pattern_selector['menu'].add_command(label=choice, command=tk._setit(self.pattern_choice, choice))
+		# pats
+		self.update_pat_choices()
+		self.pattern_choice.set(str(self.rec.cur_pat))
 
 class ConnectionSelect:
 	# to-do: 

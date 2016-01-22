@@ -29,6 +29,7 @@ class Backend:
 		self.library = Library(xmlfile)
 		self.cur_clip = Clip('',[-1,-1],"no clip loaded")
 		self.cur_song = None
+		self.cur_rec = None
 		self.cur_col = -1
 		self.search = SearchR(self.library.clips)
 		self.osc_client = ControlR(self,port=ports[0]) 
@@ -50,16 +51,17 @@ class Backend:
 				self.cur_song.vars['total_len'] = int(msg)
 		self.osc_server.map("/pyaud/pos/frame",update_time)
 		self.osc_server.map("/pyaud/info/song_len",update_song_info)
-		# for recording patterns
-		def pattern_record(_,msg):
-			if self.record.recording_patterns and self.record.cur_pat >= 0:
-				self.record.patterns[self.record.cur_pat].add_event(msg)
-			try:
-				self.cur_clip_pos.value = float(msg)
-			except:
-				pass
 
-		self.osc_server.map("/activeclip/video/position/values",pattern_record)
+		# for recording patterns
+		# def pattern_record(_,msg):
+		# 	if self.record.recording_patterns and self.record.cur_pat >= 0:
+		# 		self.record.patterns[self.record.cur_pat].add_event(msg)
+		# 	try:
+		# 		self.cur_clip_pos.value = float(msg)
+		# 	except:
+		# 		pass
+
+		self.osc_server.map("/activeclip/video/position/values",self.cur_clip_pos.update_generator())
 
 		### MIDI CONTROL
 		# basically, here are the descriptions that map to functions
@@ -375,7 +377,9 @@ class ControlR:
 					self.ignore_last = True
 					self.build_n_send(recv_addr,qp0/speedup)
 				self.build_n_send(send_addr,new_val)
-
+				if self.backend.cur_rec is not None and self.backend.cur_rec.recording_pats:
+					if self.backend.cur_rec.cur_pat >= 0:
+						self.backend.cur_rec.pats[self.backend.cur_rec.cur_pat].add_event(new_val)
 			return fun_tor
 		self.backend.osc_server.map_replace(osc_marker,recv_addr,gen_osc_route())
 		# do i need to update the opacity value as well? let's test n see
@@ -496,59 +500,67 @@ class RecordingObject:
 		self.lp_to_select = [-1,-1] # what loop points to select
 		self.lp_type = 'off' # what kind of looping to set/turn on
 		# as in if you specify a type of looping it will activate it
-		self.speed = -0.1
+		self.speed = -0.1 # playback speed
+		self.control_speed = -0.1 # control speed
+		# pattern storage
+		self.pats = []
+		self.cur_pat = -1
+		self.recording_pats = False
+		self.playing_pats = False
+
+	def add_pat(self):
+		self.pats.append(Pattern())
 	
 	def __str__(self):
-		return "{0} @ {1}".format(self.clip_name, self.timestamp)
+		return "{0} @ {1} w/ {2} pats".format(self.clip_name, self.timestamp,len(self.pats))
 
 class Pattern:
 	"""
 	special object that holds a pattern of timeline positions which can be replayed
 	maybe will do any osc_msgs... not sure
 	"""
-	def __init__(self,osc_client):
-		self.events = []
-		self.osc_client = osc_client
-		self.start_time = time.time()
-		self.pause_time = 0
-		self.scheduler = sched.scheduler(time.time, time.sleep)
-		self.running = False
+	def __init__(self,debug=True):
+		self.clear()
+		self.debug = debug
 
 	def add_event(self,osc_msg):
 		new_time = time.time()
 		time_elapsed = new_time - self.start_time
-	#	self.scheduler.enter(time_elapsed,1,self.osc_client.build_n_send,argument=('/activeclip/video/position/values',osc_msg,))
-	# 	self.scheduler.enter(time_elapsed,1,self.osc_client.send_msg,argument=(osc_msg,))
 		self.events.append((time_elapsed,osc_msg))
 		self.last_time = new_time
 
-	def test_event(self,timestamp,addr,msg):
-		self.osc_client.build_n_send(addr,msg)
-		print(time.time(),timestamp,msg)
+	def start_rec(self):
+		self.start_time = time.time()
+		if self.debug: print('started',self.start_time)
 
 	def pause_rec(self):
 		self.pause_time = time.time() - self.start_time
+		if self.debug: print('paused',self.pause_time)
 
 	def resume_rec(self):
 		self.start_time = time.time() - self.pause_time
+		if self.debug: print('resumed',self.start_time)
 
-	def run(self):
-		self.running = True
-		self.scheduler.run()#blocking=False)
+	def clear(self):
+		self.events = []
+		self.start_time = 0
+		self.pause_time = 0
 
-	def start(self):
-		# if not self.scheduler.empty(): self.stop()
-		if self.scheduler.empty:
-			now = time.time()
-			for event in self.events:
-				self.scheduler.enter(event[0],1,self.osc_client.build_n_send,argument=('/activeclip/video/position/values',event[1],))
-		self.run()
+	# def run(self):
+	# 	self.scheduler.run()#blocking=False)
 
-	def stop(self):
-		self.running = False
-		if not self.scheduler.empty(): # restart the playback
-			for event in self.scheduler.queue:
-				self.scheduler.cancel(event)
+	# def start(self):
+	# 	# if not self.scheduler.empty(): self.stop()
+	# 	if self.scheduler.empty:
+	# 		now = time.time()
+	# 		for event in self.events:
+	# 			self.scheduler.enter(event[0],1,self.osc_client.build_n_send,argument=('/activeclip/video/position/values',event[1],))
+	# 	self.run()
+
+	# def stop(self):
+	# 	if not self.scheduler.empty(): # restart the playback
+	# 		for event in self.scheduler.queue:
+	# 			self.scheduler.cancel(event)
 		
 class RecordR:
 	"""
@@ -560,10 +572,7 @@ class RecordR:
 		# containing the commands at that time : )
 		self.no_layers = C.NO_LAYERS
 		self.record = {} # where everything is written to
-		self.patterns = []
-		self.cur_pat = -1
 		self.recording = False
-		self.recording_patterns = False
 		self.playing = False
 		self.backend = backend
 		self.last_save_file = None
@@ -574,6 +583,7 @@ class RecordR:
 							   "<" : self.backend.osc_client.reverse,
 							   "*" : self.backend.osc_client.random_play}
 		self.gui_update_command = None
+		self.scheduler = sched.scheduler(time.time, time.sleep)
 	 
 	def toggle_playing(self):
 		self.playing = not self.playing
@@ -614,16 +624,6 @@ class RecordR:
 		self.record[fixed_timestamp][layer] = rec_obj
 		return rec_obj
 
-	def add_pat(self):
-		self.patterns.append(Pattern(self.backend.osc_client))
-
-	def play_pat(self):
-		if self.cur_pat < 0: return
-		self.patterns[self.cur_pat].start()
-	def stop_pat(self):
-		if self.cur_pat < 0: return
-		self.patterns[self.cur_pat].stop()
-
 
 	def copy_rec(self,rec_obj,new_time):
 		if self.backend.cur_song is None or self.backend.cur_song.vars['total_len'] is None: return
@@ -639,6 +639,10 @@ class RecordR:
 		new_rec.lp_to_select = rec_obj.lp_to_select 
 		new_rec.lp_type = rec_obj.lp_type 
 		new_rec.speed = rec_obj.speed 
+		new_rec.control_speed = rec_obj.control_speed
+		new_rec.pats = rec_obj.pats
+		new_rec.cur_pat = rec_obj.cur_pat
+
 		if new_time not in self.record:
 			self.record[new_time] = [None] * self.no_layers
 		elif self.record[new_time][new_rec.layer] is not None:
@@ -682,6 +686,7 @@ class RecordR:
 				cur_rec = self.record[time][layer]
 				if cur_rec:
 					print(cur_rec)
+					self.backend.cur_rec = cur_rec
 					rec_clip = self.backend.library.clips[cur_rec.clip_fname]
 					if cur_rec.activate:
 						self.backend.change_clip(rec_clip)
@@ -700,10 +705,20 @@ class RecordR:
 						rec_clip.vars['looptype'] = cur_rec.lp_type
 						rec_clip.vars['lp'] = cur_rec.lp_to_select
 					if cur_rec.speed >= 0:
-						rec_clip.vars['playback_speed'] = cur_rec.speed # doesnt actually do anything yet
+						rec_clip.vars['playback_speed'] = cur_rec.speed 
+					if cur_rec.playing_pats:
+						if cur_rec.cur_pat >= 0:
+							self.play_pat(cur_rec.pats[cur_rec.cur_pat])
 		if self.gui_update_command is not None and rec_clip is not None:
 			self.gui_update_command(rec_clip)
 
+	def play_pat(self,pat):
+		if len(pat.events) > 0:
+			print(len(pat.events),pat.events[0][0])
+			
+		for event in pat.events:
+			self.scheduler.enter(event[0],1,self.backend.osc_client.build_n_send,argument=('/activeclip/video/position/values',event[1],))
+		self.scheduler.run()
 
 
 	def print_self(self):

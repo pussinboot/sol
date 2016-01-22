@@ -8,7 +8,7 @@ import os
 from sol_backend import Backend
 from clip_control import ClipControl
 from library_gui import LibraryGui
-from audio_gui import AudioBar, PatternControl
+from audio_gui import AudioBar
 import CONSTANTS as C
 
 class MainGui:
@@ -51,8 +51,6 @@ class MainGui:
 		# audio stuff
 		self.audio_bar = AudioBar(self,self.bot_frame,self.backend)
 		self.audio_bar.start()
-		#### testing pattern recording
-		self.pattern_control = PatternControl(self.backend.record)
 		# menu
 		self.setup_menubar()
 		# midi
