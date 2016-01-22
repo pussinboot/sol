@@ -510,6 +510,14 @@ class RecordingObject:
 
 	def add_pat(self):
 		self.pats.append(Pattern())
+
+	def rec_pat(self):
+		if self.cur_pat < 0: return
+		if self.recording_pats:
+			if self.pats[self.cur_pat].start_time == 0:
+				self.pats[self.cur_pat].start_rec()
+			else:
+				self.pats[self.cur_pat].resume_rec()
 	
 	def __str__(self):
 		return "{0} @ {1} w/ {2} pats".format(self.clip_name, self.timestamp,len(self.pats))
@@ -695,7 +703,6 @@ class RecordR:
 						# control fix
 						self.backend.osc_client.ignore_last = True
 						self.backend.osc_client.build_n_send('/composition/video/effect1/opacity/values',qp/rec_clip.vars['speedup_factor'])
-
 					if cur_rec.playback_control in self.pbc_to_command:
 						self.pbc_to_command[cur_rec.playback_control](rec_clip)
 					if cur_rec.lp_type == 'off':
@@ -706,9 +713,14 @@ class RecordR:
 						rec_clip.vars['lp'] = cur_rec.lp_to_select
 					if cur_rec.speed >= 0:
 						rec_clip.vars['playback_speed'] = cur_rec.speed 
+					if cur_rec.control_speed >= 0:
+						rec_clip.vars['speedup_factor'] = cur_rec.control_speed 
 					if cur_rec.playing_pats:
 						if cur_rec.cur_pat >= 0:
 							self.play_pat(cur_rec.pats[cur_rec.cur_pat])
+					elif cur_rec.recording_pats:
+						cur_rec.rec_pat()
+
 		if self.gui_update_command is not None and rec_clip is not None:
 			self.gui_update_command(rec_clip)
 
@@ -719,7 +731,6 @@ class RecordR:
 		for event in pat.events:
 			self.scheduler.enter(event[0],1,self.backend.osc_client.build_n_send,argument=('/activeclip/video/position/values',event[1],))
 		self.scheduler.run()
-
 
 	def print_self(self):
 		print([item for item in self.record.items()])
