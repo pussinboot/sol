@@ -1030,31 +1030,65 @@ class RecPopUp:
 		def toggle_rec(*args):
 			self.rec.recording_pats = not self.rec.recording_pats
 			print('recording pats',self.rec.recording_pats)
+			self.update_pat_buts()
 			cur_pat = self.rec.cur_pat
 			if cur_pat < 0: return
-			if self.rec.recording_pats:
-				if self.rec.pats[cur_pat].start_time == 0:
-					self.rec.pats[cur_pat].start_rec()
-				else:
-					self.rec.pats[cur_pat].resume_rec()
-			else:
+			if not self.rec.recording_pats:
 				self.rec.pats[cur_pat].pause_rec()
 
 		def toggle_pb(*args):
 			self.rec.playing_pats = not self.rec.playing_pats
 			print('playing pats',self.rec.playing_pats)
+			self.update_pat_buts()
+
+		def clear_pat(*args):
+			if self.rec.cur_pat >= 0:
+				self.rec.pats[self.rec.cur_pat].clear()
+				self.rec.recording_pats = False
+				self.rec.playing_pats = False
+				self.update_pat_buts()
+
+		def delete_pat(*args):
+			if self.rec.cur_pat >= 0:
+				del self.rec.pats[self.rec.cur_pat]
+				if  self.rec.cur_pat + 1 >= len(self.rec.pats):
+					self.rec.cur_pat -= 1
+				self.rec.recording_pats = False
+				self.rec.playing_pats = False
+				self.update_pat_choices()
+
+		self.del_but = tk.Button(self.pat_frame,text='-',command=delete_pat)
+		self.clear_but = tk.Button(self.pat_frame,text='C',command=clear_pat)
 		self.rec_toggle = tk.Button(self.pat_frame,text='O',command=toggle_rec)
 		self.play_but = tk.Button(self.pat_frame,text='>',command=toggle_pb)
+
 		self.pattern_selector.pack(side=tk.LEFT)
 		self.add_pat_but.pack(side=tk.LEFT)
+		self.del_but.pack(side=tk.LEFT)
+		self.clear_but.pack(side=tk.LEFT)
 		self.rec_toggle.pack(side=tk.LEFT)
 		self.play_but.pack(side=tk.LEFT)
+
+	def update_pat_buts(self):
+		if self.rec.recording_pats:
+			self.rec_toggle.config(relief='sunken')
+			self.rec.playing_pats = False
+			self.play_but.config(relief='raised')
+		elif self.rec.playing_pats:
+			self.rec_toggle.config(relief='raised')
+			self.rec.recording_pats = False
+			self.play_but.config(relief='sunken')
+		else:
+			self.rec_toggle.config(relief='raised')
+			self.play_but.config(relief='raised')
 
 	def update_pat_choices(self):
 		self.pattern_selector['menu'].delete(0,'end')
 		pattern_choices = [-1] + [str(i) for i in range(len(self.rec.pats))]
 		for choice in pattern_choices:
 			self.pattern_selector['menu'].add_command(label=choice, command=tk._setit(self.pattern_choice, choice))
+		self.pattern_choice.set(str(self.rec.cur_pat))
+		self.update_pat_buts()
 
 	def update_vars_from_rec(self):
 		# for each tk var set it to current rec_obj var value
@@ -1084,7 +1118,6 @@ class RecPopUp:
 			self.lp_chooser_r['menu'].add_command(label=choice, command=tk._setit(self.lp_var_r, choice))
 		# pats
 		self.update_pat_choices()
-		self.pattern_choice.set(str(self.rec.cur_pat))
 
 class ConnectionSelect:
 	# to-do: 
