@@ -85,3 +85,8 @@ ultra updated new and improved to-do
 	which also may mean synchronizing it with overall recording by means of comparing to cur song time ??
 	in which case can add this to existing recording system by setting it to only be recording from timeline_control
 > transparent clip control for next version of ui that werks as an overlay for resolume 
+
+actually tho
+============
+move patterns from nowhere to being part of a record
+this also means cant have ref to osc_client in order to properly pickle..
