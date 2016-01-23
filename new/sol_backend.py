@@ -289,7 +289,11 @@ class ControlR:
 
 	def activate(self,clip,i,scale=1):
 		if clip.vars['qp'][i]:
-			self.get_q(clip,i)
+			qp = self.get_q(clip,i)
+			# pattern recording
+			if self.backend.cur_rec is not None and self.backend.cur_rec.recording_pats:
+				if self.backend.cur_rec.cur_pat >= 0:
+					self.backend.cur_rec.pats[self.backend.cur_rec.cur_pat].add_event(qp)
 		else:
 			return self.set_q(clip,i,scale=scale)
 
@@ -364,6 +368,7 @@ class ControlR:
 					self.build_n_send(recv_addr,qp0/speedup)
 					new_val = qp0
 				self.build_n_send(send_addr,new_val)
+				# pattern recording
 				if self.backend.cur_rec is not None and self.backend.cur_rec.recording_pats:
 					if self.backend.cur_rec.cur_pat >= 0:
 						self.backend.cur_rec.pats[self.backend.cur_rec.cur_pat].add_event(new_val)
