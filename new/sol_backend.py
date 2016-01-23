@@ -40,9 +40,8 @@ class Backend:
 		self.cur_time = RefObj("cur_time")
 		self.cur_clip_pos = RefObj("cur_clip_pos",0.0)
 
-		def update_time(_,msg): # this is the driving force behind the backend :o)
-			try:				# add going through log file and redoing it in playback mode
-								# plus making of the log file in record mode
+		def update_time(_,msg): # this is the driving force behind the (audio) backend :o)
+			try:
 				self.cur_time.value = int(msg)
 			except:
 				pass
@@ -51,16 +50,6 @@ class Backend:
 				self.cur_song.vars['total_len'] = int(msg)
 		self.osc_server.map("/pyaud/pos/frame",update_time)
 		self.osc_server.map("/pyaud/info/song_len",update_song_info)
-
-		# for recording patterns
-		# def pattern_record(_,msg):
-		# 	if self.record.recording_patterns and self.record.cur_pat >= 0:
-		# 		self.record.patterns[self.record.cur_pat].add_event(msg)
-		# 	try:
-		# 		self.cur_clip_pos.value = float(msg)
-		# 	except:
-		# 		pass
-
 		self.osc_server.map("/activeclip/video/position/values",self.cur_clip_pos.update_generator('float'))
 
 		### MIDI CONTROL
@@ -198,11 +187,7 @@ class SearchR:
 				if c == " " or c == "_":
 					self.index.append((clip.name[ix+1:].lower(),clip.fname))
 
-		#self.index = [ (w.lower(), clip) for w in [clip[ix+1:] for ix, c in enumerate(clip) for clip in clips if c == " "] ] 
-		#space_ix = [clip[ix+1:] for ix, c in enumerate(clip) if c == " "]
-
 		self.index.sort()
-		#print(self.index)
 
 	def add_clip(self, clip):
 		self.index.append((clip.name.lower(),clip.fname))
@@ -320,7 +305,6 @@ class ControlR:
 			return fun_tor
 		self.play = gen_control_sender('/activeclip/video/position/direction',1,1)
 		self.reverse = gen_control_sender('/activeclip/video/position/direction',0,-1)
-		#self.pause = gen_control_sender('/activeclip/video/position/direction',2,0)
 		self.random_play = gen_control_sender('/activeclip/video/position/direction',3,-2)
 
 		def clear_clip():
@@ -337,9 +321,7 @@ class ControlR:
 		self.build_n_send('/activeclip/video/position/direction',2)
 		self.ignore_last = True
 		self.build_n_send('/composition/video/effect1/opacity/values',self.backend.cur_clip_pos.value/clip.vars['speedup_factor'])
-		#if clip.last_pos is not None:
-		#	self.build_n_send('/composition/video/effect1/opacity/values',clip.last_pos/clip.vars['speedup_factor'])
-
+	
 	### REAL CONTROL HAX
 	# change effect1 to bypass
 	# then set opacity to timeline and map midi to its value
@@ -367,9 +349,12 @@ class ControlR:
 				new_val = float(msg) * speedup
 				if new_val > 1.0:
 					new_val = 1.0
-				if self.current_clip.vars['loopon']:	qp0,qp1 = self.current_clip.vars['qp'][self.current_clip.vars['lp'][0]],self.current_clip.vars['qp'][self.current_clip.vars['lp'][1]] # if looping
-				# linear scale
-				#new_val = (qp1 - qp0)*new_val + qp0
+				if self.current_clip.vars['loopon']:	# if looping
+					n_qp0 = self.current_clip.vars['qp'][self.current_clip.vars['lp'][0]]
+					n_qp1 = self.current_clip.vars['qp'][self.current_clip.vars['lp'][1]]
+					if n_qp0 is not None: qp0 = n_qp0
+					if n_qp1 is not None: qp1 = n_qp1
+				#new_val = (qp1 - qp0)*new_val + qp0 # linear scale
 				if new_val >= qp1: # if reached end
 					self.ignore_last = True
 					self.build_n_send(recv_addr,qp1/speedup)
@@ -384,13 +369,6 @@ class ControlR:
 						self.backend.cur_rec.pats[self.backend.cur_rec.cur_pat].add_event(new_val)
 			return fun_tor
 		self.backend.osc_server.map_replace(osc_marker,recv_addr,gen_osc_route())
-		# do i need to update the opacity value as well? let's test n see
-		# then will also have to do reverse op if im choosing to scale in order
-		# to limit active range of control
-		# self.backend.osc_server.map(send_addr,gen_osc_route(recv_addr))
-		# holy moley that doesnt work but is funny
-
-
 
 	### looping behavior
 	# select any 2 cue points, once reach one of them jump to the other
@@ -402,12 +380,6 @@ class ControlR:
 		if default looping - hit cue a go to b
 		if bounce - hit cue a, reverse direction, hit cue b, reverse direction
 		"""
-		#keep_pos_fun = self.backend.cur_clip_pos.update_generator('float')
-
-		# single_frame = self.current_clip.single_frame_float()
-		# def check_within(time,compare,factor=10):
-		# 	dt = abs(time - compare)
-		# 	return dt <= factor*single_frame
 
 		def default_loop(time):
 			if not self.current_clip.vars['loopon']: return
@@ -435,8 +407,6 @@ class ControlR:
 				self.activate(self.current_clip,self.current_clip.vars['lp'][1])
 		loop_type_to_fun = {'default':default_loop,'bounce':bounce_loop}
 		def map_fun(toss,msg):
-			#keep_pos_fun(toss,msg)	# keep default behavior # dont need this since mapping appends ^_^ 
-			#LOL not default anymore
 			curval = float(msg)
 			try:
 				loop_type_to_fun[self.current_clip.vars['looptype']](curval)
@@ -483,8 +453,6 @@ class ServeR:
 			self.special_handlers[special] = len(self.dispatcher._map[addr]) - 1
 		else:
 			self.dispatcher._map[addr][self.special_handlers[special]] = self.Handler(handler,list(args))
-		#print(self.dispatcher._map[addr])
-
 
 class RecordingObject:
 	"""
@@ -555,22 +523,6 @@ class Pattern:
 		self.events = []
 		self.start_time = 0
 		self.pause_time = 0
-
-	# def run(self):
-	# 	self.scheduler.run()#blocking=False)
-
-	# def start(self):
-	# 	# if not self.scheduler.empty(): self.stop()
-	# 	if self.scheduler.empty:
-	# 		now = time.time()
-	# 		for event in self.events:
-	# 			self.scheduler.enter(event[0],1,self.osc_client.build_n_send,argument=('/activeclip/video/position/values',event[1],))
-	# 	self.run()
-
-	# def stop(self):
-	# 	if not self.scheduler.empty(): # restart the playback
-	# 		for event in self.scheduler.queue:
-	# 			self.scheduler.cancel(event)
 		
 class RecordR:
 	"""
@@ -588,8 +540,11 @@ class RecordR:
 		self.last_save_file = None
 		self.playback_layers = [False] * self.no_layers
 		self.recording_layer = 0
+		def pause_that_wont_mess_up(clip):
+			clip.vars['playdir'] = 0
+			self.backend.osc_client.build_n_send('/activeclip/video/position/direction',2)
 		self.pbc_to_command = {">" : self.backend.osc_client.play,
-							  "||" : self.backend.osc_client.pause,
+							  "||" : pause_that_wont_mess_up,
 							   "<" : self.backend.osc_client.reverse,
 							   "*" : self.backend.osc_client.random_play}
 		self.gui_update_command = None
@@ -695,7 +650,7 @@ class RecordR:
 			if truth_val:
 				cur_rec = self.record[time][layer]
 				if cur_rec:
-					if self.backend.cur_rec is not None:
+					if self.backend.cur_rec is not None and self.backend.cur_rec != cur_rec:
 						self.backend.cur_rec.recording_pats = False
 					print(cur_rec)
 					self.backend.cur_rec = cur_rec
@@ -703,15 +658,18 @@ class RecordR:
 					if cur_rec.activate:
 						self.backend.change_clip(rec_clip)
 					if cur_rec.qp_to_activate >= 0:
+						temp_loop = rec_clip.vars['loopon']
+						rec_clip.vars['loopon'] = False # don't accidentally loop :^)
 						qp = self.backend.osc_client.get_q(rec_clip,cur_rec.qp_to_activate)
+						rec_clip.vars['loopon'] = temp_loop
 						# control fix
 						self.backend.osc_client.ignore_last = True
 						self.backend.osc_client.build_n_send('/composition/video/effect1/opacity/values',qp/rec_clip.vars['speedup_factor'])
 					if cur_rec.playback_control in self.pbc_to_command:
 						self.pbc_to_command[cur_rec.playback_control](rec_clip)
-					if cur_rec.lp_type == 'off':
-						rec_clip.vars['loopon'] = False
-					else:
+					#if cur_rec.lp_type == 'off': # if it's off then dont change anything??
+						# rec_clip.vars['loopon'] = False
+					if cur_rec.lp_type != 'off':
 						rec_clip.vars['loopon'] = True
 						rec_clip.vars['looptype'] = cur_rec.lp_type
 						rec_clip.vars['lp'] = cur_rec.lp_to_select
@@ -824,20 +782,9 @@ class RecordR:
 
 
 if __name__ == '__main__':
-	# test_lib = Library('../old/test.avc')
-	# print(test_lib.clip_names)
-	# print(test_lib.clips['D:\\Downloads\\DJ\\vj\\vids\\organized\\gundam\\dxv\\Cca Amuro Vs Cute Gril.mov'].params)
-	import time
-	bb = Backend('../old/test.avc')
-	#bb = Backend('./test_ex.avc')
-	bb.save_data()
-	#bb = Backend()
-	#print(bb.xmlfile)
-	#bb.osc_client.build_n_send('/pyaud/open','./test.wav')
-	#time.sleep(.5)
-	#bb.osc_client.build_n_send('/pyaud/pps',1)
-	#time.sleep(1)
-	#bb.osc_client.build_n_send('/pyaud/pps',-1)
-	#time.sleep(.1)
-	#bb.osc_server.stop()
+	# bb = Backend('../old/test.avc')
+	# #bb = Backend('./test_ex.avc')
+	# bb.save_data()
+	import sol_gui
+	sol_gui.test()
 

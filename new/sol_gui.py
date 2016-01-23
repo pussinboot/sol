@@ -155,7 +155,7 @@ class MainGui:
 		self.filemenu = tk.Menu(self.menubar,tearoff=0)
 		self.filemenu.add_command(label='open audio',command=self.audio_bar.open_file)
 		def load_avc():
-			default_save_path = "{0}{1}".format(os.environ['USERPROFILE'],C.RESOLUME_SAVE_DIR)
+			default_save_path = C.RESOLUME_SAVE_DIR # "{0}{1}".format(os.environ['USERPROFILE'],C.RESOLUME_SAVE_DIR)
 			filename = tkfd.askopenfilename(parent=self.root,title='Choose a file',initialdir=default_save_path)
 			if filename:
 				self.backend.load_composition(filename)
@@ -199,7 +199,7 @@ def test():
 	# for testing only
 	testgui.audio_bar.osc_client.build_n_send('/pyaud/open','./test.wav')
 	testgui.backend.record.load_last()
-	testgui.audio_bar.progress_bar.reload()
+	#testgui.audio_bar.progress_bar.reload()
 	root.mainloop()
 	testgui.quit()
 	#testgui.backend.osc_client.build_n_send("/activelayer/clear",1)

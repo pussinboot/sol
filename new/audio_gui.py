@@ -276,7 +276,11 @@ class AudioBar:
 				self.loop_on_off.config(relief='raised')
 
 	def buttons_enabler(self,_,osc_msg):
-		if osc_msg == 'loaded' or osc_msg == 'paused':
+		if osc_msg == 'loaded':
+			self.progress_bar.reload()
+			self.playbut.config(state='normal')
+			self.pausebut.config(state='disabled')
+		elif osc_msg == 'paused':
 			self.playbut.config(state='normal')
 			self.pausebut.config(state='disabled')
 		elif osc_msg == 'playing':
