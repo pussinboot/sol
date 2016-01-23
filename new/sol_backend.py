@@ -61,7 +61,7 @@ class Backend:
 		# 	except:
 		# 		pass
 
-		self.osc_server.map("/activeclip/video/position/values",self.cur_clip_pos.update_generator())
+		self.osc_server.map("/activeclip/video/position/values",self.cur_clip_pos.update_generator('float'))
 
 		### MIDI CONTROL
 		# basically, here are the descriptions that map to functions
@@ -373,9 +373,11 @@ class ControlR:
 				if new_val >= qp1: # if reached end
 					self.ignore_last = True
 					self.build_n_send(recv_addr,qp1/speedup)
+					new_val = qp1
 				elif new_val <= qp0: # if reached beginning
 					self.ignore_last = True
 					self.build_n_send(recv_addr,qp0/speedup)
+					new_val = qp0
 				self.build_n_send(send_addr,new_val)
 				if self.backend.cur_rec is not None and self.backend.cur_rec.recording_pats:
 					if self.backend.cur_rec.cur_pat >= 0:
@@ -693,6 +695,8 @@ class RecordR:
 			if truth_val:
 				cur_rec = self.record[time][layer]
 				if cur_rec:
+					if self.backend.cur_rec is not None:
+						self.backend.cur_rec.recording_pats = False
 					print(cur_rec)
 					self.backend.cur_rec = cur_rec
 					rec_clip = self.backend.library.clips[cur_rec.clip_fname]

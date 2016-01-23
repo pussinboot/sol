@@ -190,11 +190,12 @@ class MainGui:
 
 
 def test():
-
+	from tendo import singleton
+	me = singleton.SingleInstance()
 	root = tk.Tk()
 	root.title('sol_test')
 
-	testgui = MainGui(root,midi_on=False)
+	testgui = MainGui(root,midi_on=True)
 	# for testing only
 	testgui.audio_bar.osc_client.build_n_send('/pyaud/open','./test.wav')
 	testgui.backend.record.load_last()
