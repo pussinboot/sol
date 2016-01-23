@@ -484,8 +484,8 @@ class ProgressBar:
 		if not self.cliporsong.vars['loopon']:
 			self.canvas.coords(self.looprect,0,0,0,0)
 			return
-		lelines = [self.lines[i] for i in self.cliporsong.vars['lp']]
-		if not any(lelines): # if the ii activated in the looping are not lines no need to draw this
+		lelines = [self.lines[i] for i in self.cliporsong.vars['lp'] if self.lines[i] is not None]
+		if not any(lelines) or len(lelines) < 2: # if the ii activated in the looping are not lines no need to draw this
 			return
 		for line in lelines:
 			self.canvas.addtag_withtag('temploop',line)

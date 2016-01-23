@@ -275,6 +275,8 @@ class ClipControl:
 				for _ in range(-1*n): self.speedup_decrease()
 		else:
 			self.looping_vars['control_speed'].set("%.2f" % (C.MAX_SPEEDUP * n))
+		self.osc_client.build_n_send('/composition/video/effect1/opacity/values',self.backend.cur_clip_pos.value/self.clip.vars['speedup_factor'])
+
 
 	def change_lp(self,new_lp):
 		self.looping_vars['loop_a'].set(str(new_lp[0]))
