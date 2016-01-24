@@ -493,6 +493,11 @@ class RecordingObject:
 				self.pats[self.cur_pat].start_rec()
 			else:
 				self.pats[self.cur_pat].resume_rec()
+
+	def pause_pat_rec(self):
+		if self.cur_pat < 0: return
+		if self.recording_pats:
+			self.pats[self.cur_pat].pause_rec()
 	
 	def __str__(self):
 		return "{0} @ {1} w/ {2} pats".format(self.clip_name, self.timestamp,len(self.pats))
@@ -553,6 +558,7 @@ class RecordR:
 							   "<" : self.backend.osc_client.reverse,
 							   "*" : self.backend.osc_client.random_play}
 		self.gui_update_command = None
+		self.rec_gui_update_command = None
 		self.scheduler = sched.scheduler(time.time, time.sleep)
 	 
 	def toggle_playing(self):
@@ -593,7 +599,6 @@ class RecordR:
 			self.record[fixed_timestamp] = [None] * self.no_layers
 		self.record[fixed_timestamp][layer] = rec_obj
 		return rec_obj
-
 
 	def copy_rec(self,rec_obj,new_time):
 		if self.backend.cur_song is None or self.backend.cur_song.vars['total_len'] is None: return
@@ -651,6 +656,7 @@ class RecordR:
 		if time not in self.record:
 			return
 		rec_clip = None
+		play_pats = False
 		for layer, truth_val in enumerate(self.playback_layers):
 			if truth_val:
 				cur_rec = self.record[time][layer]
@@ -684,20 +690,20 @@ class RecordR:
 						rec_clip.vars['speedup_factor'] = cur_rec.control_speed 
 					if cur_rec.playing_pats:
 						if cur_rec.cur_pat >= 0:
-							self.play_pat(cur_rec.pats[cur_rec.cur_pat])
+							self.add_pat(cur_rec.pats[cur_rec.cur_pat],layer)
+							play_pats = True
 					elif cur_rec.recording_pats:
 						cur_rec.rec_pat()
 
 		if self.gui_update_command is not None and rec_clip is not None:
 			self.gui_update_command(rec_clip)
+		if play_pats: self.scheduler.run()
 
-	def play_pat(self,pat):
+	def add_pat(self,pat,layer):
 		if len(pat.events) > 0:
 			print(len(pat.events),pat.events[0][0])
-			
 		for event in pat.events:
-			self.scheduler.enter(event[0],1,self.backend.osc_client.build_n_send,argument=('/activeclip/video/position/values',event[1],))
-		self.scheduler.run()
+			self.scheduler.enter(event[0],layer,self.backend.osc_client.build_n_send,argument=('/activeclip/video/position/values',event[1],))
 
 	def print_self(self):
 		print([item for item in self.record.items()])
@@ -716,7 +722,17 @@ class RecordR:
 				return
 			if time - self.backend.cur_song.vars['qp'][self.backend.cur_song.vars['lp'][1]] > 0:
 				pyaud_controlr.activate(self.backend.cur_song,self.backend.cur_song.vars['lp'][0])
-
+				# if recording RECORDS then on loop go to next layer
+				if self.recording:
+					self.recording_layer = (self.recording_layer + 1) % self.no_layers
+					if self.rec_gui_update_command is not None:
+						self.rec_gui_update_command()
+				# if recording PATTERNS then on loop add a new pattern
+				elif self.playing:
+					# if recording pats
+					# need to add a +pat flag for playback above so that every clip w/ pattern gets updated
+					if self.backend.cur_rec is not None: self.backend.cur_rec.pause_pat_rec()
+					
 		def map_float(_,msg):
 			curfloat = float(msg)
 			try:
@@ -783,13 +799,9 @@ class RecordR:
 				fname = last_save.read()
 				self.load_data(fname)
 
-
-
-
 if __name__ == '__main__':
 	# bb = Backend('../old/test.avc')
 	# #bb = Backend('./test_ex.avc')
 	# bb.save_data()
 	import sol_gui
 	sol_gui.test()
-

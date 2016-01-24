@@ -153,6 +153,7 @@ class AudioBar:
 		self.current_song = Song('')
 		self.backend.cur_song = self.current_song
 
+		self.cur_rec = None
 		self.cur_clip = self.current_song
 		self.osc_client = ControlR(self,port=audio_server_port)
 		self.osc_server = self.backend.osc_server
@@ -173,6 +174,9 @@ class AudioBar:
 	def start(self):
 		self.osc_map()
 		self.osc_client.build_n_send('/pyaud/querystatus',1)
+
+	def refresh(self):
+		self.vars['rec_layer'].set(str(self.backend.record.recording_layer))
 
 	def setup_control(self):
 		self.audio_frame = tk.Frame(self.control_frame)
