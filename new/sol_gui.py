@@ -51,6 +51,7 @@ class MainGui:
 		# audio stuff
 		self.audio_bar = AudioBar(self,self.bot_frame,self.backend)
 		self.audio_bar.start()
+		self.backend.record.rec_gui_update_command = self.audio_bar.refresh
 		# menu
 		self.setup_menubar()
 		# midi
