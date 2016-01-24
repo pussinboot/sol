@@ -485,6 +485,7 @@ class RecordingObject:
 
 	def add_pat(self):
 		self.pats.append(Pattern())
+		self.cur_pat = len(self.pats) - 1
 
 	def rec_pat(self):
 		if self.cur_pat < 0: return
@@ -550,6 +551,7 @@ class RecordR:
 		self.last_save_file = None
 		self.playback_layers = [False] * self.no_layers
 		self.recording_layer = 0
+		self.pat_loop = False
 		def pause_that_wont_mess_up(clip):
 			clip.vars['playdir'] = 0
 			self.backend.osc_client.build_n_send('/activeclip/video/position/direction',2)
@@ -693,10 +695,13 @@ class RecordR:
 							self.add_pat(cur_rec.pats[cur_rec.cur_pat],layer)
 							play_pats = True
 					elif cur_rec.recording_pats:
+						if self.pat_loop:
+							cur_rec.add_pat()
 						cur_rec.rec_pat()
 
 		if self.gui_update_command is not None and rec_clip is not None:
 			self.gui_update_command(rec_clip)
+		if self.rec_gui_update_command is not None:	self.rec_gui_update_command()
 		if play_pats: self.scheduler.run()
 
 	def add_pat(self,pat,layer):
@@ -725,13 +730,22 @@ class RecordR:
 				# if recording RECORDS then on loop go to next layer
 				if self.recording:
 					self.recording_layer = (self.recording_layer + 1) % self.no_layers
-					if self.rec_gui_update_command is not None:
-						self.rec_gui_update_command()
+					self.pat_loop = False
+					if self.rec_gui_update_command is not None:	self.rec_gui_update_command()
 				# if recording PATTERNS then on loop add a new pattern
 				elif self.playing:
 					# if recording pats
-					# need to add a +pat flag for playback above so that every clip w/ pattern gets updated
-					if self.backend.cur_rec is not None: self.backend.cur_rec.pause_pat_rec()
+					if self.backend.cur_rec is None:
+						self.pat_loop = False
+						return
+					if self.backend.cur_rec.recording_pats:
+						# need to add a +pat flag for playback above so that every clip w/ pattern gets updated
+						self.pat_loop = True
+					self.backend.cur_rec.pause_pat_rec()
+					if self.rec_gui_update_command is not None:	self.rec_gui_update_command()
+				else:
+					self.pat_loop = False
+
 					
 		def map_float(_,msg):
 			curfloat = float(msg)
