@@ -177,6 +177,8 @@ class AudioBar:
 
 	def refresh(self):
 		self.vars['rec_layer'].set(str(self.backend.record.recording_layer))
+		if self.progress_bar.last_rec_popup is not None:
+			self.progress_bar.last_rec_popup.update_vars_from_rec()
 
 	def setup_control(self):
 		self.audio_frame = tk.Frame(self.control_frame)
@@ -211,6 +213,7 @@ class AudioBar:
 		def toggle_looping():
 			if self.backend.cur_song is not None:
 				self.backend.cur_song.vars['loopon'] = not self.backend.cur_song.vars['loopon']
+			self.progress_bar.refresh()
 
 		self.loop_on_off = tk.Button(self.audio_frame,text='loop',command=self.gen_updater(toggle_looping),padx=10,pady=6) 
 		self.loop_on_off.grid(row=1,column=2)
@@ -410,7 +413,6 @@ class ProgressBar:
 		self.canvas.coords(self.pbar,new_x,0,new_x,self.height)
 		### WHY DOES THIS LEAK MEMORY NOBODY KNOWS ###
 		#self.root.update_idletasks() # doesnt fix
-
 
 	# drag n drop
 	def drag_begin(self, event):
@@ -1045,7 +1047,11 @@ class RecPopUp:
 				self.rec.pats[cur_pat].pause_rec()
 
 		def toggle_pb(*args):
-			self.rec.playing_pats = not self.rec.playing_pats
+			if self.rec.playing_pats:
+				self.rec.playing_pats = False
+			else:
+				self.rec.recording_pats = False
+				self.rec.playing_pats = True
 			print('playing pats',self.rec.playing_pats)
 			self.update_pat_buts()
 
