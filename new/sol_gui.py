@@ -198,7 +198,7 @@ def test():
 
 	testgui = MainGui(root,midi_on=True)
 	# for testing only
-	testgui.audio_bar.osc_client.build_n_send('/pyaud/open','./test.wav')
+	testgui.audio_bar.osc_client.build_n_send('/pyaud/open','./powerless.wav')
 	testgui.backend.record.load_last()
 	#testgui.audio_bar.progress_bar.reload()
 	root.mainloop()
