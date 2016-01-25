@@ -688,6 +688,7 @@ class RecordR:
 						rec_clip.vars['lp'] = cur_rec.lp_to_select
 					if cur_rec.speed >= 0:
 						rec_clip.vars['playback_speed'] = cur_rec.speed 
+						self.backend.osc_client.build_n_send('/activeclip/video/position/speed',cur_rec.speed/10.0)
 					if cur_rec.control_speed >= 0:
 						rec_clip.vars['speedup_factor'] = cur_rec.control_speed 
 					if cur_rec.playing_pats:
