@@ -28,10 +28,8 @@ class ConfigGui:
 		self.mainframe = tk.Frame(self.root)
 		self.configframe = tk.Frame(self.mainframe)
 		self.deviceframe = tk.Frame(self.mainframe,padx=5)
-		self.deviceselect = DeviceSelect(self)
 
 		self.configbook = ttk.Notebook(self.configframe)
-		self.configbook.bind_all('<<NotebookTabChanged>>',self.deviceselect.switch_test)
 		self.inputtab = ttk.Frame(self.configbook)
 
 		input_clip_control_frame = tk.Frame(self.inputtab)
@@ -47,6 +45,10 @@ class ConfigGui:
 		self.inputs = []
 		self.outputtab = ttk.Frame(self.configbook)
 		self.outputs = []
+
+		self.deviceselect = DeviceSelect(self)
+
+		self.configbook.bind_all('<<NotebookTabChanged>>',self.deviceselect.switch_test)
 
 		self.setup_inputs()
 
@@ -95,15 +97,15 @@ class ConfigGui:
 
 	def save(self):
 		# inputs
-		if self.deviceselect.selected_devices[0][0] == '-': return
-		fname = "./savedata/{}.ini".format(self.deviceselect.selected_devices[0][0].strip())
+		# if self.deviceselect.selected_devices[0][0] == '-': return
+		fname = "./savedata/{}.ini".format("midi")#self.deviceselect.selected_devices[0][0].strip())
 		Config = configparser.RawConfigParser()
 		Config.optionxform = str 
 		cfgfile = open(fname,'w')
 		if not Config.has_section('IO'):
 			Config.add_section('IO')
-		Config.set('IO','Input Name',self.deviceselect.selected_devices[0][0])
-		Config.set('IO','Input ID',self.deviceselect.selected_devices[0][1])
+		Config.set('IO','Input Name','vvvv')#self.deviceselect.selected_devices[0][0])
+		Config.set('IO','Input ID',0)#self.deviceselect.selected_devices[0][1])
 		keyname = "Keys"
 		typename = "Type"
 		if not Config.has_section(keyname):  
@@ -116,9 +118,9 @@ class ConfigGui:
 			if inp.keytype.get() != '----':
 				Config.set(typename,inp.name,inp.keytype.get())
 		# outputs
-		if self.deviceselect.selected_devices[1][0] != '-':
-			Config.set('IO','Output Name',self.deviceselect.selected_devices[1][0])
-			Config.set('IO','Output ID',self.deviceselect.selected_devices[1][1])
+		if True: #self.deviceselect.selected_devices[1][0] != '-':
+			Config.set('IO','Output Name','vvvv_out')#self.deviceselect.selected_devices[1][0])
+			Config.set('IO','Output ID',0)#self.deviceselect.selected_devices[1][1])
 			for outp in self.outputs:
 				out_key = outp.nice_rep()
 				if out_key != [-1,-1]:
@@ -131,8 +133,8 @@ class ConfigGui:
 
 	def load(self,fname=None):
 		if not fname:
-			if self.deviceselect.selected_devices[0][0] == '-': return
-			fname = "./savedata/{}.ini".format(self.deviceselect.selected_devices[0][0])
+			#if self.deviceselect.selected_devices[0][0] == '-': return
+			fname = "./savedata/{}.ini".format('midi')#self.deviceselect.selected_devices[0][0])
 		if os.path.exists(fname):
 			self.last_loaded = os.path.splitext(fname)[0]
 			Config = configparser.RawConfigParser()
@@ -248,14 +250,14 @@ class DeviceSelect:
 
 	def __init__(self,parent):
 		self.parent = parent
-		self.m2o = self.parent.configmidi.m2o
-		self.device_dict = self.m2o.get_inps()
-		self.possinps = [key for key in self.device_dict[0]]
-		self.possinps.append('-')
-		self.possouts = [key for key in self.device_dict[1]]
-		self.possouts.append('-')
+		# self.m2o = self.parent.configmidi.m2o
+		# self.device_dict = self.m2o.get_inps()
+		# self.possinps = [key for key in self.device_dict[0]]
+		# self.possinps.append('-')
+		# self.possouts = [key for key in self.device_dict[1]]
+		# self.possouts.append('-')
 
-		self.selected_devices = [['-',-1],['-',-1]]
+		# self.selected_devices = [['-',-1],['-',-1]]
 		self.tested_inp, self.tested_inp_ns = tk.StringVar(), tk.StringVar()
 		self.tested_inp.set('[-,-]')
 		self.tested_out = [tk.IntVar() , tk.IntVar(), tk.IntVar()]
@@ -264,7 +266,10 @@ class DeviceSelect:
 		self.selectframe = tk.LabelFrame(self.topframe,text='device selection')
 		self.testframe = tk.Frame(self.topframe)
 
-		self.setup_select()
+		# self.setup_select()
+		if not self.parent.midi_running:
+			self.parent.start()
+		self.parent.load()	
 		self.setup_test()
 
 		self.selectframe.pack()
@@ -357,7 +362,10 @@ class DeviceSelect:
 		def gen_on_off(on_off):
 			def tor(*args):
 				params = [x.get() for x in self.tested_out]
-				self.m2o.send_output(*params,on_off=on_off)
+				msg = params + [int(on_off)]
+
+				self.parent.backend.osc_client.midi_out(msg)
+				# self.m2o.send_output(*params,on_off=on_off)
 			return tor
 
 		def reset(*args):

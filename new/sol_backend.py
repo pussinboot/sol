@@ -238,6 +238,7 @@ class ControlR:
 	def __init__(self,backend,ip="127.0.0.1",port=7000):
 		self.backend = backend
 		self.osc_client = udp_client.UDPClient(ip, port)
+		self.vvvv_osc_client = udp_client.UDPClient(ip, 7009)
 		self.current_clip = self.backend.cur_clip
 		self.send = self.osc_client.send
 		self.ignore_last = False
@@ -270,6 +271,13 @@ class ControlR:
 				self.build_n_send('/composition/video/effect1/opacity/values',clip.last_pos/clip.vars['speedup_factor'])
 		self.current_clip = clip
 		
+	def midi_out(self,list_params):
+		#msg = self.build_msg('/midiout',','.join(list_params))
+		msg = osc_message_builder.OscMessageBuilder(address = '/midiout')
+		for p in list_params:
+			msg.add_arg(p)
+		msg = msg.build()
+		self.vvvv_osc_client.send(msg)
 
 	### CUE POINTS ###
 
