@@ -8,7 +8,8 @@ ok looks like separate thread is not playing nice for the midi2osc part ;-;
 """
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
-import pygame.midi, threading, queue
+# import pygame.midi
+import threading, queue
 import os, configparser
 
 class Midi2Osc:
@@ -113,12 +114,13 @@ class Midi2Osc:
 class ConfigMidi:
 	def __init__(self,backend):
 		self.backend = backend
-		self.m2o = Midi2Osc(ip=self.backend.osc_server.ip,port=self.backend.osc_server.port)
+		#self.m2o = Midi2Osc(ip=self.backend.osc_server.ip,port=self.backend.osc_server.port)
 		self.queue = queue.Queue()
 
 	def config_mode(self):
 		def osc_to_id(_,osc_msg):
 			msg = eval(osc_msg)
+			print(msg)
 			self.queue.put([str(msg[:2]),msg[2]])
 			#key, val = str(msg[:2]),msg[2]
 			#if key in self.key_to_fun:
@@ -127,16 +129,16 @@ class ConfigMidi:
 		
 		self.backend.osc_server.map('/midi',osc_to_id)
 
-	def select_devices(self,inp=None,outp=None):
-		return [self.m2o.change_inp(inp),self.m2o.change_outp(outp)]
+	# def select_devices(self,inp=None,outp=None):
+	# 	return [self.m2o.change_inp(inp),self.m2o.change_outp(outp)]
 
 	def start(self):
 		self.backend.osc_server.start()
-		self.m2o.start()	
+		# self.m2o.start()	
 
 	def stop(self):
 		self.backend.osc_server.stop()
-		self.m2o.stop()
+		# self.m2o.stop()
 
 	def id_midi(self,*args):
 		# find most common key, look @ ns, figure out wat kind of key it is : )
