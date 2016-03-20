@@ -1,0 +1,6 @@
+change sol from tracker to control
+	get rid of all recording features
+	2 layer control scheme
+		duplicate control on either side, load clips to separate layers
+move from pygame midi -> osc,
+	so just assuming osc midi messages are coming in (from vvvv)
