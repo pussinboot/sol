@@ -15,25 +15,31 @@ class MainGui:
 
 		# tk
 		self.root = root
-		self.mainframe = tk.Frame(root)
+		self.mainframe = tk.Frame(root,pady=10,padx=5)
 
-		self.top_frame = tk.Frame(self.mainframe)
+		self.top_frame = tk.Frame(self.mainframe,padx=25)
+		self.bot_frame = tk.Frame(self.mainframe)
 
-		self.library_frame = tk.Frame(self.top_frame)
-		self.cc_frame = tk.Frame(self.top_frame)
+		self.library_frame = tk.Frame(self.bot_frame)
+		self.cc_frame_l = tk.Frame(self.top_frame)
+		self.cc_frame_r = tk.Frame(self.top_frame)
 
 		# pack it
 		self.mainframe.pack()
-		self.top_frame.pack()
-		self.library_frame.pack(side=tk.LEFT)
-		self.cc_frame.pack(anchor=tk.E)
+		self.top_frame.pack(fill=tk.X)
+		self.bot_frame.pack(fill=tk.Y)
+
+		self.library_frame.pack(side=tk.BOTTOM)
+		self.cc_frame_l.pack(side=tk.LEFT,anchor=tk.W)
+		self.cc_frame_r.pack(side=tk.RIGHT,anchor=tk.E)
 
 		# sol
 		self.backend = Backend(fname,self,ports=(7000,7001))
 		self.backend.load_last() #
 		self.backend.select_clip = self.change_clip
 		self.library_gui = LibraryGui(self,self.library_frame)
-		self.clipcontrol = ClipControl(self.cc_frame,self.backend)
+		self.clipcontrol = ClipControl(self.cc_frame_l,self.backend)
+		self.clipcontrol_r = ClipControl(self.cc_frame_r,self.backend)
 
 		# record -> update gui
 		def update_gui_clip(clip):
