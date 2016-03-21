@@ -8,7 +8,7 @@ from PIL import ImageTk,Image
 import os, re
 import CONSTANTS as C
 
-from sol_backend import ControlR, ServeR, RecordingObject
+from sol_backend import ControlR, ServeR
 
 # gui should be like
 # file -> open
