@@ -48,7 +48,7 @@ class LibraryGui:
 		self.collectionlabelframe.pack(side=tk.TOP,fill=tk.X)
 		self.clipframe.pack(side=tk.LEFT,anchor=tk.E)
 		self.searchframe.pack(expand=True,fill=tk.Y)
-		self.mainframe.pack()
+		self.mainframe.pack(expand=True,fill=tk.Y)
 
 	def init_cols(self):
 		self.containers = []
