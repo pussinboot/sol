@@ -151,7 +151,7 @@ class ClipContainer:
 		self.frame = tk.Frame(self.parent_frame,padx=1,pady=1)
 		self.grid = self.frame.grid
 
-		self.default_img = self.img = ImageTk.PhotoImage(Image.open('../old/sample_clip.png'))
+		self.default_img = self.img = ImageTk.PhotoImage(Image.open('./sample_clip.png'))
 		self.label = tk.Label(self.frame,image=self.img,text='test',compound='top',width=C.THUMB_W,bd=6) # width of clip preview
 		self.label.image = self.img
 		self.label.pack()
