@@ -229,7 +229,7 @@ class ControlR:
 	def __init__(self,backend,ip="127.0.0.1",port=7000):
 		self.backend = backend
 		self.osc_client = udp_client.UDPClient(ip, port)
-		self.vvvv_osc_client = udp_client.UDPClient(ip, 7009)
+		self.vvvv_osc_client = udp_client.UDPClient(ip, port-1)
 		self.current_clip = self.backend.cur_clip
 		self.send = self.osc_client.send
 		self.ignore_last = False
@@ -271,6 +271,9 @@ class ControlR:
 		for p in list_params:
 			msg.add_arg(p)
 		msg = msg.build()
+		self.vvvv_osc_client.send(msg)
+
+	def vvvv_out(self,msg):
 		self.vvvv_osc_client.send(msg)
 
 	### CUE POINTS ###
@@ -405,7 +408,8 @@ class ControlR:
 					self.ignore_last = True
 					self.build_n_send(recv_addr,qp0/speedup)
 					new_val = qp0
-				self.build_n_send(send_addr,new_val)
+				sent_msg = self.build_n_send(send_addr,new_val)
+				self.vvvv_out(sent_msg)
 			return fun_tor
 		self.backend.osc_server.map_replace(osc_marker,recv_addr,gen_osc_route())
 
