@@ -87,6 +87,7 @@ class ClipControl:
 		self.control_speed_frame.pack(side=tk.TOP)
 		self.progress_bar = ProgressBar(self,self.clip,root=self.progress_frame,width=300)
 		self.progress_bar.map_osc(self.clip_control_addr)
+		self.progress_bar.send_addr = self.clip_control_addr
 		self.cue_buttons = []
 		self.setup_cue_buttons()
 
@@ -113,7 +114,7 @@ class ClipControl:
 
 	def update_pbar(self):
 		#self.progress_bar.map_osc(self.clip.control_addr)
-		self.progress_bar.send_addr = self.clip_control_addr
+		# self.progress_bar.send_addr = self.clip_control_addr
 		def move_cue(i,x):
 			self.osc_client.set_q(self.clip,i,self.layer,x)
 		self.progress_bar.drag_release_action = move_cue
