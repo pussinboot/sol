@@ -432,20 +432,22 @@ class ControlR:
 				self.activate(self.current_clip[layer-1],self.current_clip[layer-1].vars['lp'][1],layer)
 			elif playdir == 1 and time - self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp'][1]] > 0:
 				self.activate(self.current_clip[layer-1],self.current_clip[layer-1].vars['lp'][0],layer)
-
-		playfun = [lambda: None,self.play,self.reverse] # 1 goes to play, -1 goes to reverse, 0 does nothing
+		if layer == 2:
+			playfun = [lambda: None,self.play_l,self.reverse_l] # 1 goes to play, -1 goes to reverse, 0 does nothing
+		else:
+			playfun = [lambda: None,self.play_r,self.reverse_r] 
 		def bounce_loop(time):
-			if not self.current_clip.vars['loopon']:
+			if not self.current_clip[layer-1].vars['loopon']:
 				return
-			playdir = self.current_clip.vars['playdir']
+			playdir = self.current_clip[layer-1].vars['playdir']
 			if playdir == 0 or playdir == -2:
 				return
-			if playdir == -1 and time - self.current_clip.vars['qp'][self.current_clip.vars['lp'][0]] < 0:
-				playfun[-1*playdir](self.current_clip)
-				self.activate(self.current_clip,self.current_clip.vars['lp'][0])
-			elif playdir == 1 and time - self.current_clip.vars['qp'][self.current_clip.vars['lp'][1]] > 0:
-				playfun[-1*playdir](self.current_clip)
-				self.activate(self.current_clip,self.current_clip.vars['lp'][1])
+			if playdir == -1 and time - self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp'][0]] < 0:
+				playfun[-1*playdir](self.current_clip[layer-1])
+				self.activate(self.current_clip[layer-1],self.current_clip[layer-1].vars['lp'][0])
+			elif playdir == 1 and time - self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp'][1]] > 0:
+				playfun[-1*playdir](self.current_clip[layer-1])
+				self.activate(self.current_clip[layer-1],self.current_clip[layer-1].vars['lp'][1])
 		loop_type_to_fun = {'default':default_loop,'bounce':bounce_loop}
 		def map_fun(toss,msg):
 			curval = float(msg)
@@ -454,8 +456,8 @@ class ControlR:
 			except:
 				#self.current_clip.vars['looptype'] = 'default'
 				pass
-
-		self.backend.osc_server.map_replace(osc_marker,"/activeclip/video/position/values",map_fun)
+		recv_addr = '/layer{}/video/position/values'.format(layer) # layer1/2
+		self.backend.osc_server.map_replace(osc_marker,recv_addr,map_fun)
 
 class ServeR:
 	"""
