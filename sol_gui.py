@@ -163,6 +163,7 @@ class MainGui:
 
 def test():
 	from tendo import singleton
+
 	me = singleton.SingleInstance()
 	root = tk.Tk()
 	root.title('sol_test')
@@ -174,4 +175,9 @@ def test():
 
 
 if __name__ == '__main__':
+	# import pstats
+	# import cProfile
+	# cProfile.run("test()", "Profile.prof")
+	# s = pstats.Stats("Profile.prof")
+	# s.strip_dirs().sort_stats("time").print_stats(10)
 	test()

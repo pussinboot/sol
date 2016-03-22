@@ -339,6 +339,9 @@ class ProgressBar:
 		self._drag_data = {"x": 0, "y": 0, "item": None,"label":None}
 		self.drag_release_action = None
 
+		self.pbar_pos = 0
+		self.refresh_interval = 100
+
 		self.lines = [None]*C.NO_Q
 		self.labels = [None]*C.NO_Q
 
@@ -370,6 +373,7 @@ class ProgressBar:
 		self.actions_binding()
 		self.setup_control()
 		self.refresh()
+		self.root.after(self.refresh_interval,self.update_pbar)
 
 	def actions_binding(self):
 
@@ -398,7 +402,6 @@ class ProgressBar:
 		self.zoomoutbut.pack()
 		self.zoomresetbut.pack()
 
-
 	# progress bar follow mouse
 	def find_mouse(self,event):
 		newx = self.canvas.canvasx(event.x)
@@ -411,8 +414,10 @@ class ProgressBar:
 
 	def move_bar(self,new_x):
 		self.canvas.coords(self.pbar,new_x,0,new_x,self.height)
-		### WHY DOES THIS LEAK MEMORY NOBODY KNOWS ###
-		#self.root.update_idletasks() # doesnt fix
+
+	def update_pbar(self):
+		self.move_bar(self.pbar_pos)
+		self.root.after(self.refresh_interval,self.update_pbar)
 
 	# drag n drop
 	def drag_begin(self, event):
@@ -482,12 +487,7 @@ class ProgressBar:
 
 	def map_osc(self,addr):
 		def mapfun(_,msg):
-			self.move_bar(float(msg)*self.width)
-			# try:
-			# 	float_perc = float(msg)
-			# 	self.move_bar(float_perc*self.width)
-			# except:
-			# 	self.move_bar(0)
+			self.pbar_pos = float(msg)*self.width
 		self.parent.osc_server.map(addr,mapfun)
 
 	def loop_update(self):
