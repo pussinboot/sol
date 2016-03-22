@@ -71,32 +71,6 @@ class LibraryGui:
 		self.search_or_browse.searcher = self.backend.search
 		self.search_or_browse.tree_reset()
 
-	def select_active(self):
-		for i, col in enumerate(self.containers):
-			if col.last_active is not None: # deactivate everything
-				col.last_active.deactivate()
-				col.last_active = None
-			clip_fnames = [clip.fname for clip in self.backend.library.clip_collections[i] if clip is not None]
-			if self.backend.cur_clip.fname in clip_fnames:
-				cont_i = clip_fnames.index(self.backend.cur_clip.fname)
-				col.clip_conts[cont_i].activate(pass_=True)
-				if i != self.backend.cur_col: self.highlight_col(i)
-				return
-
-	def deselect_last(self,col=-1):
-		if col < 0: col = self.backend.cur_col
-		last_act = self.containers[col].last_active
-		if last_act is not None:
-			self.containers[col].last_active.deactivate()
-			self.containers[col].last_active = None
-
-	def select_if_cur(self):
-		col = self.containers[self.backend.cur_col]
-		clip_fnames = [clip.fname for clip in self.backend.library.clip_collections[self.backend.cur_col] if clip is not None]
-		if self.backend.cur_clip.fname in clip_fnames:
-			cont_i = clip_fnames.index(self.backend.cur_clip.fname)
-			col.clip_conts[cont_i].activate(pass_=True)
-
 	def highlight_col(self,index=-1):
 		for cl in self.container_labels:
 			cl.configure(relief=tk.FLAT)
@@ -181,7 +155,8 @@ class ClipContainer:
 		self.label = tk.Label(self.frame,image=self.img,text='test',compound='top',width=C.THUMB_W,bd=6) # width of clip preview
 		self.label.image = self.img
 		self.label.pack()
-		self.label.bind('<Double-1>',self.activate)
+		self.label.bind('<Double-1>',self.activate_l)
+		self.label.bind('<Double-3>',self.activate_r)
 		self.frame.dnd_accept = self.dnd_accept
 
 		self.toggle_dnd()
@@ -194,15 +169,20 @@ class ClipContainer:
 			self.activate(pass_=True)
 
 
-	def activate(self,*args,pass_=False):
+	def activate(self,*args,layer=-1,pass_=False):
 		if self.clip:
 			if self.parent.last_active and self.parent.last_active != self:
 				self.parent.last_active.deactivate()
-			if not pass_: self.maingui.change_clip(self.clip)
+			if not pass_: self.maingui.change_clip(self.clip,layer)
 			self.label.config(relief=tk.RAISED)
 			self.active = True
 			self.parent.last_active = self
 
+	def activate_l(self,*args,pass_=False):
+		self.activate(*args,layer=2,pass_=pass_)
+
+	def activate_r(self,*args,pass_=False):
+		self.activate(*args,layer=1,pass_=pass_)
 
 	def deactivate(self,*args):
 		# mayb clear whatever
