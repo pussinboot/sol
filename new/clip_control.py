@@ -20,15 +20,16 @@ import CONSTANTS as C
 import file_io as IO
 
 class ClipControl:
-	def __init__(self,root,backend,clip=None):
+	def __init__(self,root,backend,layer,clip=None):
 		# sol stuff
 		if not clip:
-			clip = backend.cur_clip
+			clip = backend.cur_clip[layer-1]
 		self.clip = clip
-		#self.clip.control_addr = '/activeclip/video/position/values' # temp for activeclip only
+		self.clip_control_addr = '/layer{}/video/position/values'.format(layer) 
 		self.backend = backend
 		self.osc_client = self.backend.osc_client
 		self.osc_server = self.backend.osc_server
+		self.layer = layer
 
 		### tk stuff
 		self.root = root
@@ -44,9 +45,8 @@ class ClipControl:
 		
 
 	def update_mapping(self):
-		self.osc_client.map_loop()
-		self.osc_client.map_timeline()
-
+		self.osc_client.map_loop(layer)
+		self.osc_client.map_timeline(layer)
 
 	def setup_gui(self):
 		# top lvl
@@ -87,7 +87,7 @@ class ClipControl:
 		self.playback_speed_frame.pack(side=tk.TOP)
 		self.control_speed_frame.pack(side=tk.TOP)
 		self.progress_bar = ProgressBar(self,self.clip,root=self.progress_frame,width=300)
-		self.progress_bar.map_osc(self.clip.control_addr)
+		self.progress_bar.map_osc(self.clip_control_addr)
 		self.cue_buttons = []
 		self.setup_cue_buttons()
 
@@ -113,7 +113,7 @@ class ClipControl:
 
 	def update_pbar(self):
 		#self.progress_bar.map_osc(self.clip.control_addr)
-		self.progress_bar.send_addr = self.clip.control_addr
+		self.progress_bar.send_addr = self.clip_control_addr
 		def move_cue(i,x):
 			self.osc_client.set_q(self.clip,i,x)
 		self.progress_bar.drag_release_action = move_cue
@@ -186,15 +186,15 @@ class ClipControl:
 
 	def setup_control_buttons(self):
 		playbut = tk.Button(self.control_button_frame,text=">",padx=8,pady=8,
-			command=lambda:self.osc_client.play(self.clip))
+			command=lambda:self.osc_client.play(self.layer,self.clip))
 		pausebut = tk.Button(self.control_button_frame,text="||",padx=7,pady=8,
-			command=lambda:self.osc_client.pause(self.clip))
+			command=lambda:self.osc_client.pause(self.layer,self.clip))
 		rvrsbut = tk.Button(self.control_button_frame,text="<",padx=8,pady=8,
-			command=lambda:self.osc_client.reverse(self.clip))
+			command=lambda:self.osc_client.reverse(self.layer,self.clip))
 		rndbut = tk.Button(self.control_button_frame,text="*",padx=8,pady=8,
-			command=lambda:self.osc_client.random_play(self.clip))
+			command=lambda:self.osc_client.random_play(self.layer,self.clip))
 		clearbut = tk.Button(self.control_button_frame,text="X",padx=8,pady=8,
-			command=lambda:self.osc_client.clear())
+			command=lambda:self.osc_client.clear(self.layer))
 
 		for but in [playbut, pausebut, rvrsbut, rndbut, clearbut]:
 			but.pack(side=tk.LEFT)

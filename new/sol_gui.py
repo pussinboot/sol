@@ -38,17 +38,12 @@ class MainGui:
 		self.backend.load_last() #
 		self.backend.select_clip = self.change_clip
 		self.library_gui = LibraryGui(self,self.library_frame)
-		self.clipcontrol = ClipControl(self.cc_frame_l,self.backend)
-		self.clipcontrol_r = ClipControl(self.cc_frame_r,self.backend)
+		self.clipcontrol_l = ClipControl(self.cc_frame_l,self.backend,layer=2)
+		self.clipcontrol_r = ClipControl(self.cc_frame_r,self.backend,layer=1)
 
-		# record -> update gui
-		def update_gui_clip(clip):
-			self.clipcontrol.change_clip(clip)
-			self.library_gui.select_active()
-
-		self.backend.osc_client.map_loop()
-		self.backend.osc_client.map_timeline()
-		self.change_clip(self.backend.cur_clip)
+		# self.backend.osc_client.map_loop()
+		# self.backend.osc_client.map_timeline()
+		# self.change_clip(self.backend.cur_clip)
 		# menu
 		self.setup_menubar()
 		# midi
@@ -77,28 +72,25 @@ class MainGui:
 		for i in range(C.NO_Q):
 			self.backend.desc_to_fun['cue_{}'.format(i)] = gen_q_selector(i)
 		# add looping toggle 
-		self.backend.desc_to_fun['loop_i/o'] = self.clipcontrol.toggle_looping
-		self.backend.desc_to_fun['loop_type'] = self.clipcontrol.toggle_loop_type
+		self.backend.desc_to_fun['loop_i/o_l'] = self.clipcontrol_l.toggle_looping
+		self.backend.desc_to_fun['loop_type_l'] = self.clipcontrol_l.toggle_loop_type
 		# add loop point selector # this will b tricky..
-		self.backend.desc_to_fun['lp_select'] = self.toggle_setting_lp
-		self.backend.desc_to_fun['qp_delete'] = self.toggle_delete_q
+		self.backend.desc_to_fun['lp_select_l'] = self.toggle_setting_lp
+		self.backend.desc_to_fun['qp_delete_l'] = self.toggle_delete_q
 
 		# add the various speedup increment/decrement binds ... this will prob have to go thru gui, easiest way tbh
-		self.backend.desc_to_fun['pb_speed'] = self.clipcontrol.change_speed
-		self.backend.desc_to_fun['pb_speed_0'] = lambda: self.clipcontrol.change_speed(0.1)
-		self.backend.desc_to_fun['ct_speed'] = self.clipcontrol.change_speedup
-		self.backend.desc_to_fun['ct_speed_0'] = lambda: self.clipcontrol.change_speedup(C.MIN_SPEEDUP/C.MAX_SPEEDUP)
+		self.backend.desc_to_fun['pb_speed_l'] = self.clipcontrol_l.change_speed
+		self.backend.desc_to_fun['pb_speed_0_l'] = lambda: self.clipcontrol_l.change_speed(0.1)
+		self.backend.desc_to_fun['ct_speed_l'] = self.clipcontrol_l.change_speedup
+		self.backend.desc_to_fun['ct_speed_0_l'] = lambda: self.clipcontrol_l.change_speedup(C.MIN_SPEEDUP/C.MAX_SPEEDUP)
 		
-	def change_clip(self,newclip):
-		self.backend.change_clip(newclip)
-		self.clipcontrol.change_clip(newclip)
-		if newclip is not None and newclip.fname != '':
-			self.library_gui.select_if_cur()
-			rec_obj = self.backend.record.add_new_clip(newclip)
-			if rec_obj: self.audio_bar.progress_bar.add_recording(rec_obj)
+	def change_clip(self,newclip,layer):
+		self.backend.change_clip(newclip,layer)
+		if layer == 2:
+			self.clipcontrol_l.change_clip(newclip)
 		else:
-			self.library_gui.deselect_last()
-
+			self.clipcontrol_r.change_clip(newclip)
+			
 	def toggle_setting_lp(self):
 		self.setting_lp = not self.setting_lp
 		print('setting_lp',self.setting_lp)
@@ -175,7 +167,7 @@ def test():
 	root = tk.Tk()
 	root.title('sol_test')
 
-	testgui = MainGui(root,midi_on=True)
+	testgui = MainGui(root,midi_on=False)
 	root.mainloop()
 	testgui.quit()
 

@@ -27,29 +27,16 @@ class Backend:
 	def __init__(self,xmlfile=None,gui=None,ports=(7007,7008)):
 		self.xmlfile = xmlfile
 		self.library = Library(xmlfile)
-		self.cur_clip = Clip('',[-1,-1],"no clip loaded")
-		self.cur_song = None
-		self.cur_rec = None
+		self.cur_clip = [Clip('',[-1,-1],"no clip loaded"),Clip('',[-1,-1],"no clip loaded")]
+		self.cur_clip_pos = [RefObj("cur_clip_pos",0.0),RefObj("cur_clip_pos",0.0)]
 		self.cur_col = -1
 		self.search = SearchR(self.library.clips)
 		self.osc_client = ControlR(self,port=ports[0]) 
 		self.osc_server = ServeR(gui,port=ports[1])
 		self.last_save_file = None
 
-		self.cur_time = RefObj("cur_time")
-		self.cur_clip_pos = RefObj("cur_clip_pos",0.0)
-
-		def update_time(_,msg): # this is the driving force behind the (audio) backend :o)
-			try:
-				self.cur_time.value = int(msg)
-			except:
-				pass
-		def update_song_info(_,msg):
-			if self.cur_song:
-				self.cur_song.vars['total_len'] = int(msg)
-		self.osc_server.map("/pyaud/pos/frame",update_time)
-		self.osc_server.map("/pyaud/info/song_len",update_song_info)
-		self.osc_server.map("/activeclip/video/position/values",self.cur_clip_pos.update_generator('float'))
+		self.osc_server.map("/layer1/video/position/values",self.cur_clip_pos[0].update_generator('float'))
+		self.osc_server.map("/layer2/video/position/values",self.cur_clip_pos[1].update_generator('float'))
 
 		### MIDI CONTROL
 		# basically, here are the descriptions that map to functions
@@ -58,22 +45,29 @@ class Backend:
 		# which are then mapped thru the osc server to figure out 
 		# what to do with the note value (different types of notes)
 		self.desc_to_fun = {
-			'clip_play'    : self.osc_client.play         ,
-			'clip_pause'   : self.osc_client.pause        ,
-			'clip_reverse' : self.osc_client.reverse      ,
-			'clip_random'  : self.osc_client.random_play  ,
-			'clip_clear'   : self.osc_client.clear        ,
-
+			'clip_play_l'    : self.osc_client.play_l         ,
+			'clip_pause_l'   : self.osc_client.pause_l        ,
+			'clip_reverse_l' : self.osc_client.reverse_l      ,
+			'clip_random_l'  : self.osc_client.random_play_l  ,
+			'clip_clear_l'   : self.osc_client.clear_l        ,
+			'clip_play_r'    : self.osc_client.play_r         ,
+			'clip_pause_r'   : self.osc_client.pause_r        ,
+			'clip_reverse_r' : self.osc_client.reverse_r      ,
+			'clip_random_r'  : self.osc_client.random_play_r  ,
+			'clip_clear_r'   : self.osc_client.clear_r        ,
 		}
 		# can also auto-gen some of these for cue select etc
 
-		def gen_selector(i):
+		def gen_selector(i,l):
 			index = i
+			layer = l
 			def fun_tor():
-				self.select_clip(self.library.clip_collections[self.cur_col][index])
+				self.change_clip(self.library.clip_collections[self.cur_col][index],layer)
 			return fun_tor
-		for i in range(C.NO_Q):
-			self.desc_to_fun['clip_{}'.format(i)] = gen_selector(i)
+
+		for l in [1,2]:
+			for i in range(C.NO_Q):
+				self.desc_to_fun['clip_{0}_{1}'.format(i,'lr'[l-1])] = gen_selector(i,l)
 		# no clue how im going to add midi out.. for now
 		self.midi_control = None
 		#self.load_last()
@@ -83,6 +77,7 @@ class Backend:
 
 	def save_data(self,savefile=None):
 		if not os.path.exists('./savedata'): os.makedirs('./savedata')
+		if self.xmlfile is None: return
 		if not savefile:
 			if not self.last_save_file:
 				filename = os.path.splitext(self.xmlfile)[0]
@@ -125,7 +120,7 @@ class Backend:
 		else:
 			self.xmlfile = fname
 			self.library = Library(fname)
-			self.cur_clip = Clip('',[-1,-1],"no clip loaded")
+			self.cur_clip = [Clip('',[-1,-1],"no clip loaded"),Clip('',[-1,-1],"no clip loaded")]
 			self.cur_col = -1
 			print('loaded library from',fname)
 		self.search = SearchR(self.library.clips)
@@ -137,7 +132,6 @@ class Backend:
 				fname = last_save.read()
 				self.load_data(fname)
 				if self.midi_control is not None: self.load_last_midi()
-				#self.record.load_last() dangerous (have to implement dependency on audio track 2 do this)
 
 	def load_last_midi(self):
 		if os.path.exists('./savedata/last_midi'):
@@ -145,13 +139,11 @@ class Backend:
 				fname = last_midi.read()
 				self.midi_control.map_midi(fname)
 
-	def change_clip(self,newclip):
-		if self.cur_clip is not None: self.cur_clip.last_pos = self.cur_clip_pos.value
-		self.cur_clip = newclip
-		self.osc_client.select_clip(newclip)
+	def change_clip(self,newclip,layer):
+		if self.cur_clip is not None: self.cur_clip[layer-1].last_pos = self.cur_clip_pos[layer-1].value
+		self.cur_clip[layer-1] = newclip
+		self.osc_client.select_clip(newclip,layer)
 
-	def select_clip(self,newclip): # function to be overwritten : )
-		self.change_clip(newclip)
 
 class RefObj:
 	"""
@@ -257,18 +249,21 @@ class ControlR:
 	def send_msg(self,msg):
 		self.osc_client.send(msg)
 
-	def select_clip(self,clip):
+	def select_clip(self,clip,layer):
 		if clip is None:
 			return
-		addr = "/layer{0}/clip{1}/connect".format(*clip.loc)
-		self.build_n_send(addr,1)
+		layer_addr = "/layer{}/select".format(layer)
+		self.build_n_send(layer_addr,1)
+		clip_addr = "/layer{0}/clip{1}/connect".format(*clip.loc)
+		self.build_n_send(clip_addr,1)
 		# in case activating clip does not jump to start this needs to be always
 		# for now can only control if paused anyways
 		if clip.vars['playdir'] == 0:
 			if clip.last_pos is not None:
 				self.ignore_last = True
-				self.build_n_send('/composition/video/effect1/opacity/values',clip.last_pos/clip.vars['speedup_factor'])
-		self.current_clip = clip
+				timeline_fix_addr = '/composition/video/effect1/param{}/values'.format(layer)
+				self.build_n_send(timeline_fix_addr,clip.last_pos/clip.vars['speedup_factor'])
+		self.current_clip[layer-1] = clip
 		
 	def midi_out(self,list_params):
 		#msg = self.build_msg('/midiout',','.join(list_params))
@@ -314,32 +309,66 @@ class ControlR:
 				if clip is None: clip = self.current_clip
 				clip.vars['playdir'] = direction
 			return fun_tor
-		self.play = gen_control_sender('/activeclip/video/position/direction',1,1)
-		self.reverse = gen_control_sender('/activeclip/video/position/direction',0,-1)
-		self.random_play = gen_control_sender('/activeclip/video/position/direction',3,-2)
+		self.play_l = gen_control_sender('/layer2/video/position/direction',1,1)
+		self.reverse_l = gen_control_sender('/layer2/video/position/direction',0,-1)
+		self.random_play_l = gen_control_sender('/layer2/video/position/direction',3,-2)
+		self.play_r = gen_control_sender('/layer1/video/position/direction',1,1)
+		self.reverse_r = gen_control_sender('/layer1/video/position/direction',0,-1)
+		self.random_play_r = gen_control_sender('/layer1/video/position/direction',3,-2)
+		def clear_clip_l():
+			self.build_n_send('/layer2/clear', 1)# depends 
+			self.backend.change_clip(Clip('',[-1,-1],"no clip loaded"),2)
+		def clear_clip_r():
+			self.build_n_send('/layer1/clear', 1)# depends 
+			self.backend.change_clip(Clip('',[-1,-1],"no clip loaded"),1)
+		self.clear_l = clear_clip_l
+		self.clear_r = clear_clip_r
 
-		def clear_clip():
-			self.build_n_send('/activelayer/clear', 1)# depends 
-			# if activating clip activates on own layer or on activelayer..
-			# '/layer{}/clear'.format(self.clip.loc[0])
-			#self.backend.cur_clip = Clip('',[-1,-1],"no clip loaded")
-			self.backend.select_clip(Clip('',[-1,-1],"no clip loaded"))
-		self.clear = clear_clip
+	def play(self,layer,clip=None):
+		if layer == 2:
+			self.play_l(clip)
+		else:
+			self.play_r(clip)
 
-	def pause(self,clip=None): # let control take over >:)
-		if not clip: clip = self.current_clip
+	def reverse(self,layer,clip=None):
+		if layer == 2:
+			self.reverse_l(clip)
+		else:
+			self.reverse_r(clip)
+
+	def random_play(self,layer,clip=None):
+		if layer == 2:
+			self.random_play_l(clip)
+		else:
+			self.random_play_r(clip)
+
+	def pause(self,layer,clip=None): # let control take over >:)
+		if not clip: clip = self.current_clip[layer-1]
 		clip.vars['playdir'] = 0
-		self.build_n_send('/activeclip/video/position/direction',2)
+		self.build_n_send('/layer{}/video/position/direction'.format(layer),2)
 		self.ignore_last = True
-		self.build_n_send('/composition/video/effect1/opacity/values',self.backend.cur_clip_pos.value/clip.vars['speedup_factor'])
-	
+		self.build_n_send('/composition/video/effect1/param{}/values'.format(layer),
+			self.backend.cur_clip_pos[layer-1].value/clip.vars['speedup_factor'])
+
+	def pause_l(self,clip=None):
+		self.pause(2,clip)
+
+	def pause_r(self,clip=None):
+		self.pause(1,clip)
+
+	def clear(self,layer):
+		if layer == 2:
+			self.clear_l()
+		else:
+			self.clear_r()
+
 	### REAL CONTROL HAX
 	# change effect1 to bypass
 	# then set opacity to timeline and map midi to its value
 	# 
 	# now can use resolume midi behavior for own purposes >:)
 	
-	def map_timeline(self,osc_marker = "map_timeline"):
+	def map_timeline(self,layer,osc_marker = None):
 		"""
 		maps a function to osc_server that looks at current useless midi controlled param
 		and uses it to drive timeline control
@@ -348,8 +377,12 @@ class ControlR:
 		between two cue points with appropriate scaling >:)
 		"""
 		# for now let's just get it working tho
-		recv_addr = '/composition/video/effect1/opacity/values'
-		send_addr = '/activeclip/video/position/values'
+		# recv_addr = '/composition/video/effect1/opacity/values'
+		recv_addr = '/composition/video/effect1/param{}/values'.format(layer) # effect1 param1/2
+		# send_addr = '/activeclip/video/position/values' 
+		send_addr = '/layer{}/video/position/values'.format(layer) # layer1/2
+		if osc_marker is None:
+			osc_marker = "map_timeline_{}".format(layer)
 		def gen_osc_route():
 			def fun_tor(_,msg):
 				if self.ignore_last:
@@ -385,14 +418,15 @@ class ControlR:
 	### looping behavior
 	# select any 2 cue points, once reach one of them jump to the other
 
-	def map_loop(self,osc_marker="map_loop"):
+	def map_loop(self,layer,osc_marker=None):
 		"""
 		maps a function to osc_server that looks at curr pos 
 		and flips it to perform next correct action
 		if default looping - hit cue a go to b
 		if bounce - hit cue a, reverse direction, hit cue b, reverse direction
 		"""
-
+		if osc_marker is None:
+			osc_marker = "map_loop_{}".format(layer)
 		def default_loop(time):
 			if not self.current_clip.vars['loopon']: return
 			if self.current_clip.vars['lp'][0] < 0 or self.current_clip.vars['lp'][1] < 0: return
