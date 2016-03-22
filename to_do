@@ -5,5 +5,5 @@ change sol from tracker to control
 DONE move from pygame midi -> osc,
 	so just assuming osc midi messages are coming in (from vvvv)
 
-fix looping/timeline control
-	... probably think of better way to do whole dual-layers thing :/
+DONE fix looping/timeline control
+	NAH	... probably think of better way to do whole dual-layers thing :/

@@ -43,10 +43,9 @@ class ClipControl:
 			self.progress_bar.cliporsong = newclip
 		self.update_info()
 		
-
 	def update_mapping(self):
-		self.osc_client.map_loop(layer)
-		self.osc_client.map_timeline(layer)
+		self.osc_client.map_loop(self.layer)
+		self.osc_client.map_timeline(self.layer)
 
 	def setup_gui(self):
 		# top lvl
@@ -101,21 +100,22 @@ class ClipControl:
 		self.frame.pack()
 
 	def update_info(self): # update me
-		try:
-			if self.clip: 
-				self.name_var.set(self.clip.name)
-				self.update_cue_buttons()
-				self.update_looping()
-				self.update_pbar()
-				self.update_mapping()
-		except:
-			pass
+		# try:
+		if self.clip: 
+			self.name_var.set(self.clip.name)
+			self.update_cue_buttons()
+			self.update_looping()
+			self.update_pbar()
+			self.update_mapping()
+			# print(self.backend.cur_clip[1].name,self.backend.cur_clip[0].name)
+		# except:
+		# 	pass
 
 	def update_pbar(self):
 		#self.progress_bar.map_osc(self.clip.control_addr)
 		self.progress_bar.send_addr = self.clip_control_addr
 		def move_cue(i,x):
-			self.osc_client.set_q(self.clip,i,x)
+			self.osc_client.set_q(self.clip,i,self.layer,x)
 		self.progress_bar.drag_release_action = move_cue
 		# clear the screen of any junk
 		self.progress_bar.loop_update()
@@ -225,7 +225,8 @@ class ClipControl:
 							   textvariable=self.looping_vars['speed'], width=4)
 		def send_speed(*args): #### TO-DO add global speedvar
 			speed = float(self.looping_vars['speed'].get())/10.0
-			self.osc_client.build_n_send('/activeclip/video/position/speed',speed)
+			speed_addr = '/layer{}/video/position/speed'.format(self.layer)
+			self.osc_client.build_n_send(speed_addr,speed)
 		speed_scale.config(command=send_speed)
 		speed_box.config(command=send_speed)
 		speed_box.bind("<Return>",send_speed)
@@ -275,7 +276,8 @@ class ClipControl:
 				for _ in range(-1*n): self.speedup_decrease()
 		else:
 			self.looping_vars['control_speed'].set("%.2f" % (C.MAX_SPEEDUP * n))
-		self.osc_client.build_n_send('/composition/video/effect1/opacity/values',self.backend.cur_clip_pos.value/self.clip.vars['speedup_factor'])
+		self.osc_client.build_n_send('/composition/video/effect1/param{}/values'.format(self.layer),
+			self.backend.cur_clip_pos[self.layer-1].value/self.clip.vars['speedup_factor'])
 
 
 	def change_lp(self,new_lp):
@@ -345,27 +347,29 @@ class ClipControl:
 
 
 if __name__ == '__main__':
-	# testing
-	bb = Backend('./test_ex.avc',ports=(7000,7001)) # './test_ex.avc' '../old/test.avc'
-	test_clip = IO.load_clip('./Subconscious_12.mov.saved_clip')
-	bb.cur_clip = test_clip
-	#bb = Backend('../old/test.avc',ports=(7000,7001))
-	#test_clip = IO.load_clip('./00 Dodge N Kill From Back.mov.saved_clip')
-	#test_clip = bb.library.random_clip()
+	# # testing
+	# bb = Backend('./test_ex.avc',ports=(7000,7001)) # './test_ex.avc' '../old/test.avc'
+	# test_clip = IO.load_clip('./Subconscious_12.mov.saved_clip')
+	# bb.cur_clip = test_clip
+	# #bb = Backend('../old/test.avc',ports=(7000,7001))
+	# #test_clip = IO.load_clip('./00 Dodge N Kill From Back.mov.saved_clip')
+	# #test_clip = bb.library.random_clip()
 
 
-	root = tk.Tk()
-	root.title('controlR_test')
-	test_cc = ClipControl(root,bb)
-	bb.osc_server.gui = test_cc
-	bb.osc_server.start()
+	# root = tk.Tk()
+	# root.title('controlR_test')
+	# test_cc = ClipControl(root,bb)
+	# bb.osc_server.gui = test_cc
+	# bb.osc_server.start()
 
-	bb.osc_client.select_clip(test_cc.clip)
-	bb.osc_client.map_loop()
-	bb.osc_client.map_timeline()
+	# bb.osc_client.select_clip(test_cc.clip)
+	# bb.osc_client.map_loop()
+	# bb.osc_client.map_timeline()
 
-	root.mainloop()
+	# root.mainloop()
 
-	bb.osc_client.build_n_send("/activelayer/clear",1)
-	IO.save_clip(test_cc.clip)
-	print(test_cc.clip)
+	# bb.osc_client.build_n_send("/activelayer/clear",1)
+	# IO.save_clip(test_cc.clip)
+	# print(test_cc.clip)
+	import sol_gui
+	sol_gui.test()

@@ -40,7 +40,7 @@ class SavedXMLParse:
 				if new_thumb and os.path.exists(new_thumb):
 					newclip.thumbnail = new_thumb
 			self.clips[i] = newclip
-		make_thumbnail('../old/sample_clip.png','../old/sample_clip.png',size=(C.THUMB_W,int(C.THUMB_W*compheight/compwidth)))
+		make_thumbnail('./scrot/sample_clip.png','./scrot/sample_clip.png',size=(C.THUMB_W,int(C.THUMB_W*compheight/compwidth)))
 		if os.path.exists('./scrot/temp.png'):
 			os.remove('./scrot/temp.png')
 
@@ -115,7 +115,7 @@ def make_thumbnail(f_in, f_out, size=(100,100), pad=True):
 		thumb = ImageOps.fit(image, size, Image.ANTIALIAS, (0.5, 0.5))
 	thumb.save(f_out)
 
-def gen_thumbnail(clip,scalew,frameno=None,compw=1280,comph=720,special_hack=True):
+def gen_thumbnail(clip,scalew,frameno=None,compw=1280,comph=720,special_hack=False):
 	input_name = ntpath.abspath(clip.fname)
 	if special_hack:
 		input_name = input_name.replace('\\dxv\\','\\webm\\').replace('.mov','.webm')
@@ -131,11 +131,13 @@ def gen_thumbnail(clip,scalew,frameno=None,compw=1280,comph=720,special_hack=Tru
 	print('\#'*10)
 	process = subprocess.Popen(command) # -ss to seek to frame
 	process.communicate()
-	make_thumbnail('./scrot/temp.png',output_name,size=(scalew,scaleh))
-	if not special_hack:
-		if not os.path.exists(output_name):
+	if os.path.exists('./scrot/temp.png'):
+		make_thumbnail('./scrot/temp.png',output_name,size=(scalew,scaleh))
+	else:
+		if not special_hack:
+		# if not os.path.exists(output_name):
 			return gen_thumbnail(clip,scalew,frameno,compw,comph,special_hack=True)
-	return output_name
+		return './scrot/sample_clip.png'
 
 if __name__ == '__main__':
 	# testparser = SavedXMLParse("./test_ex.avc",False)

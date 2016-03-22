@@ -151,7 +151,7 @@ class ClipContainer:
 		self.frame = tk.Frame(self.parent_frame,padx=1,pady=1)
 		self.grid = self.frame.grid
 
-		self.default_img = self.img = ImageTk.PhotoImage(Image.open('./sample_clip.png'))
+		self.default_img = self.img = ImageTk.PhotoImage(Image.open('./scrot/sample_clip.png'))
 		self.label = tk.Label(self.frame,image=self.img,text='test',compound='top',width=C.THUMB_W,bd=6) # width of clip preview
 		self.label.image = self.img
 		self.label.pack()
@@ -165,24 +165,27 @@ class ClipContainer:
 				starting_clip = self.parent.clip_collection[index]
 				self.change_clip(starting_clip.fname)
 
-		if self.clip == self.maingui.backend.cur_clip:
-			self.activate(pass_=True)
+		if self.clip == self.maingui.backend.cur_clip[1]:
+			self.activate_l()
+			self.deactivate()
+		elif self.clip == self.maingui.backend.cur_clip[0]:
+			self.activate_r()
+			self.deactivate()
 
-
-	def activate(self,*args,layer=-1,pass_=False):
+	def activate(self,*args,layer=-1):
 		if self.clip:
 			if self.parent.last_active and self.parent.last_active != self:
 				self.parent.last_active.deactivate()
-			if not pass_: self.maingui.change_clip(self.clip,layer)
+			self.maingui.change_clip(self.clip,layer)
 			self.label.config(relief=tk.RAISED)
 			self.active = True
 			self.parent.last_active = self
 
-	def activate_l(self,*args,pass_=False):
-		self.activate(*args,layer=2,pass_=pass_)
+	def activate_l(self,*args):
+		self.activate(*args,layer=2)
 
-	def activate_r(self,*args,pass_=False):
-		self.activate(*args,layer=1,pass_=pass_)
+	def activate_r(self,*args):
+		self.activate(*args,layer=1)
 
 	def deactivate(self,*args):
 		# mayb clear whatever

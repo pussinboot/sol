@@ -37,9 +37,9 @@ class MainGui:
 		self.backend = Backend(fname,self,ports=(7000,7001))
 		self.backend.load_last() #
 		self.backend.select_clip = self.change_clip
-		self.library_gui = LibraryGui(self,self.library_frame)
 		self.clipcontrol_l = ClipControl(self.cc_frame_l,self.backend,layer=2)
 		self.clipcontrol_r = ClipControl(self.cc_frame_r,self.backend,layer=1)
+		self.library_gui = LibraryGui(self,self.library_frame)
 
 		# self.backend.osc_client.map_loop()
 		# self.backend.osc_client.map_timeline()
@@ -74,7 +74,7 @@ class MainGui:
 		# add looping toggle 
 		self.backend.desc_to_fun['loop_i/o_l'] = self.clipcontrol_l.toggle_looping
 		self.backend.desc_to_fun['loop_type_l'] = self.clipcontrol_l.toggle_loop_type
-		# add loop point selector # this will b tricky..
+		# add loop point selector # this will b tricky...
 		self.backend.desc_to_fun['lp_select_l'] = self.toggle_setting_lp
 		self.backend.desc_to_fun['qp_delete_l'] = self.toggle_delete_q
 
