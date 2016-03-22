@@ -387,11 +387,11 @@ class ControlR:
 					self.ignore_last = False
 					return
 				qp0, qp1 = 0.0,1.0
-				speedup = self.current_clip.vars['speedup_factor']
+				speedup = self.current_clip[layer-1].vars['speedup_factor']
 				new_val = float(msg) * speedup
 				if new_val > 1.0:
 					new_val = 1.0
-				if self.current_clip.vars['loopon']:	# if looping
+				if self.current_clip[layer-1].vars['loopon']:	# if looping
 					n_qp0 = self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp'][0]]
 					n_qp1 = self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp'][1]]
 					if n_qp0 is not None: qp0 = n_qp0
