@@ -275,29 +275,26 @@ class ControlR:
 
 	### CUE POINTS ###
 
-	def set_q(self,clip,i,qp=None,scale=1):
+	def set_q(self,clip,i,layer,qp=None,scale=1):
 		if not qp:
-			qp = self.backend.cur_clip_pos.value / scale
+			qp = self.backend.cur_clip_pos[layer-1].value / scale
 		clip.vars['qp'][i] = qp
 		return qp
 
-	def get_q(self,clip,i):
+	def get_q(self,clip,i,layer):
 		qp = clip.vars['qp'][i]
-		self.build_n_send(clip.control_addr,qp)
+		clip_control_addr = '/layer{}/video/position/values'.format(layer) 
+		self.build_n_send(clip_control_addr,qp)
 		return qp
 
 	def clear_q(self,clip,i):
 		clip.vars['qp'][i] = None
 
-	def activate(self,clip,i,scale=1):
+	def activate(self,clip,i,layer,scale=1):
 		if clip.vars['qp'][i]:
-			qp = self.get_q(clip,i)
-			# pattern recording
-			if self.backend.cur_rec is not None and self.backend.cur_rec.recording_pats:
-				if self.backend.cur_rec.cur_pat >= 0:
-					self.backend.cur_rec.pats[self.backend.cur_rec.cur_pat].add_event(qp)
+			qp = self.get_q(clip,i,layer)
 		else:
-			return self.set_q(clip,i,scale=scale)
+			return self.set_q(clip,i,layer,scale=scale)
 
 	### playback control
 
@@ -378,6 +375,7 @@ class ControlR:
 		"""
 		# for now let's just get it working tho
 		# recv_addr = '/composition/video/effect1/opacity/values'
+		layer = layer
 		recv_addr = '/composition/video/effect1/param{}/values'.format(layer) # effect1 param1/2
 		# send_addr = '/activeclip/video/position/values' 
 		send_addr = '/layer{}/video/position/values'.format(layer) # layer1/2
@@ -394,8 +392,8 @@ class ControlR:
 				if new_val > 1.0:
 					new_val = 1.0
 				if self.current_clip.vars['loopon']:	# if looping
-					n_qp0 = self.current_clip.vars['qp'][self.current_clip.vars['lp'][0]]
-					n_qp1 = self.current_clip.vars['qp'][self.current_clip.vars['lp'][1]]
+					n_qp0 = self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp'][0]]
+					n_qp1 = self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp'][1]]
 					if n_qp0 is not None: qp0 = n_qp0
 					if n_qp1 is not None: qp1 = n_qp1
 				#new_val = (qp1 - qp0)*new_val + qp0 # linear scale
@@ -408,10 +406,6 @@ class ControlR:
 					self.build_n_send(recv_addr,qp0/speedup)
 					new_val = qp0
 				self.build_n_send(send_addr,new_val)
-				# pattern recording
-				if self.backend.cur_rec is not None and self.backend.cur_rec.recording_pats:
-					if self.backend.cur_rec.cur_pat >= 0:
-						self.backend.cur_rec.pats[self.backend.cur_rec.cur_pat].add_event(new_val)
 			return fun_tor
 		self.backend.osc_server.map_replace(osc_marker,recv_addr,gen_osc_route())
 
@@ -425,18 +419,19 @@ class ControlR:
 		if default looping - hit cue a go to b
 		if bounce - hit cue a, reverse direction, hit cue b, reverse direction
 		"""
+		layer = layer
 		if osc_marker is None:
 			osc_marker = "map_loop_{}".format(layer)
 		def default_loop(time):
-			if not self.current_clip.vars['loopon']: return
-			if self.current_clip.vars['lp'][0] < 0 or self.current_clip.vars['lp'][1] < 0: return
-			playdir = self.current_clip.vars['playdir']
+			if not self.current_clip[layer-1].vars['loopon']: return
+			if self.current_clip[layer-1].vars['lp'][0] < 0 or self.current_clip[layer-1].vars['lp'][1] < 0: return
+			playdir = self.current_clip[layer-1].vars['playdir']
 			if playdir == 0 or playdir == -2:
 				return
-			if playdir == -1 and time - self.current_clip.vars['qp'][self.current_clip.vars['lp'][0]] < 0:
-				self.activate(self.current_clip,self.current_clip.vars['lp'][1])
-			elif playdir == 1 and time - self.current_clip.vars['qp'][self.current_clip.vars['lp'][1]] > 0:
-				self.activate(self.current_clip,self.current_clip.vars['lp'][0])
+			if playdir == -1 and time - self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp'][0]] < 0:
+				self.activate(self.current_clip[layer-1],self.current_clip[layer-1].vars['lp'][1],layer)
+			elif playdir == 1 and time - self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp'][1]] > 0:
+				self.activate(self.current_clip[layer-1],self.current_clip[layer-1].vars['lp'][0],layer)
 
 		playfun = [lambda: None,self.play,self.reverse] # 1 goes to play, -1 goes to reverse, 0 does nothing
 		def bounce_loop(time):
@@ -455,7 +450,7 @@ class ControlR:
 		def map_fun(toss,msg):
 			curval = float(msg)
 			try:
-				loop_type_to_fun[self.current_clip.vars['looptype']](curval)
+				loop_type_to_fun[self.current_clip[layer-1].vars['looptype']](curval)
 			except:
 				#self.current_clip.vars['looptype'] = 'default'
 				pass

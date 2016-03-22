@@ -145,7 +145,7 @@ class ClipControl:
 
 		def gen_activate(i):
 			def tor():
-				new = self.osc_client.activate(self.clip,i) # add return value
+				new = self.osc_client.activate(self.clip,i,self.layer) # add return value
 				self.cue_buttons[i].config(relief='groove')
 				if new:
 					self.progress_bar.add_line(new,i)
