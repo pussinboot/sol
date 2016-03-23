@@ -168,7 +168,7 @@ def test():
 	root = tk.Tk()
 	root.title('sol_test')
 
-	testgui = MainGui(root,midi_on=False)
+	testgui = MainGui(root,midi_on=True)
 	root.mainloop()
 	testgui.quit()
 

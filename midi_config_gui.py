@@ -31,16 +31,30 @@ class ConfigGui:
 
 		self.configbook = ttk.Notebook(self.configframe)
 		self.inputtab = ttk.Frame(self.configbook)
+		self.inputtab_l = ttk.Frame(self.configbook)
+		self.inputtab_r = ttk.Frame(self.configbook)
 
-		input_clip_control_frame = tk.Frame(self.inputtab)
-		input_rec_control_frame = tk.Frame(self.inputtab)
-		input_clip_select_frame = tk.Frame(self.inputtab)
-		input_cue_select_frame = tk.Frame(self.inputtab)
-		input_clip_control_frame.pack(side=tk.TOP)
-		input_rec_control_frame.pack(side=tk.TOP)
-		input_clip_select_frame.pack(side=tk.TOP)
-		input_cue_select_frame.pack(side=tk.TOP)
-		self.input_frames = [input_clip_control_frame, input_rec_control_frame, input_clip_select_frame, input_cue_select_frame]
+		input_clip_control_frame_l = tk.Frame(self.inputtab_l)
+		input_rec_control_frame_l = tk.Frame(self.inputtab_l)
+		input_clip_select_frame_l = tk.Frame(self.inputtab_l)
+		input_cue_select_frame_l = tk.Frame(self.inputtab_l)
+
+		input_clip_control_frame_l.pack(side=tk.TOP)
+		input_rec_control_frame_l.pack(side=tk.TOP)
+		input_clip_select_frame_l.pack(side=tk.TOP)
+		input_cue_select_frame_l.pack(side=tk.TOP)
+		self.input_frames_l = [input_clip_control_frame_l, input_rec_control_frame_l, input_clip_select_frame_l, input_cue_select_frame_l]
+
+		input_clip_control_frame_r = tk.Frame(self.inputtab_r)
+		input_rec_control_frame_r = tk.Frame(self.inputtab_r)
+		input_clip_select_frame_r = tk.Frame(self.inputtab_r)
+		input_cue_select_frame_r = tk.Frame(self.inputtab_r)
+
+		input_clip_control_frame_r.pack(side=tk.TOP)
+		input_rec_control_frame_r.pack(side=tk.TOP)
+		input_clip_select_frame_r.pack(side=tk.TOP)
+		input_cue_select_frame_r.pack(side=tk.TOP)
+		self.input_frames_r = [input_clip_control_frame_r, input_rec_control_frame_r, input_clip_select_frame_r, input_cue_select_frame_r]
 
 		self.inputs = []
 		self.outputtab = ttk.Frame(self.configbook)
@@ -53,6 +67,8 @@ class ConfigGui:
 		self.setup_inputs()
 
 		self.configbook.add(self.inputtab,text='input')
+		self.configbook.add(self.inputtab_l,text='input_l')
+		self.configbook.add(self.inputtab_r,text='input_r')
 		self.configbook.add(self.outputtab,text='output')
 		self.configbook.pack(expand=True,fill=tk.BOTH)
 
@@ -77,21 +93,26 @@ class ConfigGui:
 		self.root.destroy()
 
 	def setup_inputs(self):
-		# various inputs
+		# various inputs (that are duplicated for l and r)
 		clip_control_inps = ['clip_play', 'clip_pause', 'clip_reverse', 'clip_random', 
-							 'loop_i/o','loop_type','record_pb', 'record_rec',
+							 'loop_i/o','loop_type',#'record_pb', 'record_rec',
 							 'pb_speed', 'pb_speed_0', 'ct_speed', 'ct_speed_0']
 		#rec_control_inps = ['record_playback', 'record_record']
-		clip_select_inps = ['clip_{}'.format(i) for i in range(C.NO_Q)] + ['clip_clear','col_go_l', 'col_go_r']
+		clip_select_inps = ['clip_{}'.format(i) for i in range(C.NO_Q)] + ['clip_clear']
 		cue_select_inps = ['cue_{}'.format(i) for i in range(C.NO_Q)] + ['lp_select', 'qp_delete']
 		all_inps = [clip_control_inps, clip_select_inps, cue_select_inps]
-		for i,inp in enumerate(all_inps):
-			for x,desc in enumerate(inp):
-				new_inp_b = InputBox(self,self.input_frames[i],desc)
-				r = x // 4
-				c = x % 4
-				new_inp_b.topframe.grid(row=r,column=c)
-				self.inputs.append(new_inp_b)
+		row_offset = [0,3,5]
+		input_frames_lr = [self.input_frames_l,self.input_frames_r]
+		for lr in [0,1]:
+			for i,inp in enumerate(all_inps):
+				for x,desc in enumerate(inp):
+					new_inp_b = InputBox(self,input_frames_lr[lr][i],desc+"_"+"lr"[lr])
+					r = x // 4 + row_offset[i]
+					c = x % 4
+					new_inp_b.topframe.grid(row=r,column=c)
+					self.inputs.append(new_inp_b)
+		# general inputs (not tied to l or r)
+		gen_inp = ['col_go_l', 'col_go_r']
 		# for inp in [str(i) for i in range(8)]:
 			#self.outputs.append(OutputBox(self,self.outputtab,inp))
 
@@ -385,10 +406,10 @@ class DeviceSelect:
 
 	def switch_test(self,event):
 		cur_tab = event.widget.tab(event.widget.index("current"),"text")
-		if cur_tab == 'input':
-			self.inputtest.tkraise()
-		elif cur_tab == 'output':
+		if cur_tab == 'output':
 			self.outputtest.tkraise()
+		else:
+			self.inputtest.tkraise()
 
 if __name__ == '__main__':
 	from sol_backend import Backend

@@ -120,7 +120,6 @@ class ConfigMidi:
 	def config_mode(self):
 		def osc_to_id(_,osc_msg):
 			msg = eval(osc_msg)
-			print(msg)
 			self.queue.put([str(msg[:2]),msg[2]])
 			#key, val = str(msg[:2]),msg[2]
 			#if key in self.key_to_fun:

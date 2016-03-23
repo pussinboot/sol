@@ -115,7 +115,7 @@ def make_thumbnail(f_in, f_out, size=(100,100), pad=True):
 		thumb = ImageOps.fit(image, size, Image.ANTIALIAS, (0.5, 0.5))
 	thumb.save(f_out)
 
-def gen_thumbnail(clip,scalew,frameno=None,compw=1280,comph=720,special_hack=False):
+def gen_thumbnail(clip,scalew,frameno=None,compw=1280,comph=720,special_hack=True):
 	input_name = ntpath.abspath(clip.fname)
 	if special_hack:
 		input_name = input_name.replace('\\dxv\\','\\webm\\').replace('.mov','.webm')
