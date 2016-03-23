@@ -39,6 +39,7 @@ class MainGui:
 		self.backend.select_clip = self.change_clip
 		self.clipcontrol_l = ClipControl(self.cc_frame_l,self.backend,layer=2)
 		self.clipcontrol_r = ClipControl(self.cc_frame_r,self.backend,layer=1)
+		self.clipcontrolrs = [self.clipcontrol_l,self.clipcontrol_r]
 		self.library_gui = LibraryGui(self,self.library_frame)
 
 		# self.backend.osc_client.map_loop()
@@ -47,9 +48,9 @@ class MainGui:
 		# menu
 		self.setup_menubar()
 		# midi
-		self.setting_lp = False
-		self.delete_q = False
-		self.last_lp = []
+		self.setting_lp = [False,False]
+		self.delete_q = [False,False]
+		self.last_lp = [[],[]]
 		self.add_midi_commands()
 		if midi_on:
 			self.backend.setup_midi()
@@ -64,19 +65,21 @@ class MainGui:
 		self.backend.desc_to_fun['col_go_l'] = self.library_gui.go_left
 		self.backend.desc_to_fun['col_go_r'] = self.library_gui.go_right
 		# clip control related
-		def gen_q_selector(i):
+		def gen_q_selector(i,l):
 			index = i
+			layer = l
 			def fun_tor():
-				self.cue_handler(index)
+				self.cue_handler(index,layer)
 			return fun_tor
-		for i in range(C.NO_Q):
-			self.backend.desc_to_fun['cue_{}'.format(i)] = gen_q_selector(i)
+		for l in [2,1]:
+			for i in range(C.NO_Q):
+				self.backend.desc_to_fun['cue_{0}_{1}'.format(i,'rl'[l-1])] = gen_q_selector(i,l)
 		# add looping toggle 
 		self.backend.desc_to_fun['loop_i/o_l'] = self.clipcontrol_l.toggle_looping
 		self.backend.desc_to_fun['loop_type_l'] = self.clipcontrol_l.toggle_loop_type
 		# add loop point selector # this will b tricky...
-		self.backend.desc_to_fun['lp_select_l'] = self.toggle_setting_lp
-		self.backend.desc_to_fun['qp_delete_l'] = self.toggle_delete_q
+		self.backend.desc_to_fun['lp_select_l'] = self.toggle_setting_lp_l
+		self.backend.desc_to_fun['qp_delete_l'] = self.toggle_delete_q_l
 
 		# add the various speedup increment/decrement binds ... this will prob have to go thru gui, easiest way tbh
 		self.backend.desc_to_fun['pb_speed_l'] = self.clipcontrol_l.change_speed
@@ -91,27 +94,39 @@ class MainGui:
 		else:
 			self.clipcontrol_r.change_clip(newclip)
 			
-	def toggle_setting_lp(self):
-		self.setting_lp = not self.setting_lp
-		print('setting_lp',self.setting_lp)
+	def toggle_setting_lp(self,l):
+		self.setting_lp[l-1] = not self.setting_lp[l-1]
+		#print('setting_lp',self.setting_lp)
 
-	def toggle_delete_q(self):
-		self.delete_q = True
+	def toggle_setting_lp_l(self):
+		self.toggle_setting_lp(2)
 
-	def cue_handler(self,i):
-		print('q',i)
-		if self.setting_lp:
-			self.last_lp.append(i)
-			if len(self.last_lp) == 2:
-				self.clipcontrol.change_lp(self.last_lp) # update lp points
-				self.setting_lp = False
-				self.last_lp = []
+	def toggle_setting_lp_r(self):
+		self.toggle_setting_lp(1)
+
+	def toggle_delete_q(self,l):
+		self.delete_q[l-1] = True
+
+	def toggle_delete_q_l(self):
+		self.toggle_delete_q(2)
+
+	def toggle_delete_q_r(self):
+		self.toggle_delete_q(1)
+
+	def cue_handler(self,i,l):
+		#print('q',i)
+		if self.setting_lp[l-1]:
+			self.last_lp[l-1].append(i)
+			if len(self.last_lp[l-1]) == 2:
+				self.clipcontrolrs[l-1].change_lp(self.last_lp[l-1]) # update lp points
+				self.setting_lp[l-1] = False
+				self.last_lp[l-1] = []
 		else:
-			if self.delete_q:
-				self.clipcontrol.deactivate_funs[i]()
-				self.delete_q = False
+			if self.delete_q[l-1]:
+				self.clipcontrolrs[l-1].deactivate_funs[i]()
+				self.delete_q[l-1] = False
 			else:
-				self.clipcontrol.activate_funs[i]()
+				self.clipcontrolrs[l-1].activate_funs[i]()
 
 	def quit(self):
 		self.backend.save_data()
