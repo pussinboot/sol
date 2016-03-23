@@ -24,7 +24,7 @@ class Backend:
 	"""
 	entire backend for sol
 	"""
-	def __init__(self,xmlfile=None,gui=None,ports=(7007,7008)):
+	def __init__(self,xmlfile=None,gui=None,ports=(7000,7001)):
 		self.xmlfile = xmlfile
 		self.library = Library(xmlfile)
 		self.cur_clip = [Clip('',[-1,-1],"no clip loaded"),Clip('',[-1,-1],"no clip loaded")]

@@ -7,3 +7,5 @@ DONE move from pygame midi -> osc,
 
 DONE fix looping/timeline control
 	NAH	... probably think of better way to do whole dual-layers thing :/
+
+midi control is broken af...
