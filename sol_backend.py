@@ -140,7 +140,7 @@ class Backend:
 				self.midi_control.map_midi(fname)
 
 	def change_clip(self,newclip,layer):
-		if self.cur_clip is not None: self.cur_clip[layer-1].last_pos = self.cur_clip_pos[layer-1].value
+		if self.cur_clip[layer-1] is not None: self.cur_clip[layer-1].last_pos = self.cur_clip_pos[layer-1].value
 		self.cur_clip[layer-1] = newclip
 		self.osc_client.select_clip(newclip,layer)
 
@@ -305,19 +305,28 @@ class ControlR:
 	### playback control
 
 	def setup_control(self):
-		def gen_control_sender(addr,msg,direction):
+		def gen_control_sender(addr,msg,direction,layer):
 			osc_msg = self.build_msg(addr,msg)
 			def fun_tor(clip=None):
 				self.send(osc_msg)
-				if clip is None: clip = self.current_clip
+				if clip is None: clip = self.current_clip[layer-1]
 				clip.vars['playdir'] = direction
 			return fun_tor
-		self.play_l = gen_control_sender('/layer2/video/position/direction',1,1)
-		self.reverse_l = gen_control_sender('/layer2/video/position/direction',0,-1)
-		self.random_play_l = gen_control_sender('/layer2/video/position/direction',3,-2)
-		self.play_r = gen_control_sender('/layer1/video/position/direction',1,1)
-		self.reverse_r = gen_control_sender('/layer1/video/position/direction',0,-1)
-		self.random_play_r = gen_control_sender('/layer1/video/position/direction',3,-2)
+
+		self.play_l = gen_control_sender('/layer2/video/position/direction',1,1,2)
+		self.reverse_l = gen_control_sender('/layer2/video/position/direction',0,-1,2)
+		self.random_play_l = gen_control_sender('/layer2/video/position/direction',3,-2,2)
+		self.play_r = gen_control_sender('/layer2/video/position/direction',1,1,2)
+		self.reverse_r = gen_control_sender('/layer2/video/position/direction',0,-1,2)
+		self.random_play_r = gen_control_sender('/layer2/video/position/direction',3,-2,2)
+
+		self.play_r = gen_control_sender('/layer1/video/position/direction',1,1,1)
+		self.reverse_r = gen_control_sender('/layer1/video/position/direction',0,-1,1)
+		self.random_play_r = gen_control_sender('/layer1/video/position/direction',3,-2,1)
+		self.play_r = gen_control_sender('/layer1/video/position/direction',1,1,1)
+		self.reverse_r = gen_control_sender('/layer1/video/position/direction',0,-1,1)
+		self.random_play_r = gen_control_sender('/layer1/video/position/direction',3,-2,1)
+
 		def clear_clip_l():
 			self.build_n_send('/layer2/clear', 1)# depends 
 			self.backend.change_clip(Clip('',[-1,-1],"no clip loaded"),2)

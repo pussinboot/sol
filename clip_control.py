@@ -268,6 +268,9 @@ class ClipControl:
 				for _ in range(-1*n): self.speed_decrease()
 		else:
 			self.looping_vars['speed'].set("%.2f" % (10.0 * n))
+			speed = float(self.looping_vars['speed'].get())/10.0
+			speed_addr = '/layer{}/video/position/speed'.format(self.layer)
+			self.osc_client.build_n_send(speed_addr,speed)
 
 	def change_speedup(self,n):
 		if isinstance(n, int):
@@ -276,7 +279,10 @@ class ClipControl:
 			else:
 				for _ in range(-1*n): self.speedup_decrease()
 		else:
-			self.looping_vars['control_speed'].set("%.2f" % (C.MAX_SPEEDUP * n))
+			if n > 0:
+				self.looping_vars['control_speed'].set("%.2f" % (C.MAX_SPEEDUP * n))
+			else:
+				return
 		self.osc_client.build_n_send('/composition/video/effect1/param{}/values'.format(self.layer),
 			self.backend.cur_clip_pos[self.layer-1].value/self.clip.vars['speedup_factor'])
 

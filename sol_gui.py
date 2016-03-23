@@ -39,7 +39,7 @@ class MainGui:
 		self.backend.select_clip = self.change_clip
 		self.clipcontrol_l = ClipControl(self.cc_frame_l,self.backend,layer=2)
 		self.clipcontrol_r = ClipControl(self.cc_frame_r,self.backend,layer=1)
-		self.clipcontrolrs = [self.clipcontrol_l,self.clipcontrol_r]
+		self.clipcontrolrs = [self.clipcontrol_r,self.clipcontrol_l]
 		self.library_gui = LibraryGui(self,self.library_frame)
 
 		# self.backend.osc_client.map_loop()
@@ -71,7 +71,7 @@ class MainGui:
 			def fun_tor():
 				self.cue_handler(index,layer)
 			return fun_tor
-		for l in [2,1]:
+		for l in [1,2]:
 			for i in range(C.NO_Q):
 				self.backend.desc_to_fun['cue_{0}_{1}'.format(i,'rl'[l-1])] = gen_q_selector(i,l)
 		# add looping toggle 
