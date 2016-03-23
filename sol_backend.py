@@ -62,12 +62,12 @@ class Backend:
 			index = i
 			layer = l
 			def fun_tor():
-				self.change_clip(self.library.clip_collections[self.cur_col][index],layer)
+				self.select_clip(self.library.clip_collections[self.cur_col][index],layer)
 			return fun_tor
 
-		for l in [1,2]:
+		for l in [2,1]:
 			for i in range(C.NO_Q):
-				self.desc_to_fun['clip_{0}_{1}'.format(i,'lr'[l-1])] = gen_selector(i,l)
+				self.desc_to_fun['clip_{0}_{1}'.format(i,'rl'[l-1])] = gen_selector(i,l)
 		# no clue how im going to add midi out.. for now
 		self.midi_control = None
 		#self.load_last()
@@ -143,6 +143,9 @@ class Backend:
 		if self.cur_clip is not None: self.cur_clip[layer-1].last_pos = self.cur_clip_pos[layer-1].value
 		self.cur_clip[layer-1] = newclip
 		self.osc_client.select_clip(newclip,layer)
+
+	def select_clip(self,newclip,layer): # function to be overwritten : )
+		self.change_clip(newclip,layer)
 
 
 class RefObj:
