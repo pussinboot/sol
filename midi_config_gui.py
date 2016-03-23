@@ -34,6 +34,9 @@ class ConfigGui:
 		self.inputtab_l = ttk.Frame(self.configbook)
 		self.inputtab_r = ttk.Frame(self.configbook)
 
+		self.input_general_frame = tk.Frame(self.inputtab)
+		self.input_general_frame.pack(side=tk.TOP)
+
 		input_clip_control_frame_l = tk.Frame(self.inputtab_l)
 		input_rec_control_frame_l = tk.Frame(self.inputtab_l)
 		input_clip_select_frame_l = tk.Frame(self.inputtab_l)
@@ -60,11 +63,12 @@ class ConfigGui:
 		self.outputtab = ttk.Frame(self.configbook)
 		self.outputs = []
 
+		self.setup_inputs()
+		
 		self.deviceselect = DeviceSelect(self)
 
 		self.configbook.bind_all('<<NotebookTabChanged>>',self.deviceselect.switch_test)
 
-		self.setup_inputs()
 
 		self.configbook.add(self.inputtab,text='input')
 		self.configbook.add(self.inputtab_l,text='input_l')
@@ -113,6 +117,12 @@ class ConfigGui:
 					self.inputs.append(new_inp_b)
 		# general inputs (not tied to l or r)
 		gen_inp = ['col_go_l', 'col_go_r']
+		for x,desc in enumerate(gen_inp):
+			new_inp_b = InputBox(self,self.input_general_frame,desc)
+			r = x // 4
+			c = x % 4
+			new_inp_b.topframe.grid(row=r,column=c)
+			self.inputs.append(new_inp_b)
 		# for inp in [str(i) for i in range(8)]:
 			#self.outputs.append(OutputBox(self,self.outputtab,inp))
 
@@ -271,14 +281,7 @@ class DeviceSelect:
 
 	def __init__(self,parent):
 		self.parent = parent
-		# self.m2o = self.parent.configmidi.m2o
-		# self.device_dict = self.m2o.get_inps()
-		# self.possinps = [key for key in self.device_dict[0]]
-		# self.possinps.append('-')
-		# self.possouts = [key for key in self.device_dict[1]]
-		# self.possouts.append('-')
 
-		# self.selected_devices = [['-',-1],['-',-1]]
 		self.tested_inp, self.tested_inp_ns = tk.StringVar(), tk.StringVar()
 		self.tested_inp.set('[-,-]')
 		self.tested_out = [tk.IntVar() , tk.IntVar(), tk.IntVar()]
@@ -287,7 +290,6 @@ class DeviceSelect:
 		self.selectframe = tk.LabelFrame(self.topframe,text='device selection')
 		self.testframe = tk.Frame(self.topframe)
 
-		# self.setup_select()
 		if not self.parent.midi_running:
 			self.parent.start()
 		self.parent.load()	
@@ -295,49 +297,6 @@ class DeviceSelect:
 
 		self.selectframe.pack()
 		self.testframe.pack()
-
-	def setup_select(self):
-		self.width = max(max([len(k) for k in self.possinps]),max([len(k) for k in self.possouts])) + 5
-
-		self.input_label = tk.Label(self.selectframe,width=self.width,text='input')
-		self.output_label = tk.Label(self.selectframe,width=self.width,text='output')
-
-		self.input_choice = tk.StringVar()
-		self.input_choice.set('-')
-		self.output_choice = tk.StringVar()
-		self.output_choice.set('-')
-
-		def gen_io_select(svar,io):
-			# io = 0 -> input
-			# io = 1 -> output
-			ddict = self.device_dict[io]
-			if not io: #input
-				setfun = self.m2o.change_inp
-			else:
-				setfun = self.m2o.change_outp
-			def fun_tor(*args):
-				newval = svar.get()
-				if newval in ddict:
-					self.selected_devices[io] = [newval,setfun(ddict[newval])]
-					if not self.parent.midi_running:
-						self.parent.start()
-					else:
-						self.parent.save()
-					if newval != self.parent.last_loaded:
-						self.parent.load()
-				else:
-					self.selected_devices[io] = ['-',-1]
-			return fun_tor
-
-		self.input_choice.trace('w', gen_io_select(self.input_choice,0))
-		self.output_choice.trace('w', gen_io_select(self.output_choice,1))
-
-		self.input_select = tk.OptionMenu(self.selectframe,self.input_choice,*self.possinps)
-		self.output_select = tk.OptionMenu(self.selectframe,self.output_choice,*self.possouts)
-
-		pack_order = [self.input_label,self.input_select,self.output_label,self.output_select]
-		for thing in pack_order:
-			thing.pack()
 
 	def setup_test(self):
 		self.testframe.grid_rowconfigure(0, weight=1)
