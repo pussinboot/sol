@@ -87,6 +87,16 @@ class MainGui:
 		self.backend.desc_to_fun['ct_speed_l'] = self.clipcontrol_l.change_speedup
 		self.backend.desc_to_fun['ct_speed_0_l'] = lambda: self.clipcontrol_l.change_speedup(C.MIN_SPEEDUP/C.MAX_SPEEDUP)
 		
+		self.backend.desc_to_fun['loop_i/o_r'] = self.clipcontrol_r.toggle_looping
+		self.backend.desc_to_fun['loop_type_r'] = self.clipcontrol_r.toggle_loop_type
+		self.backend.desc_to_fun['lp_select_r'] = self.toggle_setting_lp_r
+		self.backend.desc_to_fun['qp_delete_r'] = self.toggle_delete_q_r
+		self.backend.desc_to_fun['pb_speed_r'] = self.clipcontrol_r.change_speed
+		self.backend.desc_to_fun['pb_speed_0_r'] = lambda: self.clipcontrol_r.change_speed(0.1)
+		self.backend.desc_to_fun['ct_speed_r'] = self.clipcontrol_r.change_speedup
+		self.backend.desc_to_fun['ct_speed_0_r'] = lambda: self.clipcontrol_r.change_speedup(C.MIN_SPEEDUP/C.MAX_SPEEDUP)
+
+
 	def change_clip(self,newclip,layer):
 		self.backend.change_clip(newclip,layer)
 		if layer == 2:
