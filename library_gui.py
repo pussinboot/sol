@@ -15,6 +15,7 @@ from tkdnd import dnd_start
 import tkinter.simpledialog as tksimpledialog
 
 from PIL import ImageTk,Image
+import ntpath, os
 
 import CONSTANTS as C
 from clip import ClipCollection
@@ -129,7 +130,7 @@ class LibraryGui:
 		self.highlight_col(self.backend.cur_col-1)
 
 	def go_right(self,*args):
-		self.highlight_col(self.backend.cur_col + 1)
+		self.highlight_col(self.backend.cur_col+1)
 
 # library gui is whole window
 # on left side have 1+ container collections, each of which has as many clip containers as there are cue buttons
@@ -213,7 +214,9 @@ class ClipContainer:
 		if not clip_fname in self.librarygui.backend.library.clips: return
 		self.clip = self.librarygui.backend.library.clips[clip_fname]
 		self.fname = self.clip.fname
-		if self.clip.thumbnail:
+		if self.clip.thumbnail is None:
+			self.clip.thumbnail = './scrot/{}.png'.format(ntpath.basename(self.clip.fname))
+		if self.clip.thumbnail and os.path.exists(self.clip.thumbnail):
 			self.change_img_from_file(self.clip.thumbnail)
 		#print('clip changed to',self.clip.name)
 		self.toggle_dnd()
@@ -370,8 +373,10 @@ class BrowseLibrary:
 				self.search_tree.item("root",open=True)
 
 def make_tree_clip(event):
-	if event.state != 8:
-		return
+	# print(event.state)
+	if event.state != 8: # sure numlock is on for 8 to work...
+		if event.state != 0:
+			return
 	tv = event.widget
 	if tv.identify_row(event.y) not in tv.selection():
 		tv.selection_set(tv.identify_row(event.y))    
@@ -382,6 +387,7 @@ def make_tree_clip(event):
 		return
 	clip_name = tv.item(item,"values")[1]
 	if dnd_start(TreeClip(clip_name),event):
+		# print('dnd started')
 		pass
 
 class TreeClip:

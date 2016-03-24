@@ -12,3 +12,9 @@ DONE midi control is broken af...
 
 	fix l/r mixup.... rly need a way to figure out a nicer way 
   OK just thought about what i was doin
+
+
+stuff that's still broken -- 
+loop selection
+right's speedups (both types)
+right's loop type / on off
