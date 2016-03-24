@@ -98,6 +98,7 @@ class MainGui:
 
 
 	def change_clip(self,newclip,layer):
+		if newclip is None: return
 		self.backend.change_clip(newclip,layer)
 		if layer == 2:
 			self.clipcontrol_l.change_clip(newclip)
@@ -124,17 +125,17 @@ class MainGui:
 		self.toggle_delete_q(1)
 
 	def cue_handler(self,i,l):
-		print('q',i,'l',l)
+		# print('q',i,'l',l)
 		if self.setting_lp[l-1]:
 			self.last_lp[l-1].append(i)
-			print('last_lp',self.last_lp[l-1])
+			# print('last_lp',self.last_lp[l-1])
 			if len(self.last_lp[l-1]) == 2:
 				self.clipcontrolrs[l-1].change_lp(self.last_lp[l-1]) # update lp points
 				self.setting_lp[l-1] = False
 				self.last_lp[l-1] = []
 		else:
 			if self.delete_q[l-1]:
-				print('delete_q')
+				# print('delete_q')
 				self.clipcontrolrs[l-1].deactivate_funs[i]()
 				self.delete_q[l-1] = False
 			else:
