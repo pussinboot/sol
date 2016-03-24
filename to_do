@@ -15,6 +15,6 @@ DONE midi control is broken af...
 
 
 stuff that's still broken -- 
-loop selection
+FIXED ? works now so idk loop selection/deletion
 FIXED   right's speedups (both types)
         right's loop type / on off
