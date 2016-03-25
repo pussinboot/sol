@@ -62,7 +62,8 @@ class Backend:
 			index = i
 			layer = l
 			def fun_tor():
-				self.select_clip(self.library.clip_collections[self.cur_col][index],layer)
+				#self.select_clip(self.library.clip_collections[self.cur_col][index],layer)
+				self.select_clip(index,layer)
 			return fun_tor
 
 		for l in [2,1]:
@@ -139,13 +140,13 @@ class Backend:
 				fname = last_midi.read()
 				self.midi_control.map_midi(fname)
 
-	def change_clip(self,newclip,layer):
+	def change_clip(self,index,layer):
 		if self.cur_clip[layer-1] is not None: self.cur_clip[layer-1].last_pos = self.cur_clip_pos[layer-1].value
-		self.cur_clip[layer-1] = newclip
-		self.osc_client.select_clip(newclip,layer)
+		self.cur_clip[layer-1] = self.library.clip_collections[self.cur_col][index]
+		self.osc_client.select_clip(self.library.clip_collections[self.cur_col][index],layer)
 
-	def select_clip(self,newclip,layer): # function to be overwritten : )
-		self.change_clip(newclip,layer)
+	def select_clip(self,index,layer): # function to be overwritten : )
+		self.change_clip(index,layer)
 
 
 class RefObj:

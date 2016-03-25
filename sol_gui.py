@@ -42,11 +42,9 @@ class MainGui:
 		self.clipcontrolrs = [self.clipcontrol_r,self.clipcontrol_l]
 		self.library_gui = LibraryGui(self,self.library_frame)
 
-		# self.backend.osc_client.map_loop()
-		# self.backend.osc_client.map_timeline()
-		# self.change_clip(self.backend.cur_clip)
 		# menu
 		self.setup_menubar()
+
 		# midi
 		self.setting_lp = [False,False]
 		self.delete_q = [False,False]
@@ -55,6 +53,15 @@ class MainGui:
 		if midi_on:
 			self.backend.setup_midi()
 			self.backend.load_last_midi()
+
+		# midi out
+		self.last_active_clip = [None,None] # for each layer keep track of last active clip 
+											# of the form [collection, clip_ind]
+		# these funcalls can be used to find midi out notes by index/layer : ) (if they exists)
+		# by looking in self.backend.midi_control.fun_to_key
+		self.clip_out_funcalls = [['clip_{}_r'.format(i) for i in range(C.NO_Q)],['clip_{}_l'.format(i) for i in range(C.NO_Q)]]
+		self.cue_out_funcalls = [['cue_{}_r'.format(i) for i in range(C.NO_Q)],['cue_{}_l'.format(i) for i in range(C.NO_Q)]]
+		
 		self.backend.osc_server.start()
 
 
@@ -96,14 +103,31 @@ class MainGui:
 		self.backend.desc_to_fun['ct_speed_r'] = self.clipcontrol_r.change_speedup
 		self.backend.desc_to_fun['ct_speed_0_r'] = lambda: self.clipcontrol_r.change_speedup(C.MIN_SPEEDUP/C.MAX_SPEEDUP)
 
+	def output_led(self,key,intensity):
+		# used to change the status of an led
+		msg = eval(key)
+		msg += intensity
+		self.backend.osc_client.midi_out(msg)
 
-	def change_clip(self,newclip,layer):
+	def change_clip(self,index,layer):
+		newclip = self.backend.library.clip_collections[self.backend.cur_col][index]
 		if newclip is None: return
-		self.backend.change_clip(newclip,layer)
+		self.backend.change_clip(index,layer)
 		if layer == 2:
 			self.clipcontrol_l.change_clip(newclip)
 		else:
 			self.clipcontrol_r.change_clip(newclip)
+		# turn off last active clip's output led
+		last_clip = self.last_active_clip[layer-1]
+		if last_clip is not None:
+			if last_clip[0] == self.backend.cur_col:
+				funcall = self.clip_out_funcalls[layer-1][last_clip[1]]
+				if funcall in self.backend.midi_control.fun_to_key:
+					self.output_led(self.backend.midi_control.fun_to_key[funcall],0)
+		# then turn on new led and set last_active : )
+		funcall = self.clip_out_funcalls[layer-1][index]
+		self.output_led(self.backend.midi_control.fun_to_key[funcall],127) # full intensity green 
+		self.last_active_clip[layer-1] = [self.backend.cur_col, index]
 			
 	def toggle_setting_lp(self,l):
 		self.setting_lp[l-1] = not self.setting_lp[l-1]
