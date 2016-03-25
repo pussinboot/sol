@@ -177,7 +177,7 @@ class ClipContainer:
 		if self.clip:
 			if self.parent.last_active and self.parent.last_active != self:
 				self.parent.last_active.deactivate()
-			self.maingui.change_clip(self.clip,layer)
+			self.maingui.change_clip(self.index,layer)
 			self.label.config(relief=tk.RAISED)
 			self.active = True
 			self.parent.last_active = self
