@@ -19,3 +19,5 @@ FIXED ? works now so idk loop selection/deletion
 FIXED   right's speedups (both types)
         right's loop type / on off
 FIXED errors w/ qp after triggering an empty clip from midi
+
+probably change vvvv out and looping stuff so that it just reads position values from resolume's osc out anyway...
