@@ -20,4 +20,9 @@ FIXED   right's speedups (both types)
         right's loop type / on off
 FIXED errors w/ qp after triggering an empty clip from midi
 
-probably change vvvv out and looping stuff so that it just reads position values from resolume's osc out anyway...
+DONE  probably change vvvv out and looping stuff so that it just reads position values from resolume's osc out anyway...
+
+Important info for midi out:
+  The note number and channel that controls a backlight is the same as the message sent by that button
+  push buttons 0-16 for brightness
+  big buttons 0- red, 64 -  amber, 112 - green + 0-15 for intensity
