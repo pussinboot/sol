@@ -276,7 +276,10 @@ class ControlR:
 		msg = msg.build()
 		self.vvvv_osc_client.send(msg)
 
-	def vvvv_out(self,msg):
+	def vvvv_out(self,addr,arg):
+		msg = osc_message_builder.OscMessageBuilder(address = addr)
+		msg.add_arg(arg)
+		msg = msg.build()
 		self.vvvv_osc_client.send(msg)
 
 	### CUE POINTS ###
@@ -421,7 +424,7 @@ class ControlR:
 					self.build_n_send(recv_addr,qp0/speedup)
 					new_val = qp0
 				sent_msg = self.build_n_send(send_addr,new_val)
-				self.vvvv_out(sent_msg)
+				# self.vvvv_out(sent_msg)
 			return fun_tor
 		self.backend.osc_server.map_replace(osc_marker,recv_addr,gen_osc_route())
 
@@ -465,6 +468,7 @@ class ControlR:
 				playfun[-1*playdir](self.current_clip[layer-1])
 				self.activate(self.current_clip[layer-1],self.current_clip[layer-1].vars['lp'][1])
 		loop_type_to_fun = {'default':default_loop,'bounce':bounce_loop}
+		recv_addr = '/layer{}/video/position/values'.format(layer) # layer1/2
 		def map_fun(toss,msg):
 			curval = float(msg)
 			try:
@@ -472,7 +476,7 @@ class ControlR:
 			except:
 				#self.current_clip.vars['looptype'] = 'default'
 				pass
-		recv_addr = '/layer{}/video/position/values'.format(layer) # layer1/2
+			self.vvvv_out(recv_addr,curval)
 		self.backend.osc_server.map_replace(osc_marker,recv_addr,map_fun)
 
 class ServeR:
