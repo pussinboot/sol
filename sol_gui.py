@@ -34,6 +34,7 @@ class MainGui:
 		self.cc_frame_r.pack(side=tk.RIGHT,anchor=tk.E)
 
 		# sol
+		self.midi_ready = False
 		self.backend = Backend(fname,self,ports=(7000,7001))
 		self.backend.load_last() #
 		self.backend.select_clip = self.change_clip
@@ -53,6 +54,7 @@ class MainGui:
 		if midi_on:
 			self.backend.setup_midi()
 			self.backend.load_last_midi()
+			self.midi_ready = True
 
 		# midi out
 		self.last_active_clip = [None,None] # for each layer keep track of last active clip 
@@ -103,12 +105,6 @@ class MainGui:
 		self.backend.desc_to_fun['ct_speed_r'] = self.clipcontrol_r.change_speedup
 		self.backend.desc_to_fun['ct_speed_0_r'] = lambda: self.clipcontrol_r.change_speedup(C.MIN_SPEEDUP/C.MAX_SPEEDUP)
 
-	def output_led(self,key,intensity):
-		# used to change the status of an led
-		msg = eval(key)
-		msg += intensity
-		self.backend.osc_client.midi_out(msg)
-
 	def change_clip(self,index,layer):
 		newclip = self.backend.library.clip_collections[self.backend.cur_col][index]
 		if newclip is None: return
@@ -118,15 +114,18 @@ class MainGui:
 		else:
 			self.clipcontrol_r.change_clip(newclip)
 		# turn off last active clip's output led
+		if not self.midi_ready: return
+		msg_to_send = []
 		last_clip = self.last_active_clip[layer-1]
 		if last_clip is not None:
 			if last_clip[0] == self.backend.cur_col:
 				funcall = self.clip_out_funcalls[layer-1][last_clip[1]]
 				if funcall in self.backend.midi_control.fun_to_key:
-					self.output_led(self.backend.midi_control.fun_to_key[funcall],0)
+					msg_to_send += eval(self.backend.midi_control.fun_to_key[funcall]) + [0]
 		# then turn on new led and set last_active : )
 		funcall = self.clip_out_funcalls[layer-1][index]
-		self.output_led(self.backend.midi_control.fun_to_key[funcall],127) # full intensity green 
+		msg_to_send += eval(self.backend.midi_control.fun_to_key[funcall]) + [127]# full intensity green 
+		self.backend.osc_client.midi_out(msg_to_send)
 		self.last_active_clip[layer-1] = [self.backend.cur_col, index]
 			
 	def toggle_setting_lp(self,l):

@@ -27,7 +27,8 @@ class Backend:
 	def __init__(self,xmlfile=None,gui=None,ports=(7000,7001)):
 		self.xmlfile = xmlfile
 		self.library = Library(xmlfile)
-		self.cur_clip = [Clip('',[-1,-1],"no clip loaded"),Clip('',[-1,-1],"no clip loaded")]
+		self.empty_clip = Clip('',[-1,-1],"no clip loaded")
+		self.cur_clip = [self.empty_clip,self.empty_clip]
 		self.cur_clip_pos = [RefObj("cur_clip_pos",0.0),RefObj("cur_clip_pos",0.0)]
 		self.cur_col = -1
 		self.search = SearchR(self.library.clips)
@@ -142,8 +143,11 @@ class Backend:
 
 	def change_clip(self,index,layer):
 		if self.cur_clip[layer-1] is not None: self.cur_clip[layer-1].last_pos = self.cur_clip_pos[layer-1].value
-		self.cur_clip[layer-1] = self.library.clip_collections[self.cur_col][index]
-		self.osc_client.select_clip(self.library.clip_collections[self.cur_col][index],layer)
+		if index is None:
+			self.cur_clip[layer-1] = self.empty_clip
+		else:
+			self.cur_clip[layer-1] = self.library.clip_collections[self.cur_col][index]
+			self.osc_client.select_clip(self.library.clip_collections[self.cur_col][index],layer)
 
 	def select_clip(self,index,layer): # function to be overwritten : )
 		self.change_clip(index,layer)
@@ -333,10 +337,10 @@ class ControlR:
 
 		def clear_clip_l():
 			self.build_n_send('/layer2/clear', 1)# depends 
-			self.backend.change_clip(Clip('',[-1,-1],"no clip loaded"),2)
+			self.backend.change_clip(None,2)
 		def clear_clip_r():
 			self.build_n_send('/layer1/clear', 1)# depends 
-			self.backend.change_clip(Clip('',[-1,-1],"no clip loaded"),1)
+			self.backend.change_clip(None,1)
 		self.clear_l = clear_clip_l
 		self.clear_r = clear_clip_r
 
