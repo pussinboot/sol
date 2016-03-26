@@ -238,6 +238,7 @@ class ControlR:
 		self.backend = backend
 		self.osc_client = udp_client.UDPClient(ip, port)
 		self.vvvv_osc_client = udp_client.UDPClient(ip, port-1)
+		self.vvvv_midi_osc_client = udp_client.UDPClient(ip, port-2)
 		self.current_clip = self.backend.cur_clip
 		self.send = self.osc_client.send
 		self.ignore_last = False
@@ -279,7 +280,7 @@ class ControlR:
 		for p in list_params:
 			msg.add_arg(p)
 		msg = msg.build()
-		self.vvvv_osc_client.send(msg)
+		self.vvvv_midi_osc_client.send(msg)
 
 	def vvvv_out(self,addr,arg):
 		msg = osc_message_builder.OscMessageBuilder(address = addr)
