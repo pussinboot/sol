@@ -84,6 +84,22 @@ class LibraryGui:
 		self.containers[index].frame.tkraise()
 		self.container_labels[index].configure(relief=tk.SUNKEN)
 		self.backend.cur_col = index
+		msg_to_send = []
+		# for both layers, if last clip not cur_col then send 0
+		# if it is turn it on
+		if not self.maingui.midi_ready: return
+		for l in [2,1]:
+			check_clip = self.maingui.last_active_clip[l-1]
+			if check_clip is not None:
+				funcall = self.maingui.clip_out_funcalls[l-1][check_clip[1]]
+				if funcall in self.backend.midi_control.fun_to_key:
+					msg_to_send += eval(self.backend.midi_control.fun_to_key[funcall])
+					if check_clip[0] == index:
+						msg_to_send += [127]
+					else:
+						msg_to_send += [0]
+		self.backend.osc_client.midi_out(msg_to_send)
+
 
 	def add_collection(self,*args):
 		new_cont = ContainerCollection(self,self.collectionframe,len(self.containers))
