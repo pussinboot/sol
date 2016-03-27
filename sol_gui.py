@@ -84,7 +84,10 @@ class MainGui:
 			for i in range(C.NO_Q):
 				self.backend.desc_to_fun['cue_{0}_{1}'.format(i,'rl'[l-1])] = gen_q_selector(i,l)
 		# add looping toggle 
-		self.backend.desc_to_fun['loop_i/o_l'] = self.clipcontrol_l.toggle_looping
+		def tog_loop_l():
+			self.clipcontrol_l.toggle_looping()
+			self.refresh_cue_lights(2)
+		self.backend.desc_to_fun['loop_i/o_l'] = tog_loop_l
 		self.backend.desc_to_fun['loop_type_l'] = self.clipcontrol_l.toggle_loop_type
 		# add loop point selector # this will b tricky...
 		self.backend.desc_to_fun['lp_select_l'] = self.toggle_setting_lp_l
@@ -96,7 +99,10 @@ class MainGui:
 		self.backend.desc_to_fun['ct_speed_l'] = self.clipcontrol_l.change_speedup
 		self.backend.desc_to_fun['ct_speed_0_l'] = lambda: self.clipcontrol_l.change_speedup(C.MIN_SPEEDUP/C.MAX_SPEEDUP)
 		
-		self.backend.desc_to_fun['loop_i/o_r'] = self.clipcontrol_r.toggle_looping
+		def tog_loop_r():
+			self.clipcontrol_r.toggle_looping()
+			self.refresh_cue_lights(1)
+		self.backend.desc_to_fun['loop_i/o_r'] = tog_loop_r
 		self.backend.desc_to_fun['loop_type_r'] = self.clipcontrol_r.toggle_loop_type
 		self.backend.desc_to_fun['lp_select_r'] = self.toggle_setting_lp_r
 		self.backend.desc_to_fun['qp_delete_r'] = self.toggle_delete_q_r
@@ -127,6 +133,7 @@ class MainGui:
 		msg_to_send += eval(self.backend.midi_control.fun_to_key[funcall]) + [127]# full intensity green 
 		self.backend.osc_client.midi_out(msg_to_send)
 		self.last_active_clip[layer-1] = [self.backend.cur_col, index]
+		#self.refresh_cue_lights(layer)
 			
 	def toggle_setting_lp(self,l):
 		self.setting_lp[l-1] = not self.setting_lp[l-1]
@@ -147,6 +154,23 @@ class MainGui:
 	def toggle_delete_q_r(self):
 		self.toggle_delete_q(1)
 
+	def refresh_cue_lights(self,l):
+		# build up array of light values to send
+		# on/off if a cue point exists
+		# brighter if loop point & selected
+		if not self.midi_ready: return
+		last_clip = self.backend.cur_clip[l-1]
+		if last_clip is None: return
+		light_vals = [79 if qp is not None else 0 for qp in last_clip.vars['qp']]
+		if last_clip.vars['loopon']:
+			for i in last_clip.vars['lp']:
+				if last_clip.vars['qp'][i] is not None: light_vals[i] = 127 # loop color
+		msg_to_send = []
+		for i in range(len(light_vals)):
+			funcall = self.cue_out_funcalls[l-1][i]
+			msg_to_send += eval(self.backend.midi_control.fun_to_key[funcall]) + [light_vals[i]]
+		self.backend.osc_client.midi_out(msg_to_send)
+
 	def cue_handler(self,i,l):
 		# print('q',i,'l',l)
 		if self.setting_lp[l-1]:
@@ -163,6 +187,7 @@ class MainGui:
 				self.delete_q[l-1] = False
 			else:
 				self.clipcontrolrs[l-1].activate_funs[i]()
+		self.refresh_cue_lights(l)
 
 	def quit(self):
 		self.backend.save_data()

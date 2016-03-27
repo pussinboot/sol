@@ -344,6 +344,7 @@ class ClipControl:
 			self.loop_on_off.config(relief='sunken')
 		else:
 			self.loop_on_off.config(relief='raised')
+		
 
 	def toggle_loop_type(self):
 		if self.looping_vars['loop_type'].get() == 'default': 
