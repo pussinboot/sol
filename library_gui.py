@@ -257,10 +257,12 @@ class ClipContainer:
 			#print(self.searcher.get_from_name(self.clip.name)) # it gets the right clip after change
 
 	def dnd_accept(self, source, event):
+		# print("source:",source.fname,"event",event)
 		return self
 
 	def dnd_enter(self, source, event):
-		self.label.focus_set() # Show highlight border
+		#self.label.focus_set() # Show highlight border
+		pass
 
 	def dnd_motion(self, source, event):
 		pass

@@ -25,18 +25,35 @@ class ClipOrg:
 		self.sol = fake_sol(Backend(None,self.root))
 		self.backend = self.sol.backend
 		# tk
-		h = self.root.winfo_screenheight()
-		self.mainframe = tk.Frame(root,height=h)
+
+		self.mainframe = tk.Frame(root)
 		self.lib_frame = tk.Frame(self.mainframe)
-		self.frame = tk.Frame(self.mainframe)
+		self.canvas = tk.Canvas(self.mainframe)
+		self.frame = tk.Frame(self.canvas)
+		self.vsb = tk.Scrollbar(self.mainframe, orient="vertical", command=self.canvas.yview)
+		self.canvas.configure(yscrollcommand=self.vsb.set)
 
 		self.lib_gui = LibraryGui(self.sol,self.lib_frame)
 		self.clip_conts = []
 
 		self.lib_frame.pack()
-		self.frame.pack()
 		self.mainframe.pack(expand=True,fill=tk.Y)
+		self.vsb.pack(side="right", fill="y")
+		self.canvas.pack(side="left", fill="both", expand=True)
+		self.canvas.create_window((4,4), window=self.frame, anchor="nw", 
+								  tags="self.frame")
+		self.canvas.bind("<MouseWheel>", self.mouse_wheel)
+		self.canvas.bind("<Button-4>", self.mouse_wheel)
+		self.canvas.bind("<Button-5>", self.mouse_wheel)
+
+		self.frame.bind("<Configure>", self.reset_scroll_region)
 		self.initialize_all_clips()
+
+	def reset_scroll_region(self, event):
+		self.canvas.configure(scrollregion=self.canvas.bbox("all"))
+
+	def mouse_wheel(self,event):
+		 self.canvas.yview('scroll',-1*int(event.delta//120),'units')
 
 	def initialize_all_clips(self):
 		# first sort by filename : )
@@ -61,9 +78,23 @@ class ClipCont(ClipContainer):
 			self.clip.thumbnail = './scrot/{}.png'.format(ntpath.basename(self.clip.fname))
 		if self.clip.thumbnail and os.path.exists(self.clip.thumbnail):
 			self.change_img_from_file(self.clip.thumbnail)
+		self.fname = self.clip.fname
+		self.label.bind("<MouseWheel>", self.parent.mouse_wheel)
+		self.label.bind("<Button-4>", self.parent.mouse_wheel)
+		self.label.bind("<Button-5>", self.parent.mouse_wheel)
+		self.frame.bind("<MouseWheel>", self.parent.mouse_wheel)
+		self.frame.bind("<Button-4>", self.parent.mouse_wheel)
+		self.frame.bind("<Button-5>", self.parent.mouse_wheel)
+
 	def activate(self,*args,layer=-1):
 		#self.maingui.change_clip(self.index,layer)
+		self.parent.backend.osc_client.select_clip(self.clip,layer)
+		print(self.clip.name,layer)
 		pass
+
+	def dnd_accept(self,source,event):
+		pass
+
 	def remove_clip(self,*args):
 		pass
 
