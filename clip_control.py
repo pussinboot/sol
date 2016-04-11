@@ -123,7 +123,7 @@ class ClipControl:
 
 
 	def setup_cue_buttons(self):
-		n_buts = len(self.clip.vars['qp'])
+		n_buts = C.NO_Q #len(self.clip.vars['qp'])
 		n_rows = 1
 		if n_buts > 4:
 			n_rows = n_buts // 4

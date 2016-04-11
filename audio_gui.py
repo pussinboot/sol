@@ -335,7 +335,7 @@ class ProgressBar:
 		self.width, self.height = width, height
 		self.oldwidth, self.oldheight = width, height
 		self.og_width = width
-		self.send_addr = cliporsong.control_addr
+		if cliporsong is not None: self.send_addr = cliporsong.control_addr
 		self._drag_data = {"x": 0, "y": 0, "item": None,"label":None}
 		self.drag_release_action = None
 
@@ -491,6 +491,8 @@ class ProgressBar:
 		self.parent.osc_server.map(addr,mapfun)
 
 	def loop_update(self):
+		if self.cliporsong is None:
+			return
 		if not self.cliporsong.vars['loopon']:
 			self.canvas.coords(self.looprect,0,0,0,0)
 			return
