@@ -37,6 +37,7 @@ class ClipOrg:
 
 		self.lib_gui = LibraryGui(self.sol,self.lib_frame)
 		self.clip_conts = []
+		self.clip_folds = []
 
 		self.lib_frame.pack()
 		self.mainframe.pack(expand=True,fill=tk.Y)
@@ -65,10 +66,28 @@ class ClipOrg:
 		self.lib_frame.update()
 		w = self.lib_frame.winfo_width()
 		across = w // (C.THUMB_W+12)
+		last_folder_name = ""
+		offset = 0
 		for i in range(len(fnames)):
-			newcont = ClipCont(self.backend.library.clips[fnames[i]],self.lib_gui,self)
+			foldername = fnames[i].split("\\")[-2]
+			if foldername == 'dxv':
+				foldername = fnames[i].split("\\")[-3]
+			if foldername != last_folder_name:
+				offset = i
+				last_folder_name = foldername
+				new_frame = tk.LabelFrame(self.frame,text=foldername)
+				new_frame.frame = new_frame
+				new_frame.mouse_wheel = self.mouse_wheel
+				new_frame.bind("<MouseWheel>", self.mouse_wheel)
+				new_frame.bind("<Button-4>", self.mouse_wheel)
+				new_frame.bind("<Button-5>", self.mouse_wheel)
+				self.clip_folds.append(new_frame)
+			newcont = ClipCont(self.backend.library.clips[fnames[i]],self.lib_gui,self.clip_folds[-1])
 			self.clip_conts.append(newcont)
-			self.clip_conts[-1].grid(row=(i//across),column=(i%across))
+			self.clip_conts[-1].grid(row=((i-offset)//across),column=((i-offset)%across))
+
+		for frame in self.clip_folds:
+			frame.pack()
 
 	def quit(self):
 		self.backend.save_data()
