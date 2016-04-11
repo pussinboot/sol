@@ -38,7 +38,9 @@ class LibraryGui:
 
 		self.add_col_but = tk.Button(self.collectionlabelframe,text='+',command=self.add_collection)
 		self.go_l_but = tk.Button(self.collectionlabelframe,text='<',command=self.go_left)
+		self.go_l_but.bind("<Button-3>",self.swap_left)
 		self.go_r_but = tk.Button(self.collectionlabelframe,text='>',command=self.go_right)
+		self.go_r_but.bind("<Button-3>",self.swap_right)
 		self.add_col_but.pack(side=tk.RIGHT)
 		self.go_r_but.pack(side=tk.RIGHT)
 		self.go_l_but.pack(side=tk.RIGHT)
@@ -145,8 +147,38 @@ class LibraryGui:
 		if self.backend.cur_col <= 0: self.backend.cur_col = len(self.containers)
 		self.highlight_col(self.backend.cur_col-1)
 
+	def swap_cols(self,col_i,col_j):
+		if col_i == col_j:
+			return
+		itext, jtext = self.container_labels[col_i].config()['text'][-1],self.container_labels[col_j].config()['text'][-1]
+		self.container_labels[col_i].configure(text=jtext)
+		self.container_labels[col_j].configure(text=itext)
+		self.containers[col_i],self.containers[col_j] = self.containers[col_j],self.containers[col_i]
+		self.backend.library.clip_collections[col_i],self.backend.library.clip_collections[col_j] = self.backend.library.clip_collections[col_j],self.backend.library.clip_collections[col_i] 
+
+	def swap_left(self,*args):
+		last_ind = self.backend.cur_col
+		if self.backend.cur_col <= 0: self.backend.cur_col = len(self.containers)
+		index = self.backend.cur_col - 1
+		if index < 0 : 
+			index = len(self.containers) - 1
+		if index > len(self.containers) - 1: 
+			index = 0
+		self.swap_cols(index,last_ind)
+		self.go_left()
+
 	def go_right(self,*args):
 		self.highlight_col(self.backend.cur_col+1)
+
+	def swap_right(self,*args):
+		last_ind = self.backend.cur_col
+		index = self.backend.cur_col + 1
+		if index < 0 : 
+			index = len(self.containers) - 1
+		if index > len(self.containers) - 1: 
+			index = 0
+		self.swap_cols(index,last_ind)
+		self.go_right()
 
 # library gui is whole window
 # on left side have 1+ container collections, each of which has as many clip containers as there are cue buttons

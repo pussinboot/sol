@@ -16,7 +16,9 @@ class fake_sol:
 
 	def change_clip(self,index,layer):
 		self.backend.change_clip(index,layer)
-		print(self.lr[layer],self.backend.cur_clip[layer-1].name)
+		newclip = self.backend.cur_clip[layer-1]
+		if newclip is not None:
+			print(self.lr[layer],newclip.name)
 
 class ClipOrg:
 	def __init__(self,root):
