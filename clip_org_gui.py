@@ -5,7 +5,7 @@ from library_gui import LibraryGui, ClipContainer
 from sol_backend import Backend
 import CONSTANTS as C
 
-import os
+import ntpath, os
 
 class fake_sol:
 	def __init__(self,backend):
@@ -81,6 +81,7 @@ class ClipOrg:
 				new_frame.bind("<MouseWheel>", self.mouse_wheel)
 				new_frame.bind("<Button-4>", self.mouse_wheel)
 				new_frame.bind("<Button-5>", self.mouse_wheel)
+				new_frame.backend = self.backend
 				self.clip_folds.append(new_frame)
 			newcont = ClipCont(self.backend.library.clips[fnames[i]],self.lib_gui,self.clip_folds[-1])
 			self.clip_conts.append(newcont)
