@@ -168,7 +168,8 @@ class MainGui:
 		msg_to_send = []
 		for i in range(len(light_vals)):
 			funcall = self.cue_out_funcalls[l-1][i]
-			msg_to_send += eval(self.backend.midi_control.fun_to_key[funcall]) + [light_vals[i]]
+			if funcall in self.backend.midi_control.fun_to_key:
+				msg_to_send += eval(self.backend.midi_control.fun_to_key[funcall]) + [light_vals[i]]
 		self.backend.osc_client.midi_out(msg_to_send)
 
 	def cue_handler(self,i,l):

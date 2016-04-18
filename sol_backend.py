@@ -311,6 +311,10 @@ class ControlR:
 		else:
 			return self.set_q(clip,i,layer,scale=scale)
 
+	def activate_q(self,qp,layer):
+		clip_control_addr = '/layer{}/video/position/values'.format(layer) 
+		self.build_n_send(clip_control_addr,qp)
+
 	### playback control
 
 	def setup_control(self):
@@ -455,11 +459,11 @@ class ControlR:
 			playdir = self.current_clip[layer-1].vars['playdir']
 			if playdir == 0 or playdir == -2:
 				return
-			cur_qp = self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp']] # cue points selected for looping
+			cur_qp = [self.current_clip[layer-1].vars['qp'][lp] for lp in self.current_clip[layer-1].vars['lp']] # cue points selected for looping
 			if playdir == -1 and time - min(cur_qp) < 0:
-				self.activate(max(cur_qp))
+				self.activate_q(max(cur_qp),layer)
 			elif playdir == 1 and time - max(cur_qp) > 0:
-				self.activate(min(cur_qp))
+				self.activate_q(min(cur_qp),layer)
 
 		if layer == 2:
 			playfun = [lambda: None,self.play_l,self.reverse_l] # 1 goes to play, -1 goes to reverse, 0 does nothing
@@ -472,13 +476,13 @@ class ControlR:
 			playdir = self.current_clip[layer-1].vars['playdir']
 			if playdir == 0 or playdir == -2:
 				return
-			cur_qp = self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp']] # cue points selected for looping
+			cur_qp = [self.current_clip[layer-1].vars['qp'][lp] for lp in self.current_clip[layer-1].vars['lp']] # cue points selected for looping
 			if playdir == -1 and time - min(cur_qp) < 0:
 				playfun[-1*playdir](self.current_clip[layer-1])
-				self.activate(self.current_clip[layer-1],min(cur_qp))
+				# self.activate(self.current_clip[layer-1],min(cur_qp))
 			elif playdir == 1 and time - max(cur_qp) > 0:
 				playfun[-1*playdir](self.current_clip[layer-1])
-				self.activate(self.current_clip[layer-1],max(cur_qp))
+				# self.activate(self.current_clip[layer-1],max(cur_qp))
 
 		loop_type_to_fun = {'default':default_loop,'bounce':bounce_loop}
 		recv_addr = '/layer{}/video/position/values'.format(layer) # layer1/2
@@ -487,11 +491,11 @@ class ControlR:
 			curval = float(msg)
 			try:
 				loop_type_to_fun[self.current_clip[layer-1].vars['looptype']](curval)
-			except:
+			except Exception as e:
 				#self.current_clip.vars['looptype'] = 'default'
-				pass
+				print(e)
 			self.vvvv_out(recv_addr,curval)
-			
+
 		self.backend.osc_server.map_replace(osc_marker,recv_addr,map_fun)
 
 class ServeR:
