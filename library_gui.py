@@ -214,12 +214,12 @@ class ClipContainer:
 				starting_clip = self.parent.clip_collection[index]
 				self.change_clip(starting_clip.fname)
 
-		if self.clip == self.maingui.backend.cur_clip[1]:
-			self.activate_l()
-			self.deactivate()
-		elif self.clip == self.maingui.backend.cur_clip[0]:
-			self.activate_r()
-			self.deactivate()
+		# if self.clip == self.maingui.backend.cur_clip[1]:
+		# 	self.activate_l()
+		# 	self.deactivate()
+		# elif self.clip == self.maingui.backend.cur_clip[0]:
+		# 	self.activate_r()
+		# 	self.deactivate()
 
 	def activate(self,*args,layer=-1):
 		if self.clip:
