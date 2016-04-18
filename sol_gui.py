@@ -88,6 +88,10 @@ class MainGui:
 			self.clipcontrol_l.toggle_looping()
 			self.refresh_cue_lights(2)
 		self.backend.desc_to_fun['loop_i/o_l'] = tog_loop_l
+		def nxt_loop_l():
+			self.clipcontrol_l.advance_looping()
+			self.refresh_cue_lights(2)
+		self.backend.desc_to_fun['loop_nxt_l'] = nxt_loop_l
 		self.backend.desc_to_fun['loop_type_l'] = self.clipcontrol_l.toggle_loop_type
 		# add loop point selector # this will b tricky...
 		self.backend.desc_to_fun['lp_select_l'] = self.toggle_setting_lp_l
@@ -103,6 +107,10 @@ class MainGui:
 			self.clipcontrol_r.toggle_looping()
 			self.refresh_cue_lights(1)
 		self.backend.desc_to_fun['loop_i/o_r'] = tog_loop_r
+		def nxt_loop_r():
+			self.clipcontrol_r.advance_looping()
+			self.refresh_cue_lights(1)
+		self.backend.desc_to_fun['loop_nxt_r'] = nxt_loop_r
 		self.backend.desc_to_fun['loop_type_r'] = self.clipcontrol_r.toggle_loop_type
 		self.backend.desc_to_fun['lp_select_r'] = self.toggle_setting_lp_r
 		self.backend.desc_to_fun['qp_delete_r'] = self.toggle_delete_q_r

@@ -99,7 +99,7 @@ class ConfigGui:
 	def setup_inputs(self):
 		# various inputs (that are duplicated for l and r)
 		clip_control_inps = ['clip_play', 'clip_pause', 'clip_reverse', 'clip_random', 
-							 'loop_i/o','loop_type',#'record_pb', 'record_rec',
+							 'loop_i/o','loop_type','loop_nxt',#'record_pb', 'record_rec',
 							 'pb_speed', 'pb_speed_0', 'ct_speed', 'ct_speed_0']
 		#rec_control_inps = ['record_playback', 'record_record']
 		clip_select_inps = ['clip_{}'.format(i) for i in range(C.NO_Q)] + ['clip_clear']
