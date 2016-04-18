@@ -479,10 +479,10 @@ class ControlR:
 			cur_qp = [self.current_clip[layer-1].vars['qp'][lp] for lp in self.current_clip[layer-1].vars['lp']] # cue points selected for looping
 			if playdir == -1 and time - min(cur_qp) < 0:
 				playfun[-1*playdir](self.current_clip[layer-1])
-				# self.activate(self.current_clip[layer-1],min(cur_qp))
+				self.activate_q(min(cur_qp),layer)
 			elif playdir == 1 and time - max(cur_qp) > 0:
 				playfun[-1*playdir](self.current_clip[layer-1])
-				# self.activate(self.current_clip[layer-1],max(cur_qp))
+				self.activate_q(max(cur_qp),layer)
 
 		loop_type_to_fun = {'default':default_loop,'bounce':bounce_loop}
 		recv_addr = '/layer{}/video/position/values'.format(layer) # layer1/2

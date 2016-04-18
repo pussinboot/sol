@@ -255,6 +255,9 @@ class ClipControl:
 		self.loop_on_off = tk.Button(self.loop_ctrl_frame,text='loop',command=self.toggle_looping) 
 		self.looping_controls.append(self.loop_on_off)
 
+		self.next_loop = tk.Button(self.loop_ctrl_frame,text='nxt',command=self.advance_looping) 
+		self.looping_controls.append(self.next_loop)
+
 		loop_select_type = tk.OptionMenu(self.loop_param_frame,self.looping_vars['loop_type'],'default','bounce')
 		self.looping_controls.append(loop_select_type)
 		for control in self.looping_controls:
@@ -336,6 +339,15 @@ class ClipControl:
 
 	def toggle_looping(self):
 		self.clip.vars['loopon'] = not self.clip.vars['loopon']
+		self.progress_bar.refresh()
+		self.looping_but_check()
+
+	def advance_looping(self):
+		all_qp = [i for i in range(C.NO_Q) if self.clip.vars['qp'][i] is not None]
+		if len(all_qp) > 1:
+			biggest_qp_no = max(all_qp) + 1
+			self.clip.vars['lp'] = [(self.clip.vars['lp'][0] + 1) % biggest_qp_no,(self.clip.vars['lp'][1] + 1) % biggest_qp_no]
+			self.change_lp(self.clip.vars['lp'])
 		self.progress_bar.refresh()
 		self.looping_but_check()
 
