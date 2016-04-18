@@ -133,7 +133,7 @@ class MainGui:
 		msg_to_send += eval(self.backend.midi_control.fun_to_key[funcall]) + [127]# full intensity green 
 		self.backend.osc_client.midi_out(msg_to_send)
 		self.last_active_clip[layer-1] = [self.backend.cur_col, index]
-		#self.refresh_cue_lights(layer)
+		self.refresh_cue_lights(layer)
 			
 	def toggle_setting_lp(self,l):
 		self.setting_lp[l-1] = not self.setting_lp[l-1]

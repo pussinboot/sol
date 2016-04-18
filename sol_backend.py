@@ -420,6 +420,7 @@ class ControlR:
 					n_qp1 = self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp'][1]]
 					if n_qp0 is not None: qp0 = n_qp0
 					if n_qp1 is not None: qp1 = n_qp1
+				qp0, qp1 = min([qp0,qp1]),max([qp0,qp1])
 				#new_val = (qp1 - qp0)*new_val + qp0 # linear scale
 				if new_val >= qp1: # if reached end
 					self.ignore_last = True
@@ -447,34 +448,41 @@ class ControlR:
 		layer = layer
 		if osc_marker is None:
 			osc_marker = "map_loop_{}".format(layer)
+
 		def default_loop(time):
 			if not self.current_clip[layer-1].vars['loopon']: return
 			if self.current_clip[layer-1].vars['lp'][0] < 0 or self.current_clip[layer-1].vars['lp'][1] < 0: return
 			playdir = self.current_clip[layer-1].vars['playdir']
 			if playdir == 0 or playdir == -2:
 				return
-			if playdir == -1 and time - self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp'][0]] < 0:
-				self.activate(self.current_clip[layer-1],self.current_clip[layer-1].vars['lp'][1],layer)
-			elif playdir == 1 and time - self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp'][1]] > 0:
-				self.activate(self.current_clip[layer-1],self.current_clip[layer-1].vars['lp'][0],layer)
+			cur_qp = self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp']] # cue points selected for looping
+			if playdir == -1 and time - min(cur_qp) < 0:
+				self.activate(max(cur_qp))
+			elif playdir == 1 and time - max(cur_qp) > 0:
+				self.activate(min(cur_qp))
+
 		if layer == 2:
 			playfun = [lambda: None,self.play_l,self.reverse_l] # 1 goes to play, -1 goes to reverse, 0 does nothing
 		else:
 			playfun = [lambda: None,self.play_r,self.reverse_r] 
+
 		def bounce_loop(time):
 			if not self.current_clip[layer-1].vars['loopon']:
 				return
 			playdir = self.current_clip[layer-1].vars['playdir']
 			if playdir == 0 or playdir == -2:
 				return
-			if playdir == -1 and time - self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp'][0]] < 0:
+			cur_qp = self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp']] # cue points selected for looping
+			if playdir == -1 and time - min(cur_qp) < 0:
 				playfun[-1*playdir](self.current_clip[layer-1])
-				self.activate(self.current_clip[layer-1],self.current_clip[layer-1].vars['lp'][0])
-			elif playdir == 1 and time - self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp'][1]] > 0:
+				self.activate(self.current_clip[layer-1],min(cur_qp))
+			elif playdir == 1 and time - max(cur_qp) > 0:
 				playfun[-1*playdir](self.current_clip[layer-1])
-				self.activate(self.current_clip[layer-1],self.current_clip[layer-1].vars['lp'][1])
+				self.activate(self.current_clip[layer-1],max(cur_qp))
+
 		loop_type_to_fun = {'default':default_loop,'bounce':bounce_loop}
 		recv_addr = '/layer{}/video/position/values'.format(layer) # layer1/2
+
 		def map_fun(toss,msg):
 			curval = float(msg)
 			try:
@@ -483,6 +491,7 @@ class ControlR:
 				#self.current_clip.vars['looptype'] = 'default'
 				pass
 			self.vvvv_out(recv_addr,curval)
+			
 		self.backend.osc_server.map_replace(osc_marker,recv_addr,map_fun)
 
 class ServeR:
