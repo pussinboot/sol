@@ -82,10 +82,13 @@ class ClipOrg:
 		self.search_clip_canvas.pack(side="left", fill="both", expand=True)
 		self.search_clip_canvas.create_window((4,4), window=self.search_clip_inner_frame, anchor="nw", 
 								  tags="self.search_clip_inner_frame")
+		self.search_clip_canvas.bind("<MouseWheel>", self.mouse_wheel_search)
+		self.search_clip_canvas.bind("<Button-4>", self.mouse_wheel_search)
+		self.search_clip_canvas.bind("<Button-5>", self.mouse_wheel_search)
 
-	def reset_scroll_region(self, event):
+	def reset_scroll_region(self, event=None):
 		self.all_clip_canvas.configure(scrollregion=self.all_clip_canvas.bbox("all"))
-		self.search_clip_canvas.configure(scrollregion=self.all_clip_canvas.bbox("all"))
+		self.search_clip_canvas.configure(scrollregion=self.search_clip_canvas.bbox("all"))
 
 	def mouse_wheel(self,event):
 		 self.all_clip_canvas.yview('scroll',-1*int(event.delta//120),'units')
@@ -139,6 +142,7 @@ class ClipOrg:
 				newcont = ClipCont(self.backend.library.clips[fnames[i]],self.lib_gui,self.search_clip_inner_frame)
 				self.search_res_clip_conts.append(newcont)
 				self.search_res_clip_conts[-1].grid(row=((i)//self.across),column=((i)%self.across))
+		self.reset_scroll_region()
 	def quit(self):
 		self.backend.save_data()
 
