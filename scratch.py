@@ -89,21 +89,25 @@
 # for item in test_dict.items():
 # 	print(item)
 # print(1 in test_dict)
-import sched
-import time
+# import sched
+# import time
 
-scheduler = sched.scheduler(time.time, time.sleep)
+# scheduler = sched.scheduler(time.time, time.sleep)
 
-def print_event(name, start):
-    now = time.time()
-    elapsed = int(now - start)
-    print ('EVENT: %s elapsed=%s name=%s' % (time.ctime(now),
-                                            elapsed,
-                                            name))
+# def print_event(name, start):
+#     now = time.time()
+#     elapsed = int(now - start)
+#     print ('EVENT: %s elapsed=%s name=%s' % (time.ctime(now),
+#                                             elapsed,
+#                                             name))
 
-start = time.time()
-print ('START:', time.ctime(start))
-scheduler.enter(2, 1, print_event, ('first', start))
-scheduler.enter(3, 1, print_event, ('second', start))
+# start = time.time()
+# print ('START:', time.ctime(start))
+# scheduler.enter(2, 1, print_event, ('first', start))
+# scheduler.enter(3, 1, print_event, ('second', start))
 
-scheduler.run()
+# scheduler.run()
+
+qp0, qp1 = 1.2,10
+qp0, qp1 = min([qp0,qp1]),max([qp0,qp1])
+print(qp0,qp1)
