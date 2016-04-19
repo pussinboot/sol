@@ -438,6 +438,30 @@ class ControlR:
 				# self.vvvv_out(sent_msg)
 			return fun_tor
 		self.backend.osc_server.map_replace(osc_marker,recv_addr,gen_osc_route())
+		self.map_vvvv_timeline(layer,osc_marker)
+
+	def map_vvvv_timeline(self,layer,osc_marker):
+		layer = layer
+		recv_addr = '/vvvvout/layer{}/values'.format(layer) 
+		send_addr = '/layer{}/video/position/values'.format(layer)
+		osc_marker = osc_marker + "_vvvv"
+		def gen_osc_route():
+			def fun_tor(_,msg):
+				qp0, qp1 = 0.0,1.0
+				if self.current_clip[layer-1].vars['loopon']:	# if looping
+					n_qp0 = self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp'][0]]
+					n_qp1 = self.current_clip[layer-1].vars['qp'][self.current_clip[layer-1].vars['lp'][1]]
+					if n_qp0 is not None: qp0 = n_qp0
+					if n_qp1 is not None: qp1 = n_qp1
+				qp0, qp1 = min([qp0,qp1]),max([qp0,qp1])
+				new_val = float(msg)
+				new_val = (qp1 - qp0)*new_val + qp0 # linear scale
+				sent_msg = self.build_n_send(send_addr,new_val)
+			return fun_tor
+		self.backend.osc_server.map_replace(osc_marker,recv_addr,gen_osc_route())
+
+
+
 
 	### looping behavior
 	# select any 2 cue points, once reach one of them jump to the other
