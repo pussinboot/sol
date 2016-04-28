@@ -346,7 +346,7 @@ class ClipControl:
 		all_qp = [i for i in range(C.NO_Q) if self.clip.vars['qp'][i] is not None]
 		if len(all_qp) > 1:
 			biggest_qp_no = max(all_qp) + 1
-			self.clip.vars['lp'] = [(self.clip.vars['lp'][0] + 1) % biggest_qp_no,(self.clip.vars['lp'][1] + 1) % biggest_qp_no]
+			self.clip.vars['lp'] = [(self.clip.vars['lp'][0] + 2) % biggest_qp_no,(self.clip.vars['lp'][1] + 2) % biggest_qp_no]
 			self.change_lp(self.clip.vars['lp'])
 		self.progress_bar.refresh()
 		self.looping_but_check()
