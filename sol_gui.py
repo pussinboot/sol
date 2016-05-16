@@ -15,9 +15,9 @@ class MainGui:
 
 		# tk
 		self.root = root
-		self.mainframe = tk.Frame(root,pady=10,padx=5)
+		self.mainframe = tk.Frame(root,pady=0,padx=0)
 
-		self.top_frame = tk.Frame(self.mainframe,padx=25)
+		self.top_frame = tk.Frame(self.mainframe,padx=0)
 		self.bot_frame = tk.Frame(self.mainframe)
 
 		self.library_frame = tk.Frame(self.bot_frame)
