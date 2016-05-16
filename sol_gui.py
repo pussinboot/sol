@@ -251,7 +251,8 @@ def test():
 
 	me = singleton.SingleInstance()
 	root = tk.Tk()
-	root.title('sol_test')
+	root.title('sol')
+	root.call('wm', 'attributes', '.', '-topmost', '1')
 
 	testgui = MainGui(root,midi_on=True)
 	root.mainloop()
