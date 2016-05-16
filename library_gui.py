@@ -27,10 +27,10 @@ class LibraryGui:
 		# tk
 		self.root = root
 		self.mainframe = tk.Frame(root)#,height=500,width=600)
-		self.clipframe = tk.Frame(self.mainframe,padx=2,pady=1)
+		self.clipframe = tk.Frame(self.mainframe,padx=0,pady=0)
 		self.collectionframe = tk.Frame(self.clipframe)
 		self.collectionlabelframe = tk.Frame(self.clipframe)
-		self.searchframe = tk.Frame(self.mainframe,padx=2,pady=1)
+		self.searchframe = tk.Frame(self.mainframe,padx=0,pady=0)
 
 		self.containers = []
 		self.container_labels = []
@@ -50,7 +50,7 @@ class LibraryGui:
 		self.collectionframe.pack(side=tk.TOP)
 		self.collectionlabelframe.pack(side=tk.TOP,fill=tk.X)
 		self.clipframe.pack(side=tk.LEFT,anchor=tk.E)
-		self.searchframe.pack(expand=True,fill=tk.Y)
+		# self.searchframe.pack(expand=True,fill=tk.Y) # for performance
 		self.mainframe.pack(expand=True,fill=tk.Y)
 
 	def init_cols(self):
@@ -197,11 +197,11 @@ class ClipContainer:
 
 		self.parent = parent
 		self.parent_frame = parent.frame
-		self.frame = tk.Frame(self.parent_frame,padx=1,pady=1)
+		self.frame = tk.Frame(self.parent_frame,padx=5,pady=0)
 		self.grid = self.frame.grid
 
 		self.default_img = self.img = ImageTk.PhotoImage(Image.open('./scrot/sample_clip.png'))
-		self.label = tk.Label(self.frame,image=self.img,text='test',compound='top',width=C.THUMB_W,bd=6) # width of clip preview
+		self.label = tk.Label(self.frame,image=self.img,text='test',compound='top',width=C.THUMB_W,bd=2) # width of clip preview
 		self.label.image = self.img
 		self.label.pack()
 		self.label.bind('<Double-1>',self.activate_l)

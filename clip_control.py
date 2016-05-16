@@ -54,7 +54,7 @@ class ClipControl:
 		self.progress_frame = tk.Frame(self.frame)
 		self.control_frame = tk.Frame(self.frame)
 		self.name_var = tk.StringVar()
-		self.name_label = tk.Label(self.info_frame,textvariable=self.name_var,relief=tk.RIDGE)
+		self.name_label = tk.Label(self.info_frame,textvariable=self.name_var)#,relief=tk.RIDGE)
 		self.name_label.pack(side=tk.TOP,fill=tk.X)
 
 		# bottom half
@@ -69,7 +69,7 @@ class ClipControl:
 		self.loop_param_frame = tk.Frame(self.right_half)
 		# subparams
 		self.playback_speed_frame = tk.Frame(self.param_frame)
-		self.control_speed_frame = tk.Frame(self.param_frame)
+		self.control_speed_frame = self.playback_speed_frame#tk.Frame(self.param_frame)
 		# pack it
 		self.info_frame.pack(side=tk.TOP)
 		self.progress_frame.pack(side=tk.TOP)
@@ -84,7 +84,7 @@ class ClipControl:
 		self.param_frame.pack(side=tk.TOP)
 		self.loop_param_frame.pack(side=tk.TOP)
 		self.playback_speed_frame.pack(side=tk.TOP)
-		self.control_speed_frame.pack(side=tk.TOP)
+		# self.control_speed_frame.pack(side=tk.TOP)
 		self.progress_bar = ProgressBar(self,self.clip,root=self.progress_frame,width=300)
 		self.progress_bar.map_osc(self.clip_control_addr)
 		self.progress_bar.send_addr = self.clip_control_addr
@@ -132,7 +132,7 @@ class ClipControl:
 		for r in range(n_rows):
 			for c in range(4):
 				i = r*4 + c
-				but = tk.Button(self.cue_button_frame,text=str(i),padx=10,pady=10,relief='flat') 
+				but = tk.Button(self.cue_button_frame,text=str(i),padx=10,pady=1,relief='flat') 
 				but.grid(row=r,column=c)
 				if i + 1 > n_buts: but.config(state='disabled')
 				self.cue_buttons.append(but)
@@ -186,15 +186,16 @@ class ClipControl:
 		return fun_tor
 
 	def setup_control_buttons(self):
-		playbut = tk.Button(self.control_button_frame,text=">",padx=8,pady=8,
+		pad_x,pad_y = 8, 0 # 8, 8
+		playbut = tk.Button(self.control_button_frame,text=">",padx=pad_x,pady=pad_y,
 			command=lambda:self.osc_client.play(self.layer,self.clip))
-		pausebut = tk.Button(self.control_button_frame,text="||",padx=7,pady=8,
+		pausebut = tk.Button(self.control_button_frame,text="||",padx=(pad_x-1),pady=pad_y,
 			command=lambda:self.osc_client.pause(self.layer,self.clip))
-		rvrsbut = tk.Button(self.control_button_frame,text="<",padx=8,pady=8,
+		rvrsbut = tk.Button(self.control_button_frame,text="<",padx=pad_x,pady=pad_y,
 			command=lambda:self.osc_client.reverse(self.layer,self.clip))
-		rndbut = tk.Button(self.control_button_frame,text="*",padx=8,pady=8,
+		rndbut = tk.Button(self.control_button_frame,text="*",padx=pad_x,pady=pad_y,
 			command=lambda:self.osc_client.random_play(self.layer,self.clip))
-		clearbut = tk.Button(self.control_button_frame,text="X",padx=8,pady=8,
+		clearbut = tk.Button(self.control_button_frame,text="X",padx=pad_x,pady=pad_y,
 			command=lambda:self.osc_client.clear(self.layer))
 
 		for but in [playbut, pausebut, rvrsbut, rndbut, clearbut]:
@@ -221,7 +222,7 @@ class ClipControl:
 		# speedup (of playback)
 
 		speed_scale = tk.Scale(self.playback_speed_frame,from_=0.0,to=10.0,resolution=0.05,variable=self.looping_vars['speed'],
-							   orient=tk.HORIZONTAL, showvalue = 0)
+							   orient=tk.HORIZONTAL, showvalue = 0,length = 40)
 		speed_box = tk.Spinbox(self.playback_speed_frame,from_=0.0,to=10.0,increment=0.1,format="%.2f",
 							   textvariable=self.looping_vars['speed'], width=4)
 		def send_speed(*args): #### TO-DO add global speedvar
@@ -231,14 +232,14 @@ class ClipControl:
 		speed_scale.config(command=send_speed)
 		speed_box.config(command=send_speed)
 		speed_box.bind("<Return>",send_speed)
-		self.looping_controls.append(speed_scale)
+		# self.looping_controls.append(speed_scale)
 		self.looping_controls.append(speed_box)
 		self.speed_increase = lambda: speed_box.invoke("buttonup")
 		self.speed_decrease = lambda: speed_box.invoke("buttondown")
 
 		# speedup of control?
 		control_speed_scale = tk.Scale(self.control_speed_frame,from_=1.0,to=C.MAX_SPEEDUP,resolution=0.01,variable=self.looping_vars['control_speed'],
-							   orient=tk.HORIZONTAL, showvalue = 0)
+							   orient=tk.HORIZONTAL, showvalue = 0,length = 60)
 		control_speed_box = tk.Spinbox(self.control_speed_frame,from_=1.0,to=C.MAX_SPEEDUP,increment=0.03,format="%.2f",
 							   textvariable=self.looping_vars['control_speed'], width=4)
 		self.looping_controls.append(control_speed_scale)
