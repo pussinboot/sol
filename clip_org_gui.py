@@ -64,7 +64,7 @@ class ClipOrg:
 
 		self.lib_frame.pack()
 		self.mainframe.pack(expand=True,fill=tk.Y)
-		self.clip_frame.pack(expand=True,fill=tk.X)
+		self.clip_frame.pack(expand=True,fill="both")
 		self.vsb_all_clips.pack(side="right", fill="y")
 		self.all_clip_canvas.pack(side="left", fill="both", expand=True)
 		self.all_clip_canvas.create_window((4,4), window=self.all_clip_inner_frame, anchor="nw", 
