@@ -1,4 +1,14 @@
 #########################################
+###         overview/features         ###
+#########################################
+
+database of clips
+	w/ fx (and saved parameters), queue points, loop points, thumbnails and tags
+organize and search for clips
+control playback and add missing features of resolume, maybe mpv if i can figure out how to render to a shared texture.
+
+
+#########################################
 ###      new design / refactor        ###
 #########################################
 
@@ -46,3 +56,26 @@
 	provide compatible api
 	translate info coming in so that it can go out
 		for example correcting clip commands
+
+
+#### where what is coming from (all from zzz_old_v4j)
+
+control
+	sol_backend.py
+
+db
+	clip.py - dont base clips off of resolume pls
+	file_io.py
+
+inputs
+	midi_control.py
+gui
+	NOTE: will be transitioning to kivy or libavg so most old code is useless
+	clip_control.py
+	audio_gui.py - really dont use most of the stuff from here since i got rid of the audio player 
+		(why i'm hesitant to re-add the recording, that being said resolume or whatever else i may be using will no doubt have ways to playback audio)
+	clip_org_gui.py - good basis for organization, may keep while i build up new things just be sure to add a clip_control equivalent
+	library_gui.py 
+	sol_gui.py
+
+models
