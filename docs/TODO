@@ -1,4 +1,7 @@
-new design
+#########################################
+###      new design / refactor        ###
+#########################################
+
             database
               ^ |
               | v
@@ -8,3 +11,38 @@ new design
               v |
             model (resolume or other)
 
+#########################################
+###             the parts             ###
+#########################################
+
+- control aka MAGI -
+	>the brains<
+	gets input from
+		inputs - midi or osc
+		its own state (for example, when to loop)
+		the gui
+	interfaces with database to get/update info
+	and passes said info to the model
+
+- database -
+	>the data<
+	abstractions of clips
+	collections to store clips
+	methods to update or query database
+	save/load 
+
+- inputs -
+	self-explanatory
+
+- gui -
+	whats happening right now
+	what can be changed
+	2 or 3 different guis
+		1 - organizing collections
+		2 - performance
+		3 - recordings (like original sol)
+
+- models -
+	provide compatible api
+	translate info coming in so that it can go out
+		for example correcting clip commands
