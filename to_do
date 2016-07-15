@@ -1,28 +1,8 @@
-change sol from tracker to control
-	get rid of all recording features
-	2 layer control scheme
-		duplicate control on either side, load clips to separate layers
-DONE move from pygame midi -> osc,
-	so just assuming osc midi messages are coming in (from vvvv)
-
-DONE fix looping/timeline control
-	NAH	... probably think of better way to do whole dual-layers thing :/
-
-DONE midi control is broken af...
-
-	fix l/r mixup.... rly need a way to figure out a nicer way 
-  OK just thought about what i was doin
-
-
-stuff that's still broken -- 
-FIXED ? works now so idk loop selection/deletion
-FIXED   right's speedups (both types)
-        right's loop type / on off
-FIXED errors w/ qp after triggering an empty clip from midi
-
-DONE  probably change vvvv out and looping stuff so that it just reads position values from resolume's osc out anyway...
-
-Important info for midi out:
-  The note number and channel that controls a backlight is the same as the message sent by that button
-  push buttons 0-16 for brightness
-  big buttons 0- red, 64 -  amber, 112 - green + 0-15 for intensity
+new design
+			database
+              ^ |
+              | v
+midi/osc -> control -> gui
+              | ^   <- 
+              v |
+            model (resolume or other)
