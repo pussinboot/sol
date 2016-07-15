@@ -1,9 +1,9 @@
 new design
-			database
+            database
               ^ |
               | v
  inputs ->  control -> gui
-(midi/osc)	(magi)  <- 
+(midi/osc)  (magi)  <- 
               | ^   
               v |
             model (resolume or other)
