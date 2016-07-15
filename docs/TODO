@@ -1,0 +1,10 @@
+new design
+			database
+              ^ |
+              | v
+ inputs ->  control -> gui
+(midi/osc)	(magi)  <- 
+              | ^   
+              v |
+            model (resolume or other)
+
