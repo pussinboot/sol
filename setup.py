@@ -10,16 +10,15 @@ reqs = [str(ir.req) for ir in install_reqs]
 
 
 config = {
+    'name': 'sol',
     'description': 'sol vj soft',
     'author': 'pussinboots',
     'url': 'https://github.com/pussinboot/sol',
-    'download_url': 'https://github.com/pussinboot/sol.git',
-    'author_email': 'leooooo@bu.edu',
+    'license':'MIT',
     'version': '2.0',
     'install_requires': reqs,
     'packages': ['sol'],
-    'scripts': [],
-    'name': 'sol'
+    'scripts': []
 }
 
 setup(**config)
