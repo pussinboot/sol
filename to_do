@@ -1,8 +1,0 @@
-new design
-			database
-              ^ |
-              | v
-midi/osc -> control -> gui
-              | ^   <- 
-              v |
-            model (resolume or other)
