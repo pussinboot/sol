@@ -10,7 +10,7 @@ class Clip:
 
 	def __init__(self, filepath,activation_string,name=None,
 					thumbnail_path=None,params={},tags=[]):
-	
+
 		self.f_name = filepath
 		self.t_name = thumbnail_path
 
@@ -33,3 +33,19 @@ class Clip:
 	def remove_tag(self,tag):
 		if tag in self.tags:
 			self.tags.remove(tag)
+
+class ClipCollection:
+	"""
+	a collection of n many clips
+	"""
+	def __init__(self,n=8,name='new_col'):
+		self.name = name
+		self.clips = [None] * n #C.NO_Q until i figure out how 
+								# i will do system wide config
+		# may be better to just set it from MAGI whenever instantiate a clipcollection
+
+	def __getitem__(self,i):
+		return self.clips[i]
+
+	def __setitem__(self,i,clip):
+		self.clips[i] = clip
