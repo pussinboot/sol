@@ -17,6 +17,7 @@ class ConfigMidi:
 	def config_mode(self):
 		def osc_to_id(_,osc_msg):
 			msg = eval(osc_msg)
+			print(msg)
 			self.queue.put([str(msg[:2]),msg[2]])
 		self.backend.osc_server.map('/midi',osc_to_id)
 

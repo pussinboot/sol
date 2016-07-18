@@ -319,6 +319,7 @@ class ClipControl:
 					self.clip.vars[lookup[0]][lookup[1]] = newtype(self.looping_vars[which_one].get())
 			else:
 				def fun_tor(*args):
+					if self.clip.vars[lookup[0]] is None: return
 					newtype = type(self.clip.vars[lookup[0]])		
 					self.clip.vars[lookup[0]] = newtype(self.looping_vars[which_one].get())
 			return fun_tor
