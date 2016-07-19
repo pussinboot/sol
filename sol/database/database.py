@@ -1,3 +1,4 @@
+import xml.etree.ElementTree as ET
 from bisect import bisect_left
 
 ######
@@ -13,6 +14,7 @@ class Database:
 	so, contains all of our clips, clip collections, tags, etc
 	"""
 	def __init__(self,savefile=None):
+		self.file_ops = FileOPs()
 		self.clips = {}
 		if savefile is not None:
 			# load the savefile
@@ -40,6 +42,8 @@ class Database:
 		self.remove_clip(clip)
 		clip.name = new_name
 		self.add_a_clip(clip)
+
+
 
 class Search:
 	"""
@@ -114,16 +118,76 @@ class ClipSearch(Search):
 	def refresh(self):
 		super().refresh()
 
+
+
+class FileOPs:
+	"""
+	save/load to disk
+	"""
+	def __init__(self):
+		pass
+
+	def save_clip(self,clip):
+		clip_element = ET.Element('clip')
+		# filename goes into overarching tag
+		clip_element.set('filename',clip.f_name) # should be unique..
+		# name
+		name = ET.SubElement(clip_element,'name')
+		name.text = clip.name 
+		# activation command
+		cmd = ET.SubElement(clip_element,'activate')
+		cmd.text = clip.command 
+		# tags
+		tags = ET.SubElement(clip_element,'tags')
+		tags.text = ','.join(clip.tags)
+		# params 
+		params = ET.SubElement(clip_element,'params')
+		for k,v in clip.params:
+			param = ET.SubElement(params,param)
+			param.text = v
+		# thumbnail
+		thumb = ET.SubElement(clip_element,'thumbnail')
+		thumb.text = clip.t_name 
+		
+		return clip_element
+
+	def load_clip(self,clip_element):
+		if clip_element.get('filename') is None:
+			return
+		filename = clip_element.get('filename')
+		parsed_rep = {}
+		for child in clip_element:
+			parsed_rep[child.tag] = child.text
+		print(parsed_rep)
+		# build dict out of params
+		# build list out of tags
+		tags = parsed_rep['tags'].split(',')
+		if tags[0] == '': tags = []
+		clip_tor = Clip(filename,parsed_rep['activate'],
+						parsed_rep['name'],parsed_rep['thumbnail'],
+						params={},tags=tags)
+		return clip_tor
+		
+
+
 if __name__ == '__main__':
 	from clip import Clip
 	testdb = Database()
 	test_fnames = ['bazin.mov','test.mov','really cool clip.mov']
 	for fname in test_fnames:
 		testdb.add_a_clip(Clip(fname,"fake act"))
-	print(testdb.search('c')[0])
-	print(testdb.search('t')[0])
-	print(testdb.search('clip')[0])
-	testdb.clips[test_fnames[0]].f_name = 'hahaha.test'
-	print(testdb.search('bazin')[0])
-	testdb.search('bazin')[0].name = 'not funny anymore'
-	print(testdb.search('bazin')[0])
+	# print(testdb.search('c')[0])
+	# print(testdb.search('t')[0])
+	# print(testdb.search('clip')[0])
+	# testdb.clips[test_fnames[0]].f_name = 'hahaha.test'
+	# print(testdb.search('bazin')[0])
+	# testdb.search('bazin')[0].name = 'not funny anymore'
+	# print(testdb.search('bazin')[0])
+	testclip = testdb.clips[test_fnames[1]]
+	xmlclip = testdb.file_ops.save_clip(testclip)
+	# print(ET.dump(xmlclip))
+	test_testclip = testdb.file_ops.load_clip(xmlclip)
+	print(testclip)
+	print(test_testclip)
+	print([testclip,test_testclip])
+	print(test_testclip.tags)
