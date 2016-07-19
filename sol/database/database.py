@@ -31,8 +31,8 @@ class Database:
 
 	def remove_clip(self,clip):
 		self.searcher.remove_clip(clip)
-		if clip.fname in self.clips:
-			del self.clips[clip.fname]
+		if clip.f_name in self.clips:
+			del self.clips[clip.f_name]
 
 class Search:
 	"""
@@ -58,6 +58,7 @@ class Search:
 
 	def remove_thing(self,name,thing):
 		if (name.lower(), thing) in self.index:
+			to_remove = [(name.lower(), thing)]
 			for ix, c in enumerate(name.lower()):
 					if c == " " or c == "_":
 						to_remove.append((name[ix+1:].lower(),thing))
@@ -105,3 +106,17 @@ class ClipSearch(Search):
 
 	def refresh(self):
 		super().refresh()
+
+if __name__ == '__main__':
+	from clip import Clip
+	testdb = Database()
+	test_fnames = ['bazin.mov','test.mov','really cool clip.mov']
+	for fname in test_fnames:
+		testdb.add_a_clip(Clip(fname,"fake act"))
+	print(testdb.search('c')[0])
+	print(testdb.search('t')[0])
+	print(testdb.search('clip')[0])
+	testdb.clips[test_fnames[0]].f_name = 'hahaha.test'
+	print(testdb.search('bazin')[0])
+	testdb.search('bazin')[0].name = 'not funny anymore'
+	print(testdb.search('bazin')[0])
