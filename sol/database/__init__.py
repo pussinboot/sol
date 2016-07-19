@@ -1,2 +1,2 @@
-from clip import Clip
-from clip import ClipCollection
+from .clip import Clip
+from .clip import ClipCollection

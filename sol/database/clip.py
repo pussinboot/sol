@@ -19,7 +19,7 @@ class Clip:
 		self.tags = []
 
 		if name is None:
-			self.name = os.path.splitext(filepath)[0]
+			self.name = os.path.split(os.path.splitext(filepath)[0])[1]
 		else:
 			self.name = name
 
