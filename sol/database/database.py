@@ -17,19 +17,20 @@ class Database:
 		if savefile is not None:
 			# load the savefile
 			pass
-		self.search = ClipSearch(self.clips)
+		self.searcher = ClipSearch(self.clips)
+		self.search = self.searcher.search
 
 	def add_clip(self,clip):
 		self.clips[clip.f_name] = clip
-		self.search.add_clip(clip)
+		self.searcher.add_clip(clip)
 
 	def add_a_clip(self,clip):
 		# for when adding a single clip
 		self.add_clip(clip)
-		self.search.refresh()
+		self.searcher.refresh()
 
 	def remove_clip(self,clip):
-		self.search.remove_clip(clip)
+		self.searcher.remove_clip(clip)
 		if clip.fname in self.clips:
 			del self.clips[clip.fname]
 
@@ -53,7 +54,7 @@ class Search:
 		self.index.append((name.lower(),thing))
 		for ix, c in enumerate(name):
 			if c == " " or c == "_":
-				self.index.append((clip[ix+1:].lower(),thing))
+				self.index.append((name[ix+1:].lower(),thing))
 
 	def remove_thing(self,name,thing):
 		if (name.lower(), thing) in self.index:
@@ -87,20 +88,20 @@ class Search:
 
 class ClipSearch(Search):
 	def __init__(self,clips):
-		super.__init__()
+		super().__init__()
 		for clip in clips.values(): 
 		# assuming clips are passed in as a dict
 			self.add_clip(clip)
 		self.refresh()
 
 	def add_clip(self,clip):
-		super.add_thing(clip.name,clip)
+		super().add_thing(clip.name,clip)
 
 	def remove_clip(self,clip):
-		super.remove_thing(clip.name,clip)
+		super().remove_thing(clip.name,clip)
 
 	def search(self,search_term):
-		return super.search_by_prefix(search_term)
+		return super().search_by_prefix(search_term)
 
 	def refresh(self):
-		super.refresh()
+		super().refresh()

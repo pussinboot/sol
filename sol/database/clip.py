@@ -34,6 +34,10 @@ class Clip:
 		if tag in self.tags:
 			self.tags.remove(tag)
 
+	def __lt__(self,other):
+		# needed for sort
+		return self.f_name < other
+
 class ClipCollection:
 	"""
 	a collection of n many clips
