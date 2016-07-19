@@ -34,6 +34,13 @@ class Database:
 		if clip.f_name in self.clips:
 			del self.clips[clip.f_name]
 
+	def rename_clip(self,clip,new_name):
+		# gotta remove and readd for searcher to play nice
+		# and potentially tags etc too
+		self.remove_clip(clip)
+		clip.name = new_name
+		self.add_a_clip(clip)
+
 class Search:
 	"""
 	trie-based search interface
