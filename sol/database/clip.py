@@ -6,6 +6,16 @@ class Clip:
 	with associated information
 	most importantly, filepath and how to activate them
 		but also params and tags
+
+	example params (inspired by previous sol version)
+		queue_points - point in time to jump to
+		loop_points - collection of pairs of points between which can loop
+		 -> loop_type - default or bounce
+		loop_selection - which loop points are chosen
+		loop_on - boolean
+		playback_speed - self explanatory
+		play_direction - forward, backward, pause, random
+		control_speed - multiplication factor for controlling clip
 	"""
 
 	def __init__(self, filepath,activation_string,name=None,
