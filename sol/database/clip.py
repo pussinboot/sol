@@ -10,11 +10,11 @@ class Clip:
 	example params (inspired by previous sol version)
 		queue_points - point in time to jump to
 		loop_points - collection of pairs of points between which can loop
-		 -> loop_type - default or bounce
+		 -> loop_type - default (d) or bounce (b)
 		loop_selection - which loop points are chosen
 		loop_on - boolean
 		playback_speed - self explanatory
-		play_direction - forward, backward, pause, random
+		play_direction - forward (f), backward (b), pause (p), random (r)
 		control_speed - multiplication factor for controlling clip
 	"""
 
@@ -60,7 +60,8 @@ class ClipCollection:
 		self.name = name
 		self.clips = [None] * n #C.NO_Q until i figure out how 
 								# i will do system wide config
-		# may be better to just set it from MAGI whenever instantiate a clipcollection
+		# may be better to just set it from MAGI whenever instantiate
+		# a clipcollection
 
 	def __getitem__(self,i):
 		return self.clips[i]
