@@ -1,4 +1,5 @@
 import xml.etree.ElementTree as ET
+from xml.dom import minidom
 from bisect import bisect_left
 
 ######
@@ -185,6 +186,10 @@ if __name__ == '__main__':
 	# print(testdb.search('bazin')[0])
 	testclip = testdb.clips[test_fnames[1]]
 	xmlclip = testdb.file_ops.save_clip(testclip)
+	# ET.ElementTree(xmlclip).write('./testclip.xml')
+	rough_string = ET.tostring(xmlclip, 'utf-8')
+	reparsed = minidom.parseString(rough_string)
+	print(reparsed.toprettyxml(indent="\t"))
 	# print(ET.dump(xmlclip))
 	test_testclip = testdb.file_ops.load_clip(xmlclip)
 	print(testclip)
