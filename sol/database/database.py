@@ -78,7 +78,8 @@ class Search:
 				self.index.remove(rem)
 
 	def search_by_prefix(self, prefix,n=-1):
-		#Return things with names starting with a given prefix in lexicographical order
+		# return things with names starting with a given prefix 
+		# in lexicographical order
 		tor = set([])
 		prefix = prefix.lower()
 		i = bisect_left(self.index, (prefix, ''))
@@ -98,6 +99,8 @@ class Search:
 		tor = list(tor)
 		tor.sort()
 		return tor
+
+
 
 class ClipSearch(Search):
 	def __init__(self,clips):
@@ -143,9 +146,11 @@ class FileOPs:
 		tags.text = ','.join(clip.tags)
 		# params 
 		params = ET.SubElement(clip_element,'params')
-		for k,v in clip.params:
-			param = ET.SubElement(params,param)
-			param.text = v
+		for k,v in clip.params.items():
+			param = ET.SubElement(params,k)
+			if isinstance(v, str):
+				v = "'{}'".format(v)
+			param.text = str(v)
 		# thumbnail
 		thumb = ET.SubElement(clip_element,'thumbnail')
 		thumb.text = clip.t_name 
@@ -158,15 +163,17 @@ class FileOPs:
 		filename = clip_element.get('filename')
 		parsed_rep = {}
 		for child in clip_element:
-			parsed_rep[child.tag] = child.text
-		print(parsed_rep)
+			parsed_rep[child.tag] = child
 		# build dict out of params
+		parsed_params = {}
+		for param in parsed_rep['params']:
+			parsed_params[param.tag] = eval(param.text)
 		# build list out of tags
-		tags = parsed_rep['tags'].split(',')
+		tags = parsed_rep['tags'].text.split(',')
 		if tags[0] == '': tags = []
-		clip_tor = Clip(filename,parsed_rep['activate'],
-						parsed_rep['name'],parsed_rep['thumbnail'],
-						params={},tags=tags)
+		clip_tor = Clip(filename,parsed_rep['activate'].text,
+						parsed_rep['name'].text,parsed_rep['thumbnail'].text,
+						params=parsed_params,tags=tags)
 		return clip_tor
 		
 
@@ -184,7 +191,21 @@ if __name__ == '__main__':
 	# print(testdb.search('bazin')[0])
 	# testdb.search('bazin')[0].name = 'not funny anymore'
 	# print(testdb.search('bazin')[0])
-	testclip = testdb.clips[test_fnames[1]]
+	# testclip = testdb.clips[test_fnames[1]]
+
+	test_params = {
+		'queue_points'   : [0.01,0.51,None,0.76,None,None,None,None],
+		'loop_points'    : [(0.01,0.51,'d'),(0.6,0.7,'b'),None,None],
+		'loop_selection' : 0,
+		'loop_on'        : True,
+		'playback_speed' : 5.2,
+		'play_direction' : 'p',
+		'control_speed'  : 3.33
+	}
+
+	testclip = Clip("test_clip.mov","/fake/act",params=test_params,
+		tags = ['test_tag1','tag2','tag2','teststst'])
+
 	xmlclip = testdb.file_ops.save_clip(testclip)
 	# ET.ElementTree(xmlclip).write('./testclip.xml')
 	rough_string = ET.tostring(xmlclip, 'utf-8')
@@ -195,4 +216,4 @@ if __name__ == '__main__':
 	print(testclip)
 	print(test_testclip)
 	print([testclip,test_testclip])
-	print(test_testclip.tags)
+	print(test_testclip.params)
