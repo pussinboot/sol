@@ -158,6 +158,8 @@ class FileOPs:
 		return clip_element
 
 	def load_clip(self,clip_element):
+		### TODO ###
+		# fail gracefully :v)
 		if clip_element.get('filename') is None:
 			return
 		filename = clip_element.get('filename')
