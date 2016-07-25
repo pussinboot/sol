@@ -19,7 +19,7 @@ class Resolume:
 		self.current_clip_pos = [None] * no_layers
 		# index current_clip_pos by layer
 		self.clip_pos_addr = [None] * no_layers
-		for n in no_layers:
+		for n in range(no_layers):
 			self.clip_pos_addr[n] = "/layer{}/video/position/values".format(n+1)
 			
 		# have to do something like this as well
