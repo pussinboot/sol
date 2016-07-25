@@ -2,3 +2,5 @@ it's possible to send my midi messages over osc as long as both sides are runnin
 sending can be same as old, but receiving end needs to take the input as raw, s+h it and then send it out again
 
 - for the savedata make it (at least partially) xml so that can copy collections between sets etc
+
+- in resolume do NOT select bundle under osc msgs : )
