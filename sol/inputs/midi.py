@@ -26,6 +26,7 @@ class MidiController:
 	def __init__(self):
 		self.key_to_fun = {}
 		# self.fun_to_key = {} # reverse for midi output (?)
+		self.queue = None
 
 	def map_fun_key(self,fun,key,type_k='none'):
 		# map a function to a key 
@@ -57,3 +58,43 @@ class MidiController:
 		key, n = str(msg[:2]),msg[2]
 		if key in self.key_to_fun:
 			self.key_to_fun[key](n)
+
+	### midi map making
+
+	def start_mapping(self):
+		# you need to override the /midi command with the osc_to_id
+		# that this function returns
+		import queue
+		self.queue = queue.Queue()
+
+		def osc_to_id(_,osc_msg):
+			msg = eval(osc_msg)
+			self.queue.put([str(msg[:2]),msg[2]])
+
+		return osc_to_id
+
+	def id_midi(self,*args):
+		# find most common key and different values it took on
+		if self.queue is None: # if you haven't started mapping
+			return
+		msgs = []
+		while self.queue.qsize():
+			try:
+				msg = self.queue.get(0)
+				msgs.append(msg)
+			except queue.Empty:
+				pass
+		msgs = msgs[-10:]
+		f=lambda s,d={}:([d.__setitem__(i[0],d.get(i[0],0)+1) for i in s],d)[-1]
+		hist = f(msgs)
+		def keywithmaxval(d):
+			v=list(d.values())
+			k=list(d.keys())
+			return k[v.index(max(v))]
+		if hist:
+			maxval = keywithmaxval(hist)
+			ns = [msgs[i][1] for i, x in enumerate(msgs) if x[0] == maxval]
+			f=lambda s,d={}:([d.__setitem__(i,d.get(i,0)+1) for i in s],d)[-1]
+			hist_ns = f(ns)
+			return [maxval,hist_ns] 
+			# can then use len(hist_ns) to classify what kind of key it is
