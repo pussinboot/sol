@@ -9,6 +9,7 @@ provide interfaces for osc server/clients
 
 class OscServer:
 	def __init__(self,ip="127.0.0.1",port=7001):
+		self.ip, self.port = ip, port
 		self.running = 0
 		self.dispatcher = dispatcher.Dispatcher()
 		self.map = self.dispatcher.map
@@ -26,6 +27,7 @@ class OscServer:
 
 class OscClient:
 	def __init__(self,ip="127.0.0.1",port=7000):
+		self.ip, self.port = ip, port
 		self.osc_client = udp_client.UDPClient(ip, port)
 		self.send = self.osc_client.send
 
