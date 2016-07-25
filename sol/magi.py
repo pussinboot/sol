@@ -83,7 +83,14 @@ class TerminalGui:
 		return " | ".join(the_line)
 
 	def print_cur_col(self):
-		return "_"
+		cur_col_text = []
+		for i in range(len(self.magi.clip_col.clips)):
+			cur_col_clip = self.magi.clip_col.clips[i]
+			if cur_col_clip is None:
+				cur_col_text += ["[ ________ ]"]
+			else:
+				cur_col_text += [cur_col_clip.name]
+		
 
 	def print_a_line(self):
 		return "=" * 35
@@ -101,3 +108,9 @@ if __name__ == '__main__':
 			print("exiting...")
 			testit.stop()
 			break
+
+### TO DO
+# add some methods to actually control what's going on 
+# ie from an ipython notebook that sends osc commands
+# save/load library state from disk or whatnot
+# looping (duh), control hax (?)
