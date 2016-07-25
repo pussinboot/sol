@@ -3,6 +3,8 @@ from pythonosc import osc_server
 from pythonosc import osc_message_builder
 from pythonosc import udp_client
 
+import threading
+
 """
 provide interfaces for osc server/clients
 """
