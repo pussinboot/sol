@@ -26,7 +26,7 @@ class Magi:
 		# model (resomeme for now)
 		self.model = model.Resolume(NO_LAYERS)
 		# gui (to-do)
-		pass
+		self.gui = TerminalGui(self)
 
 		# clip collection 
 		self.clip_col = clip.ClipCollection()
@@ -40,7 +40,7 @@ class Magi:
 			def update_fun(_,msg):
 				try:
 					new_val = float(msg)
-					if DEBUG: print("clip_{0} : {1}".format(i,new_val))
+					# if DEBUG: print("clip_{0} : {1}".format(i,new_val))
 					self.model.current_clip_pos[i] = new_val
 				except:
 					pass
@@ -54,5 +54,50 @@ class Magi:
 	def start(self):
 		self.osc_server.start()
 
+	def stop(self):
+		self.osc_server.stop()
+
+class TerminalGui:
+	"""
+	for "testing purposes"
+	"""
+	def __init__(self,magi):
+		self.magi = magi
+
+	def print_current_state(self):
+		to_print = "*-"*18+"*\n" + \
+		self.print_cur_pos() +"\n" + \
+		self.print_a_line() +"\n" + \
+		self.print_cur_col() +"\n" + \
+		self.print_a_line() +"\n"
+
+		print(to_print)
+
+	def print_cur_pos(self):
+		the_line =  []
+		for i in range(NO_LAYERS):
+			cur_pos = self.magi.model.current_clip_pos[i]
+			if cur_pos is None:
+				cur_pos = 0.00
+			the_line += ["clip_{0} : {1: .3f}".format(i,cur_pos)]
+		return " | ".join(the_line)
+
+	def print_cur_col(self):
+		return "_"
+
+	def print_a_line(self):
+		return "=" * 35
+
+
 if __name__ == '__main__':
-	Magi()
+	testit = Magi()
+	import time
+	testit.start()
+	while True:
+		try:
+			time.sleep(1)
+			testit.gui.print_current_state()
+		except (KeyboardInterrupt, SystemExit):
+			print("exiting...")
+			testit.stop()
+			break
