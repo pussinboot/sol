@@ -68,7 +68,7 @@ class TerminalGui:
 		to_print = "*-"*18+"*\n" + \
 		self.print_cur_pos() +"\n" + \
 		self.print_a_line() +"\n" + \
-		self.print_cur_col() +"\n" + \
+		self.print_cur_col() + \
 		self.print_a_line() +"\n"
 
 		print(to_print)
@@ -89,7 +89,16 @@ class TerminalGui:
 			if cur_col_clip is None:
 				cur_col_text += ["[ ________ ]"]
 			else:
-				cur_col_text += [cur_col_clip.name]
+				cur_col_text += ["[ {} ]".format(cur_col_clip.name)]
+		final_string = ""
+		for j in range(len(cur_col_text)//4):
+			for i in range(4):
+				indx = 4 * j + i
+				if indx < len(cur_col_text):
+					final_string += cur_col_text[indx]
+			final_string += "\n"
+		return final_string
+
 		
 
 	def print_a_line(self):
