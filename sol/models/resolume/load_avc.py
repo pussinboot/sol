@@ -42,11 +42,18 @@ class ResolumeLoader:
 	
 			# params
 			params = {}
-			xml_param = xml_clip[1][1][2][0][0]
-			params['playback_speed'] = eval(xml_param[8].get('curValue'))
+			xml_param = xml_clip[1][1].findall('parameters')[0][0]
+			try:
+				pbs = eval(xml_param.findall('speedFactor')[0].get('curValue'))
+			except:
+				pbs = 1.0
+			params['playback_speed'] = pbs
 			direction_lookup = ['b','f','p','r']
-			params['play_direction'] = direction_lookup[ \
-										eval(xml_param[9].get('value'))]
+			try:
+				p_dir_i = eval(xml_param.findall('direction')[0].get('value'))
+			except:
+				p_dir_i = 2
+			params['play_direction'] = direction_lookup[p_dir_i]
 
 			# queue points already present
 			# xml_clip[1][1][2][0][0][6] .findall('choice') .get('value')
