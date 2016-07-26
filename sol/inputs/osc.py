@@ -27,6 +27,17 @@ class OscServer:
 		self.server.shutdown()
 		self.server_thread.join()
 
+	def osc_value(self,msg):
+		# returns the value of the osc msg
+		tor = msg
+		if isinstance(msg,str):
+			try:
+				tor = eval(msg)
+			except:
+				pass
+		return tor
+
+
 class OscClient:
 	def __init__(self,ip="127.0.0.1",port=7000):
 		self.ip, self.port = ip, port
