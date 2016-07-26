@@ -48,6 +48,10 @@ class Clip:
 		# needed for sort
 		return self.f_name < other
 
+	def __gt__(self,other):
+		# needed for sort
+		return self.f_name > other
+
 	def __str__(self):
 		return self.name + \
 		"\n\t@ " + self.f_name
