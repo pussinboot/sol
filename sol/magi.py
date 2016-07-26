@@ -95,7 +95,7 @@ class Magi:
 				cmd_fun = gen_pb_fun(osc_cmd_msg,i,fun)
 				map_addr = base_addr.format(i) + fun
 				self.osc_server.map(map_addr,cmd_fun)
-				
+
 			seek_addr = base_addr.format(i) + 'seek'
 			seek_fun = gen_seek_fun(i)
 			self.osc_server.map(seek_addr,seek_fun)
@@ -157,8 +157,18 @@ class TerminalGui:
 
 if __name__ == '__main__':
 	testit = Magi()
-	import time
+	# until i add proper library save/load
+	from models.resolume import load_avc
+	testfile = "C:/Users/shapil/Documents/Resolume Arena 5/compositions/vjcomp.avc"
+	vjcomp = load_avc.ResolumeLoader(testfile)
+	for parsed_clip in vjcomp.clips:
+		new_clip = clip.Clip(*vjcomp.clips[parsed_clip])
+		testit.db.add_clip(new_clip)
+	testit.db.searcher.refresh()
+
+
 	testit.start()
+	import time
 	while True:
 		try:
 			time.sleep(1)
