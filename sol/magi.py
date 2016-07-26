@@ -54,24 +54,23 @@ class Magi:
 			update_fun = gen_update_fun(i)
 			self.osc_server.map(self.model.clip_pos_addr[i],update_fun)
 
-	# map some FUNctions
 	def map_pb_funs(self):
-		# backward (b), forward (f), pause (p), random (r)
-		# 
+		# map playback functions
+		base_addr = "/magi/layer{}/playback/"
 		play_fun_to_dir = { 'play':'f',
 							'pause':'p',
 							'reverse':'b',
 							'random':'r'
 							}
 
-		def gen_fun_tor(osc_msg,layer,funkey):
+		def gen_pb_fun(osc_msg,layer,funkey):
 			osc_cmd = osc_msg
 			i, key  = layer, funkey
 			def fun_tor(_,n):
 				try:
-					if eval(n):
+					if self.osc_server.osc_value(n):
 						self.osc_client.send(osc_cmd)
-						cur_clip = self.model.current_clips[i]
+						cur_clip = self.current_clips[i]
 						if cur_clip is not None:
 							if 'play_direction' in cur_clip.params:
 								cur_clip.params['play_direction'] =  \
@@ -79,14 +78,27 @@ class Magi:
 				except:
 					if DEBUG: print('oh no',osc_cmd)
 					pass
-				
+			return fun_tor
+		
+		def gen_seek_fun(layer):
+			i = layer
+			def fun_tor(_,pos):
+				pos = self.osc_server.osc_value(pos)
+				(addr, msg) = self.model.set_clip_pos(i,pos)
+				self.osc_client.build_n_send(addr,msg)
+			return fun_tor
+
 		for i in range(NO_LAYERS):
 			for fun in play_fun_to_dir:
 				(addr, msg) = eval("self.model.{}({})".format(fun,i))
 				osc_cmd_msg = self.osc_client.build_msg(addr,msg)
-				cmd_fun = gen_fun_tor(osc_cmd_msg,i,fun)
-				map_addr = "/magi/layer{}/playback/{}".format(i,fun)
+				cmd_fun = gen_pb_fun(osc_cmd_msg,i,fun)
+				map_addr = base_addr.format(i) + fun
 				self.osc_server.map(map_addr,cmd_fun)
+				
+			seek_addr = base_addr.format(i) + 'seek'
+			seek_fun = gen_seek_fun(i)
+			self.osc_server.map(seek_addr,seek_fun)
 
 
 	def start(self):
