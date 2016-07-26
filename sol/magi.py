@@ -116,7 +116,7 @@ class TerminalGui:
 
 	def print_current_state(self):
 		to_print = "*-"*18+"*\n" + \
-		self.print_cur_pos() +"\n" + \
+		selnf.print_cur_pos() +"\n" + \
 		self.print_a_line() +"\n" + \
 		self.print_cur_col() + \
 		self.print_a_line() +"\n"
@@ -185,8 +185,8 @@ if __name__ == '__main__':
 # ie from an ipython notebook that sends osc commands
 
 # clip_collection / organization
-# load a clip, clear a clip, loop on/off
-# loop_type, activate queue point
+# load a clip, clear a clip, playback speed (these rely on model)
+# loop on/off, loop_type, activate queue point
 # set loop points, set queue points
 
 
