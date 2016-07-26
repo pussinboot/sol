@@ -166,20 +166,43 @@ if __name__ == '__main__':
 		testit.db.add_clip(new_clip)
 	testit.db.searcher.refresh()
 
-
-	testit.start()
-	import time
-	while True:
-		try:
-			time.sleep(1)
-			testit.gui.print_current_state()
-		except (KeyboardInterrupt, SystemExit):
-			print("exiting...")
-			testit.stop()
-			break
+	clipz = testit.db.search('gundam')
+	for c in clipz:
+		print(c)
+	# testit.start()
+	# import time
+	# while True:
+	# 	try:
+	# 		time.sleep(1)
+	# 		testit.gui.print_current_state()
+	# 	except (KeyboardInterrupt, SystemExit):
+	# 		print("exiting...")
+	# 		testit.stop()
+	# 		break
 
 ### TO DO
 # add some methods to actually control what's going on 
 # ie from an ipython notebook that sends osc commands
+
+# clip_collection / organization
+# load a clip, clear a clip, loop on/off
+# loop_type, activate queue point
+# set loop points, set queue points
+
+
 # save/load library state from disk or whatnot
+# load savefile
+# (optionally) load from resolume xml file 
+#	everything else delete activation fun
+# 		so saving all params per clip regardless of composition
+# maybe something like
+
+# def add_resolume_clip(self,parsed_clip_params):
+# 	new_clip = clip.Clip(*parsed_clip_params)
+# 	if new_clip.f_name in self.db.clips:
+# 		self.db.clips[new_clip.f_name].command = new_clip.command
+# 		# maybe update thumbnail if it was none
+# 	else:
+# 		self.db.clips[new_clip.f_name] = new_clip
+
 # looping (duh), control hax (?)
