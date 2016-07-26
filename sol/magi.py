@@ -16,6 +16,8 @@ class Magi:
 	setup midi, osc etc. | keep track of vars
 	                     | for looping,
 	                     | updating of library
+
+	input osc goes to /magi ok
 	"""
 	def __init__(self):
 		# database
@@ -30,8 +32,10 @@ class Magi:
 
 		# clip collection 
 		self.clip_col = clip.ClipCollection()
+		self.current_clips = [None] * NO_LAYERS
 
 		self.track_vars()
+		self.map_pb_funs()
 
 	def track_vars(self):
 		# keeps track of our clip_positions
@@ -49,6 +53,40 @@ class Magi:
 		for i in range(NO_LAYERS):
 			update_fun = gen_update_fun(i)
 			self.osc_server.map(self.model.clip_pos_addr[i],update_fun)
+
+	# map some FUNctions
+	def map_pb_funs(self):
+		# backward (b), forward (f), pause (p), random (r)
+		# 
+		play_fun_to_dir = { 'play':'f',
+							'pause':'p',
+							'reverse':'b',
+							'random':'r'
+							}
+
+		def gen_fun_tor(osc_msg,layer,funkey):
+			osc_cmd = osc_msg
+			i, key  = layer, funkey
+			def fun_tor(_,n):
+				try:
+					if eval(n):
+						self.osc_client.send(osc_cmd)
+						cur_clip = self.model.current_clips[i]
+						if cur_clip is not None:
+							if 'play_direction' in cur_clip.params:
+								cur_clip.params['play_direction'] =  \
+														play_fun_to_dir[key]
+				except:
+					if DEBUG: print('oh no',osc_cmd)
+					pass
+				
+		for i in range(NO_LAYERS):
+			for fun in play_fun_to_dir:
+				(addr, msg) = eval("self.model.{}({})".format(fun,i))
+				osc_cmd_msg = self.osc_client.build_msg(addr,msg)
+				cmd_fun = gen_fun_tor(osc_cmd_msg,i,fun)
+				map_addr = "/magi/layer{}/playback/{}".format(i,fun)
+				self.osc_server.map(map_addr,cmd_fun)
 
 
 	def start(self):
