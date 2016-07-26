@@ -59,7 +59,7 @@ class ResolumeLoader:
 			# xml_clip[1][1][2][0][0][6] .findall('choice') .get('value')
 
 			# now to figure out how to create clips properly from this
-			self.clips[f_name] = (name,None, # none because no thumb yet
+			self.clips[f_name] = (f_name, command, name,None, # none because no thumb yet
 						params) 
 
 
