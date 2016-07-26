@@ -42,13 +42,13 @@ class Resolume:
 		return (addr, direction)
 
 	def play(self,layer):
-		self.playback_direction(layer,1)
+		return self.playback_direction(layer,1)
 	def pause(self,layer):
-		self.playback_direction(layer,2)
+		return self.playback_direction(layer,2)
 	def reverse(self,layer):
-		self.playback_direction(layer,0)
+		return self.playback_direction(layer,0)
 	def random(self,layer):
-		self.playback_direction(layer,3)
+		return self.playback_direction(layer,3)
 
 	def set_clip_pos(self,layer,pos):
 		addr = '/layer{}/video/position/values'.format(layer+1) 
