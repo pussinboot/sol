@@ -72,3 +72,6 @@ class ClipCollection:
 
 	def __setitem__(self,i,clip):
 		self.clips[i] = clip
+
+	def __len__(self):
+		return len(self.clips)
