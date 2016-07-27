@@ -22,7 +22,10 @@ class Database:
 			pass
 		self.searcher = ClipSearch(self.clips)
 		self.search = self.searcher.search
-		self.last_search = self.searcher.search_res
+
+	@property
+	def last_search(self):
+		return self.searcher.search_res
 
 	def add_clip(self,clip):
 		self.clips[clip.f_name] = clip
