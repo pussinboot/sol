@@ -22,6 +22,7 @@ class Database:
 			pass
 		self.searcher = ClipSearch(self.clips)
 		self.search = self.searcher.search
+		self.last_search = self.searcher.search_res
 
 	def add_clip(self,clip):
 		self.clips[clip.f_name] = clip
@@ -109,6 +110,7 @@ class ClipSearch(Search):
 		# assuming clips are passed in as a dict
 			self.add_clip(clip)
 		self.refresh()
+		self.search_res = []
 
 	def add_clip(self,clip):
 		super().add_thing(clip.name,clip)
@@ -117,7 +119,8 @@ class ClipSearch(Search):
 		super().remove_thing(clip.name,clip)
 
 	def search(self,search_term):
-		return super().search_by_prefix(search_term)
+		self.search_res = super().search_by_prefix(search_term)
+		return self.search_res
 
 	def refresh(self):
 		super().refresh()
