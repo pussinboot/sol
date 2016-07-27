@@ -356,10 +356,15 @@ if __name__ == '__main__':
 
 # clip_collection / organization
 # load a clip, clear a clip, playback speed (these rely on model)
+	# done, tho not sure how to implement loading of a clip
+	# maybe by passing f_name ? 
 # loop on/off, loop_type, activate queue point
 # set loop points, set queue points
+	# these 2 lines should be done after looping is implemented (go to line 56)
 
-
+####  important  ########
+#####  | | | |  ########
+###### V V V V ########
 # save/load library state from disk or whatnot
 # load savefile
 # (optionally) load from resolume xml file 
