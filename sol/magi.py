@@ -30,9 +30,11 @@ class Magi:
 		# gui (to-do)
 		self.gui = TerminalGui(self)
 
-		# clip collection 
-		self.clip_col = clip.ClipCollection()
-		self.current_clips = [None] * NO_LAYERS
+		# clip storage 
+		self.clip_storage = ClipStorage()
+		# if nothing loaded
+		self.clip_storage.add_collection()
+		self.clip_storage.select_collection(0)
 
 		self.track_vars()
 		self.map_pb_funs()
@@ -100,12 +102,71 @@ class Magi:
 			seek_fun = gen_seek_fun(i)
 			self.osc_server.map(seek_addr,seek_fun)
 
-
 	def start(self):
 		self.osc_server.start()
 
 	def stop(self):
 		self.osc_server.stop()
+
+class ClipStorage:
+	"""
+	for storing currently active clips / all clip collections
+	and methods on interacting with clip collections
+	"""
+	def __init__(self):
+		self.clip_cols = []
+		self.cur_clip_col = -1
+		self.current_clips = [None] * NO_LAYERS
+
+	# clip collection management
+
+	def add_collection(self,name=None):
+		if name is None:
+			name = str(len(self.clip_cols))
+		new_clip_col = clip.ClipCollection(name=name)
+		self.clip_cols.append(new_clip_col)
+
+	def select_collection(self,i):
+		self.cur_clip_col = i
+
+	def swap_collections(self,i,j):
+		# swap collections in spots i and j
+		if i > len(self.clip_cols) or j > len(self.clip_cols):
+			return
+		self.clip_cols[i], self.clip_cols[j] = self.clip_cols[j], self.clip_cols[i]
+
+	def swap_left(self):
+		self.swap_collections(self.cur_clip_col,self.cur_clip_col-1)
+
+	def swap_right(self):
+		self.swap_collections(self.cur_clip_col,self.cur_clip_col+1)
+
+	def remove_collection(self,i=None):
+		if i is None:
+			i = self.cur_clip_col
+		del self.clip_cols[i]
+		if i <= self.cur_clip_col:
+			self.cur_clip_col -= 1
+
+	# clip management
+	# for setting/getting current clips just have to access self.current_clips
+
+	def set_clip_in_col(self,clip,i,col_i=None):
+		if col_i is None:
+			col_i = self.cur_clip_col
+		if i < len(self.clip_cols[col_i]):
+			self.clip_cols[col_i][i] = clip 
+
+	def del_clip_in_col(self,i,col_i=None):
+		if col_i is None:
+			col_i = self.cur_clip_col
+		if i < len(self.clip_cols[col_i]):
+			self.clip_cols[col_i][i] = None
+
+
+
+
+
 
 class TerminalGui:
 	"""
