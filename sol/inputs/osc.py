@@ -4,6 +4,7 @@ from pythonosc import osc_message_builder
 from pythonosc import udp_client
 
 import threading
+import re
 
 """
 provide interfaces for osc server/clients
@@ -15,6 +16,7 @@ class OscServer:
 		self.running = 0
 		self.dispatcher = dispatcher.Dispatcher()
 		self.map = self.dispatcher.map
+		self.number_regex = re.compile(r'(\d+)$')
 
 	def start(self):
 		self.running = 1
@@ -36,6 +38,12 @@ class OscServer:
 			except:
 				pass
 		return tor
+
+	def find_num_in_addr(self,addr):
+		try:
+			return int(self.number_regex.search(addr).group(1))
+		except:
+			return -1
 
 
 class OscClient:
