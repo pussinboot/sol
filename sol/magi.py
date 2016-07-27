@@ -18,6 +18,9 @@ class Magi:
 	                     | updating of library
 
 	input osc goes to /magi ok
+
+	this is basically an osc server that also keeps track of
+	the state, so every action has an associated address 
 	"""
 	def __init__(self):
 		# database
@@ -38,6 +41,7 @@ class Magi:
 
 		self.track_vars()
 		self.map_pb_funs()
+		self.map_search_funs()
 
 	def track_vars(self):
 		# keeps track of our clip_positions
@@ -48,6 +52,8 @@ class Magi:
 					new_val = float(msg)
 					# if DEBUG: print("clip_{0} : {1}".format(i,new_val))
 					self.model.current_clip_pos[i] = new_val
+					#### #### #### #### #### #### #### ####
+					# this is where looping logic comes in
 				except:
 					pass
 			return update_fun
@@ -55,6 +61,19 @@ class Magi:
 		for i in range(NO_LAYERS):
 			update_fun = gen_update_fun(i)
 			self.osc_server.map(self.model.clip_pos_addr[i],update_fun)
+
+	def select_clip(self,clip,layer):
+		# do model prep work
+		model_addr, model_msg = self.model.select_clip(layer)
+		self.osc_client.build_n_send(model_addr,model_msg)
+		# activate clip command
+		self.osc_client.build_n_send(clip.command,1)
+		self.clip_storage.current_clips[layer] = clip
+
+	def clear_clip(self,layer):
+		model_addr, model_msg = self.model.clear_clip(layer)
+		self.osc_client.build_n_send(model_addr,model_msg)
+		self.clip_storage.current_clips[layer] = None
 
 	def map_pb_funs(self):
 		# map playback functions
@@ -72,7 +91,7 @@ class Magi:
 				try:
 					if self.osc_server.osc_value(n):
 						self.osc_client.send(osc_cmd)
-						cur_clip = self.current_clips[i]
+						cur_clip = self.clip_storage.current_clips[i]
 						if cur_clip is not None:
 							if 'play_direction' in cur_clip.params:
 								cur_clip.params['play_direction'] =  \
@@ -81,7 +100,19 @@ class Magi:
 					if DEBUG: print('oh no',osc_cmd)
 					pass
 			return fun_tor
-		
+
+		# seeking
+
+		# for something as time-critical as seeking would rather reduce complexity
+		# by pre-instantiating the layer rather than doing regex and figuring it out
+
+		# def seek_fun(a,pos):
+		# 	sub_addr = a.split("/")[2]
+		# 	i = self.osc_server.find_num_in_addr(sub_addr)
+		# 	pos = self.osc_server.osc_value(pos)
+		# 	(addr, msg) = self.model.set_clip_pos(i,pos)
+		# 	self.osc_client.build_n_send(addr,msg)
+
 		def gen_seek_fun(layer):
 			i = layer
 			def fun_tor(_,pos):
@@ -89,6 +120,31 @@ class Magi:
 				(addr, msg) = self.model.set_clip_pos(i,pos)
 				self.osc_client.build_n_send(addr,msg)
 			return fun_tor
+
+		# clear clip
+
+		def gen_clear_fun(layer):
+			i = layer
+			def fun_tor(_,n):
+				if self.osc_server.osc_value(n):
+					self.clear_clip(i)
+			return fun_tor
+
+		# speed value
+		def gen_spd_fun(layer):
+			i = layer
+			def spd_fun(_,n):
+				# update speed
+				n = self.osc_server.osc_value(n)
+				spd_addr, spd_msg = self.model.set_playback_speed(i,n)
+				self.osc_client.build_n_send(spd_addr,spd_msg)
+				# update our clip representation
+				cur_clip = self.clip_storage.current_clips[i]
+				if cur_clip is not None:
+					if 'playback_speed' in cur_clip.params:
+						cur_clip.params['playback_speed'] = n
+			return spd_fun
+
 
 		for i in range(NO_LAYERS):
 			for fun in play_fun_to_dir:
@@ -102,11 +158,48 @@ class Magi:
 			seek_fun = gen_seek_fun(i)
 			self.osc_server.map(seek_addr,seek_fun)
 
+			clear_addr = base_addr.format(i) + 'clear'
+			clear_fun = gen_clear_fun(i)
+			self.osc_server.map(clear_addr,clear_fun)	
+
+			spd_addr = base_addr.format(i) + 'speed'
+			spd_fun = gen_spd_fun(i)
+			self.osc_server.map(spd_addr,spd_fun)		
+
+
+	def map_search_funs(self):
+		# perform search
+		search_addr = "/magi/search"
+		def do_search(_,msg):
+			search_term = str(msg).strip("'.,")
+			self.db.search(search_term)
+			self.debug_search_res()
+		self.osc_server.map(search_addr,do_search)
+
+		# select clip from last search res to certain layer
+		select_addr = "/magi/search/select{}"
+		def select_search_res(a,i):
+			i = self.osc_server.osc_value(i)
+			layer = self.osc_server.find_num_in_addr(a)
+			if i < len(self.db.last_search) and layer >= 0:
+				clip = self.db.last_search[i]
+				self.select_clip(clip,layer)
+		for i in range(NO_LAYERS):
+			self.osc_server.map(select_addr.format(i),select_search_res)
+
+	def debug_search_res(self):
+		if not DEBUG:
+			return
+		for i,clip in enumerate(self.db.last_search):
+			print("[{}] {}".format(i,clip.name))
+
 	def start(self):
 		self.osc_server.start()
 
 	def stop(self):
 		self.osc_server.stop()
+
+
 
 class ClipStorage:
 	"""
@@ -118,6 +211,10 @@ class ClipStorage:
 		self.cur_clip_col = -1
 		self.current_clips = [None] * NO_LAYERS
 
+	@property
+	def clip_col(self):
+		return self.clip_cols[self.cur_clip_col]
+	
 	# clip collection management
 
 	def add_collection(self,name=None):
@@ -165,9 +262,6 @@ class ClipStorage:
 
 
 
-
-
-
 class TerminalGui:
 	"""
 	for "testing purposes"
@@ -177,26 +271,41 @@ class TerminalGui:
 
 	def print_current_state(self):
 		to_print = "*-"*18+"*\n" + \
-		selnf.print_cur_pos() +"\n" + \
+		self.print_cur_clip_info() +"\n" + \
 		self.print_a_line() +"\n" + \
 		self.print_cur_col() + \
 		self.print_a_line() +"\n"
 
 		print(to_print)
 
-	def print_cur_pos(self):
-		the_line =  []
+	def print_cur_clip_info(self):
+		name_line = []
+		pos_line =  []
+		spd_line =  []
 		for i in range(NO_LAYERS):
+			cur_clip = self.magi.clip_storage.current_clips[i]
+			if cur_clip is None:
+				name_line += [" -"*7 + " "]
+				cur_spd = 0
+			else:
+				name_line += [cur_clip.name[:16]]
+				if 'playback_speed' in cur_clip.params:
+					cur_spd = cur_clip.params['playback_speed']
+				else:
+					cur_spd = 0
+			spd_line += ["   spd : {0: 2.2f}  ".format(cur_spd)]
+
 			cur_pos = self.magi.model.current_clip_pos[i]
 			if cur_pos is None:
 				cur_pos = 0.00
-			the_line += ["clip_{0} : {1: .3f}".format(i,cur_pos)]
-		return " | ".join(the_line)
+			pos_line += ["   pos : {0: .3f} ".format(cur_pos)]
+		return " | ".join(name_line) + "\n" + " | ".join(pos_line) + \
+				"\n" + " | ".join(spd_line)
 
 	def print_cur_col(self):
 		cur_col_text = []
-		for i in range(len(self.magi.clip_col.clips)):
-			cur_col_clip = self.magi.clip_col.clips[i]
+		for i in range(len(self.magi.clip_storage.clip_col.clips)):
+			cur_col_clip = self.magi.clip_storage.clip_col.clips[i]
 			if cur_col_clip is None:
 				cur_col_text += ["[ ________ ]"]
 			else:
@@ -227,19 +336,18 @@ if __name__ == '__main__':
 		testit.db.add_clip(new_clip)
 	testit.db.searcher.refresh()
 
-	clipz = testit.db.search('gundam')
-	for c in clipz:
-		print(c)
-	# testit.start()
-	# import time
-	# while True:
-	# 	try:
-	# 		time.sleep(1)
-	# 		testit.gui.print_current_state()
-	# 	except (KeyboardInterrupt, SystemExit):
-	# 		print("exiting...")
-	# 		testit.stop()
-	# 		break
+	# clipz = testit.db.search('gundam')
+	# testit.debug_search_res()
+	testit.start()
+	import time
+	while True:
+		try:
+			time.sleep(1)
+			testit.gui.print_current_state()
+		except (KeyboardInterrupt, SystemExit):
+			print("exiting...")
+			testit.stop()
+			break
 
 ### TO DO
 # add some methods to actually control what's going on 
