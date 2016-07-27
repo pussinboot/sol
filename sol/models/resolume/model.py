@@ -67,7 +67,7 @@ class Resolume:
 
 	def set_playback_speed(self,layer,speed):
 		addr = "/layer{}/video/position/speed".format(layer+1)
-		return (addr, speed)
+		return (addr, speed / 10.0) # have to map 0 - 10.0 to 0 - 1.0
 
 	# do I need to keep track of what resolume reports as the playback speed 
 	# or just keep of it internally...
