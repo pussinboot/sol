@@ -2,17 +2,13 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from bisect import bisect_left
 
-######
-## 
-#	IMPORTANT NOTE: trying to see if passing a reference to a clip
-#	works for searching/db so i don't have to duplicate changing of
-#	parameters every time i edit a clip somewhere
-#
+from clip import Clip
+from clip import ClipCollection
 
 class Database:
 	"""
 	hold everything together and has methods to save/load from disk
-	so, contains all of our clips, clip collections, tags, etc
+	so, contains all of our clips, tags, etc
 	"""
 	def __init__(self,savefile=None):
 		self.file_ops = FileOPs()
@@ -184,10 +180,32 @@ class FileOPs:
 						params=parsed_params,tags=tags)
 		return clip_tor
 		
+	def save_clip_col(self,clip_col):
+		# save clip by filename
+		# this necessitates loading all clips before looking at clip collections
+		col_element = ET.Element('clip_collection')
+
+		clip_element.set('n',len(clip_col.clips)) 
+		clip_element.set('name',clip_col.name) 
+
+		clips = ET.SubElement(clip_element,'clips')
+		for clip in clip_col.clips:
+			# if clip is not none
+			clip = ET.SubElement(clips,'clip')
+			clip.text = clip.f_name
+	
+		return col_element
+
+	def load_clip_col(self,col_element,clips_from_db):
+		# to-do
+		# make a clip collection
+		# n, name from the top element
+		# then each line is ith clip
+		# (loaded from clips_from_db if it exists)
+		pass
 
 
 if __name__ == '__main__':
-	from clip import Clip
 	testdb = Database()
 	test_fnames = ['bazin.mov','test.mov','really cool clip.mov']
 	for fname in test_fnames:
