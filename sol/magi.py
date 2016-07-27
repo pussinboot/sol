@@ -74,6 +74,7 @@ class Magi:
 		model_addr, model_msg = self.model.clear_clip(layer)
 		self.osc_client.build_n_send(model_addr,model_msg)
 		self.clip_storage.current_clips[layer] = None
+		self.model.current_clip_pos[layer] = None # clear cur pos
 
 	def map_pb_funs(self):
 		# map playback functions
