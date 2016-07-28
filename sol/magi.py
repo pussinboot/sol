@@ -208,9 +208,9 @@ class ClipStorage:
 	and methods on interacting with clip collections
 	"""
 	def __init__(self):
-		self.clip_cols = []
+		self.current_clips = clip.ClipCollection(NO_LAYERS,"current_clips")
 		self.cur_clip_col = -1
-		self.current_clips = [None] * NO_LAYERS
+		self.clip_cols = []
 
 	@property
 	def clip_col(self):
@@ -337,18 +337,26 @@ if __name__ == '__main__':
 		testit.db.add_clip(new_clip)
 	testit.db.searcher.refresh()
 
-	# clipz = testit.db.search('gundam')
+	clipz = testit.db.search('gundam')
 	# testit.debug_search_res()
-	testit.start()
-	import time
-	while True:
-		try:
-			time.sleep(1)
-			testit.gui.print_current_state()
-		except (KeyboardInterrupt, SystemExit):
-			print("exiting...")
-			testit.stop()
-			break
+	testit.select_clip(clipz[0],0)
+	testit.select_clip(clipz[1],1)
+	# for i in range(8):
+	# add clipz to clip collection
+	# testit.gui.print_current_state()
+	clip_store_test = testit.db.file_ops.save_clip_storage(testit.clip_storage)
+	print(testit.db.file_ops.pretty_print(clip_store_test))
+
+	# testit.start()
+	# import time
+	# while True:
+	# 	try:
+	# 		time.sleep(1)
+	# 		testit.gui.print_current_state()
+	# 	except (KeyboardInterrupt, SystemExit):
+	# 		print("exiting...")
+	# 		testit.stop()
+	# 		break
 
 ### TO DO
 # add some methods to actually control what's going on 
