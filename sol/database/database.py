@@ -14,12 +14,9 @@ class Database:
 	hold everything together and has methods to save/load from disk
 	so, contains all of our clips, tags, etc
 	"""
-	def __init__(self,savefile=None):
+	def __init__(self):
 		self.file_ops = FileOPs()
 		self.clips = {}
-		if savefile is not None:
-			# load the savefile
-			pass
 		self.searcher = ClipSearch(self.clips)
 		self.search = self.searcher.search
 
@@ -191,8 +188,11 @@ class FileOPs:
 			parsed_rep[child.tag] = child
 		# build dict out of params
 		parsed_params = self.load_settings(parsed_rep['params'])
-		tags = parsed_rep['tags'].text.split(',')
-		if tags[0] == '': tags = []
+		parsed_tags = parsed_rep['tags'].text
+		if parsed_tags is None:
+			tags = []
+		else:
+			tags = parsed_tags.split(',')
 		clip_tor = Clip(filename,parsed_rep['activate'].text,
 						parsed_rep['name'].text,parsed_rep['thumbnail'].text,
 						params=parsed_params,tags=tags)
@@ -249,11 +249,30 @@ class FileOPs:
 			cur_cols.append(self.load_clip_col(clip_col_el,clips_from_db))
 		dict_tor = {'cur_clip_col' : cur_clip_col,
 					'current_clips' : current_clips,
-					'clip_cols' : clip_cols
+					'clip_cols' : cur_cols
 		}
 		return dict_tor
 
+	def save_database(self,database):
+		db_el = ET.Element('database')
+		for clip in database.clips.values():
+			db_el.append(self.save_clip(clip))
+		return db_el
 
+	def load_database(self,database_el,database):
+		clip_dict = {}
+		for clip_el in database_el.findall('clip'):
+			new_clip = self.load_clip(clip_el)
+			database.add_clip(new_clip)
+		database.searcher.refresh()
+
+	def create_save(self,name):
+		return ET.Element(name)
+
+	def create_load(self,filename):
+		tree = ET.parse(filename)
+		root = tree.getroot()
+		return root
 
 if __name__ == '__main__':
 	testdb = Database()
