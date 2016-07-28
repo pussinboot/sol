@@ -42,15 +42,16 @@ class ResolumeLoader:
 	
 			# params
 			params = {}
-			xml_param = xml_clip[1][1].findall('parameters')[0][0]
+			xml_param = xml_clip[1][1].find('parameters')[0]
 			try:
-				pbs = eval(xml_param.findall('speedFactor')[0].get('curValue'))
+				pbs = eval(xml_param.find('speedFactor').get('curValue'))
 			except:
 				pbs = 1.0
 			params['playback_speed'] = pbs
 			direction_lookup = ['b','f','p','r']
 			try:
-				p_dir_i = eval(xml_param.findall('direction')[0].get('value'))
+				# fix this... not working >:(
+				p_dir_i = eval(xml_param.find('playmode').get('value'))
 			except:
 				p_dir_i = 2
 			params['play_direction'] = direction_lookup[p_dir_i]
