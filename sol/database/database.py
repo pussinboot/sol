@@ -2,8 +2,12 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from bisect import bisect_left
 
-from clip import Clip
-from clip import ClipCollection
+try:
+	from .clip import Clip
+	from .clip import ClipCollection
+except: # stupid for testing
+	from clip import Clip
+	from clip import ClipCollection
 
 class Database:
 	"""
@@ -133,6 +137,28 @@ class FileOPs:
 	def __init__(self):
 		pass
 
+	def save_settings(self,settings,name="settings"):
+		# save a bunch of things passed in as a dict
+		# to a subelement with name = to name : )
+		settings_el = ET.Element(name)
+		for k,v in settings.items():
+			setting = ET.SubElement(settings_el,k)
+			if isinstance(v, str):
+				v = "'{}'".format(v)
+			setting.text = str(v)
+		return settings_el
+
+	def load_settings(self,settings_el):
+		settings = {}
+		for setting in settings_el:
+			settings[setting.tag] = eval(setting.text)
+		return settings
+
+	def pretty_print(self,el):
+		rough_string = ET.tostring(el, 'utf-8')
+		reparsed = minidom.parseString(rough_string)
+		return reparsed.toprettyxml(indent="  ") # alternatively \t
+
 	def save_clip(self,clip):
 		clip_element = ET.Element('clip')
 		# filename goes into overarching tag
@@ -147,12 +173,8 @@ class FileOPs:
 		tags = ET.SubElement(clip_element,'tags')
 		tags.text = ','.join(clip.tags)
 		# params 
-		params = ET.SubElement(clip_element,'params')
-		for k,v in clip.params.items():
-			param = ET.SubElement(params,k)
-			if isinstance(v, str):
-				v = "'{}'".format(v)
-			param.text = str(v)
+		params = self.save_settings(clip.params,'params')
+		clip_element.append(params)
 		# thumbnail
 		thumb = ET.SubElement(clip_element,'thumbnail')
 		thumb.text = clip.t_name 
@@ -160,7 +182,6 @@ class FileOPs:
 		return clip_element
 
 	def load_clip(self,clip_element):
-		### TODO ###
 		# fail gracefully :v)
 		if clip_element.get('filename') is None:
 			return
@@ -169,10 +190,7 @@ class FileOPs:
 		for child in clip_element:
 			parsed_rep[child.tag] = child
 		# build dict out of params
-		parsed_params = {}
-		for param in parsed_rep['params']:
-			parsed_params[param.tag] = eval(param.text)
-		# build list out of tags
+		parsed_params = self.load_settings(parsed_rep['params'])
 		tags = parsed_rep['tags'].text.split(',')
 		if tags[0] == '': tags = []
 		clip_tor = Clip(filename,parsed_rep['activate'].text,
@@ -197,16 +215,12 @@ class FileOPs:
 		return col_element
 
 	def load_clip_col(self,col_element,clips_from_db):
-		# to-do
-		# make a clip collection
-		# n, name from the top element
-		# then each line is ith clip
-		# (loaded from clips_from_db if it exists)
 		n = eval(col_element.get('n'))
 		name = col_element.get('name')
-
+		# fail nicely
 		if n is None or name is None:
 			return
+
 		clip_sub_elms = [child for child in col_element[0]]
 		clip_names = [c.text for c in clip_sub_elms]
 
@@ -215,6 +229,30 @@ class FileOPs:
 			if clip_names[i] in clips_from_db:
 				clip_col_tor[i] = clips_from_db[clip_names[i]]
 		return clip_col_tor
+
+	def save_clip_storage(self,clip_store):
+		clip_storage_el = ET.Element('clip_storage')
+		clip_storage_el.set('current_clip_collection',
+							str(clip_store.cur_clip_col))
+		current_clips_el = ET.SubElement(clip_storage_el,'current_clips')
+		current_clips_el.append(self.save_clip_col(clip_store.current_clips))
+		clip_cols_el = ET.SubElement(clip_storage_el,'clip_collections')
+		for clip_col in clip_store.clip_cols:
+			clip_cols_el.append(self.save_clip_col(clip_col))
+		return clip_storage_el
+
+	def load_clip_storage(self,clip_storage_el,clips_from_db):
+		cur_clip_col = eval(clip_storage_el.get('current_clip_collection'))
+		current_clips = self.load_clip_col(clip_storage_el[0][0],clips_from_db)
+		cur_cols = []
+		for clip_col_el in clip_storage_el[1]:
+			cur_cols.append(self.load_clip_col(clip_col_el,clips_from_db))
+		dict_tor = {'cur_clip_col' : cur_clip_col,
+					'current_clips' : current_clips,
+					'clip_cols' : clip_cols
+		}
+		return dict_tor
+
 
 
 if __name__ == '__main__':
@@ -260,9 +298,8 @@ if __name__ == '__main__':
 	for i in range(len(test_fnames)):
 		test_col[i] = testdb.clips[test_fnames[i]]
 	testclipcol = testdb.file_ops.save_clip_col(test_col)
-	rough_string = ET.tostring(testclipcol, 'utf-8')
-	reparsed = minidom.parseString(rough_string)
-	print(reparsed.toprettyxml(indent="\t"))
+	
+	print(testdb.file_ops.pretty_print(testclipcol))
 	test_parsed_col = testdb.file_ops.load_clip_col(testclipcol,testdb.clips)
 	print(len(test_parsed_col))
 	for i in range(8):
