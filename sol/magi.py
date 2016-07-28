@@ -86,6 +86,13 @@ class Magi:
 		self.clip_storage.current_clips[layer] = None
 		self.model.current_clip_pos[layer] = None # clear cur pos
 
+	def select_col_clip(self,i,layer,col_i=None):
+		if col_i is None:
+			col_i = self.clip_storage.cur_clip_col
+		the_col = self.clip_storage.clip_cols[col_i]
+		if i >= len(the_col): return # dont access a clip that isnt there
+		self.select_clip(the_col[i],layer)
+
 	def map_pb_funs(self):
 		# map playback functions
 		base_addr = "/magi/layer{}/playback/"
@@ -320,7 +327,7 @@ class TerminalGui:
 		self.magi = magi
 
 	def print_current_state(self):
-		to_print = "*-"*18+"*\n" + \
+		to_print = "*-"*36+"*\n" + \
 		self.print_cur_clip_info() +"\n" + \
 		self.print_a_line() +"\n" + \
 		self.print_cur_col() + \
@@ -338,7 +345,7 @@ class TerminalGui:
 				name_line += [" -"*7 + " "]
 				cur_spd = 0
 			else:
-				name_line += [cur_clip.name[:16]]
+				name_line += ["{:<16}".format(cur_clip.name[:16])]
 				if 'playback_speed' in cur_clip.params:
 					cur_spd = cur_clip.params['playback_speed']
 				else:
@@ -359,7 +366,7 @@ class TerminalGui:
 			if cur_col_clip is None:
 				cur_col_text += ["[ ________ ]"]
 			else:
-				cur_col_text += ["[ {} ]".format(cur_col_clip.name)]
+				cur_col_text += ["[{:<16}]".format(cur_col_clip.name[:16])]
 		final_string = ""
 		for j in range(len(cur_col_text)//4):
 			for i in range(4):
@@ -372,7 +379,7 @@ class TerminalGui:
 		
 
 	def print_a_line(self):
-		return "=" * 35
+		return "=" * 73
 
 
 if __name__ == '__main__':
@@ -386,15 +393,13 @@ if __name__ == '__main__':
 	# # testit.debug_search_res()
 	# testit.select_clip(clipz[0],0)
 	# testit.select_clip(clipz[1],1)
-
 	# for i in range(8):
-	# add clipz to clip collection
+	# 	testit.clip_storage.set_clip_in_col(clipz[i+2],i)
 	# testit.gui.print_current_state()
 
 	# testit.save_to_file('./test_save.xml')
 
 	testit.load('./test_save.xml')
-
 	testit.start()
 	import time
 	while True:
