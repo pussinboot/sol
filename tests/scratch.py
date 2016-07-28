@@ -6,3 +6,11 @@ teststr = ''
 print(teststr.split(','))
 
 
+test_dict = {
+	'a':1,
+	'b':222,
+	'c':'noob'
+}
+
+for thing in test_dict.values():
+	print(thing)

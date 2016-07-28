@@ -69,6 +69,16 @@ class Magi:
 		# activate clip command
 		self.osc_client.build_n_send(clip.command,1)
 		self.clip_storage.current_clips[layer] = clip
+		# perform the play command
+		if 'play_direction' in clip.params:
+			play_dir_to_fun = { 'f' : self.model.play,
+								'p' : self.model.pause,
+								'b' : self.model.reverse,
+								'r' : self.model.random
+								}
+			pd = clip.params['play_direction']
+			(pb_addr, pb_msg) = play_dir_to_fun[pd](layer)
+			self.osc_client.build_n_send(pb_addr,pb_msg)
 
 	def clear_clip(self,layer):
 		model_addr, model_msg = self.model.clear_clip(layer)
@@ -200,7 +210,35 @@ class Magi:
 	def stop(self):
 		self.osc_server.stop()
 
+	def save(self):
+		fio = self.db.file_ops
+		root = fio.create_save('magi')
+		root.append(fio.save_clip_storage(self.clip_storage))
+		root.append(fio.save_database(self.db))
+		return fio.pretty_print(root)
 
+	def save_to_file(self,filename):
+		with open(filename,'wt') as f:
+			f.write(self.save())
+
+	def load(self,filename):
+		# TO-DO 
+		# catch errors, probably just complain at the user
+		fio = self.db.file_ops
+		# parse the xml into an element tree
+		parsed_xml = fio.create_load(filename)
+		# load the database NOTE: this doesnt clear out current db
+		fio.load_database(parsed_xml.find('database'),self.db)
+		# reset clip storage
+		storage_dict = fio.load_clip_storage(parsed_xml.find('clip_storage'),
+											 self.db.clips)
+		self.clip_storage = ClipStorage()
+		self.clip_storage.current_clips = storage_dict['current_clips']
+		self.clip_storage.clip_cols = storage_dict['clip_cols']
+		self.clip_storage.cur_clip_col = storage_dict['cur_clip_col']
+
+
+			
 
 class ClipStorage:
 	"""
@@ -329,24 +367,32 @@ class TerminalGui:
 if __name__ == '__main__':
 	testit = Magi()
 	# until i add proper library save/load
-	from models.resolume import load_avc
-	testfile = "C:/Users/shapil/Documents/Resolume Arena 5/compositions/vjcomp.avc"
-	vjcomp = load_avc.ResolumeLoader(testfile)
-	for parsed_clip in vjcomp.clips:
-		new_clip = clip.Clip(*vjcomp.clips[parsed_clip])
-		testit.db.add_clip(new_clip)
-	testit.db.searcher.refresh()
+	# from models.resolume import load_avc
+	# testfile = "C:/Users/shapil/Documents/Resolume Arena 5/compositions/vjcomp.avc"
+	# vjcomp = load_avc.ResolumeLoader(testfile)
+	# for parsed_clip in vjcomp.clips:
+	# 	new_clip = clip.Clip(*vjcomp.clips[parsed_clip])
+	# 	testit.db.add_clip(new_clip)
+	# testit.db.searcher.refresh()
 
-	clipz = testit.db.search('gundam')
-	# testit.debug_search_res()
-	testit.select_clip(clipz[0],0)
-	testit.select_clip(clipz[1],1)
+	# clipz = testit.db.search('gundam')
+	# # testit.debug_search_res()
+	# testit.select_clip(clipz[0],0)
+	# testit.select_clip(clipz[1],1)
+
 	# for i in range(8):
 	# add clipz to clip collection
 	# testit.gui.print_current_state()
-	clip_store_test = testit.db.file_ops.save_clip_storage(testit.clip_storage)
-	print(testit.db.file_ops.pretty_print(clip_store_test))
 
+	# clip_store_test = testit.db.file_ops.save_clip_storage(testit.clip_storage)
+	# print(testit.db.file_ops.pretty_print(clip_store_test))
+
+	# print(testit.save())	
+	# testit.save_to_file('./test_save.xml')
+	testit.load('./test_save.xml')
+
+	testit.gui.print_current_state()
+	
 	# testit.start()
 	# import time
 	# while True:
