@@ -237,6 +237,17 @@ class Magi:
 		self.clip_storage.clip_cols = storage_dict['clip_cols']
 		self.clip_storage.cur_clip_col = storage_dict['cur_clip_col']
 
+		for layer in range(len(self.clip_storage.current_clips)):
+			self.select_clip(self.clip_storage.current_clips[layer],layer)
+
+	def load_resolume_comp(self,filename):
+		from models.resolume import load_avc
+		comp = load_avc.ResolumeLoader(filename)
+		for parsed_clip_vals in comp.clips.values():
+			new_clip = clip.Clip(*parsed_clip_vals)
+			self.db.add_clip(new_clip)
+		self.db.searcher.refresh()
+
 
 			
 
@@ -366,15 +377,11 @@ class TerminalGui:
 
 if __name__ == '__main__':
 	testit = Magi()
-	# until i add proper library save/load
-	# from models.resolume import load_avc
-	# testfile = "C:/Users/shapil/Documents/Resolume Arena 5/compositions/vjcomp.avc"
-	# vjcomp = load_avc.ResolumeLoader(testfile)
-	# for parsed_clip in vjcomp.clips:
-	# 	new_clip = clip.Clip(*vjcomp.clips[parsed_clip])
-	# 	testit.db.add_clip(new_clip)
-	# testit.db.searcher.refresh()
 
+
+	### load and save test resolume library
+	# testfile = "C:/Users/shapil/Documents/Resolume Arena 5/compositions/vjcomp.avc"
+	# testit.load_resolume_comp(testfile)
 	# clipz = testit.db.search('gundam')
 	# # testit.debug_search_res()
 	# testit.select_clip(clipz[0],0)
@@ -384,25 +391,21 @@ if __name__ == '__main__':
 	# add clipz to clip collection
 	# testit.gui.print_current_state()
 
-	# clip_store_test = testit.db.file_ops.save_clip_storage(testit.clip_storage)
-	# print(testit.db.file_ops.pretty_print(clip_store_test))
-
-	# print(testit.save())	
 	# testit.save_to_file('./test_save.xml')
+
 	testit.load('./test_save.xml')
 
-	testit.gui.print_current_state()
-	
-	# testit.start()
-	# import time
-	# while True:
-	# 	try:
-	# 		time.sleep(1)
-	# 		testit.gui.print_current_state()
-	# 	except (KeyboardInterrupt, SystemExit):
-	# 		print("exiting...")
-	# 		testit.stop()
-	# 		break
+	testit.start()
+	import time
+	while True:
+		try:
+			time.sleep(1)
+			testit.gui.print_current_state()
+		except (KeyboardInterrupt, SystemExit):
+			print("exiting...")
+			testit.stop()
+			testit.save_to_file('./test_save.xml')
+			break
 
 ### TO DO
 # add some methods to actually control what's going on 
