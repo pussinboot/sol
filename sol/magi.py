@@ -64,6 +64,9 @@ class Magi:
 			self.osc_server.map(self.model.clip_pos_addr[i],update_fun)
 
 	def select_clip(self,clip,layer):
+		# can't select a clip that's already been activated
+		# (at least in resolume..)
+		if clip in self.clip_storage.current_clips: return
 		# do model prep work
 		model_addr, model_msg = self.model.select_clip(layer)
 		self.osc_client.build_n_send(model_addr,model_msg)
