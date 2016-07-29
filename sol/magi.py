@@ -42,7 +42,7 @@ class Magi:
 		self.track_vars()
 		self.map_pb_funs()
 		self.map_search_funs()
-		self.map_select_funs()
+		self.map_col_funs()
 
 	def track_vars(self):
 		# keeps track of our clip_positions
@@ -188,7 +188,6 @@ class Magi:
 			spd_fun = gen_spd_fun(i)
 			self.osc_server.map(spd_addr,spd_fun)		
 
-
 	def map_search_funs(self):
 		# perform search
 		search_addr = "/magi/search"
@@ -209,9 +208,9 @@ class Magi:
 		for i in range(NO_LAYERS):
 			self.osc_server.map(select_addr.format(i),select_search_res)
 
-	def map_select_funs(self):
+	def map_col_funs(self):
 		# select from col
-		col_select_addr = "/magi/cur_col/select/layer{}"
+		col_select_addr = "/magi/cur_col/select_clip/layer{}"
 		def gen_sel_fun(layer):
 			l = layer
 			def fun_tor(_,n):
@@ -221,6 +220,54 @@ class Magi:
 		for i in range(NO_LAYERS):
 			sel_fun = gen_sel_fun(i)
 			self.osc_server.map(col_select_addr.format(i),sel_fun)
+		def add_col(_,msg):
+			name = self.osc_server.osc_value(msg)
+			if not isinstance(name,str):
+				name = None
+			self.clip_storage.add_collection(name)
+		def sel_col(_,n):
+			n = self.osc_server.osc_value(n)
+			if isinstance(n,int) and n < len(self.clip_storage.clip_cols):
+				self.clip_storage.select_collection(n)
+		def go_left(_,n):
+			if self.osc_server.osc_value(n):
+				self.clip_storage.go_left()
+		def go_right(_,n):
+			if self.osc_server.osc_value(n):
+				self.clip_storage.go_right()
+		def swap_col(_,ns):
+			ij = self.osc_server.osc_value(ns)
+			if isinstance(ij,list) and len(ij) == 2:
+				self.clip_storage.swap_collections(*ij)
+		def swap_left(_,n):
+			if self.osc_server.osc_value(n):
+				self.clip_storage.swap_left()
+		def swap_right(_,n):
+			if self.osc_server.osc_value(n):
+				self.clip_storage.swap_right()
+		# remove col
+		def del_col(_,n):
+			n = self.osc_server.osc_value(n)
+			if isinstance(n,int) and n < len(self.clip_storage.clip_cols):
+				pass
+			else:
+				n = None
+			self.clip_storage.remove_collection(n)
+
+		col_map = {
+		'add'          : add_col   ,
+		'delete'       : del_col   ,
+		'select'       : sel_col   ,
+		'select_left'  : go_left   ,
+		'select_right' : go_right  ,
+		'swap'         : swap_col  ,
+		'swap_left'    : swap_left ,
+		'swap_right'   : swap_right
+		}
+
+		for key in col_map:
+			col_addr = "/magi/cur_col/" + key
+			self.osc_server.map(col_addr,col_map[key])
 
 	def debug_search_res(self):
 		if not DEBUG:
@@ -300,6 +347,14 @@ class ClipStorage:
 	def select_collection(self,i):
 		self.cur_clip_col = i
 
+	def go_left(self):
+		new_i = self.cur_clip_col - 1
+		self.select_collection((new_i % len(self.clip_cols)))
+
+	def go_right(self):
+		new_i = self.cur_clip_col + 1
+		self.select_collection((new_i % len(self.clip_cols)))
+
 	def swap_collections(self,i,j):
 		# swap collections in spots i and j
 		if i > len(self.clip_cols) or j > len(self.clip_cols):
@@ -348,7 +403,8 @@ class TerminalGui:
 		self.print_cur_clip_info() +"\n" + \
 		self.print_a_line() +"\n" + \
 		self.print_cur_col() + \
-		self.print_a_line() +"\n"
+		self.print_a_line() +"\n" + \
+		self.print_cols()
 
 		print(to_print)
 
@@ -381,7 +437,7 @@ class TerminalGui:
 		for i in range(len(self.magi.clip_storage.clip_col.clips)):
 			cur_col_clip = self.magi.clip_storage.clip_col.clips[i]
 			if cur_col_clip is None:
-				cur_col_text += ["[ ________ ]"]
+				cur_col_text += ["[ ______________ ]"]
 			else:
 				cur_col_text += ["[{:<16}]".format(cur_col_clip.name[:16])]
 		final_string = ""
@@ -393,6 +449,11 @@ class TerminalGui:
 			final_string += "\n"
 		return final_string
 
+	def print_cols(self):
+		names = [clip_col.name for clip_col in self.magi.clip_storage.clip_cols]
+		names[self.magi.clip_storage.cur_clip_col] = "[{}]".format(\
+									names[self.magi.clip_storage.cur_clip_col])
+		return ' | '.join(names)
 		
 
 	def print_a_line(self):
