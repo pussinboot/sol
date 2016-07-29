@@ -42,6 +42,7 @@ class Magi:
 		self.track_vars()
 		self.map_pb_funs()
 		self.map_search_funs()
+		self.map_select_funs()
 
 	def track_vars(self):
 		# keeps track of our clip_positions
@@ -195,7 +196,7 @@ class Magi:
 		self.osc_server.map(search_addr,do_search)
 
 		# select clip from last search res to certain layer
-		select_addr = "/magi/search/select{}"
+		select_addr = "/magi/search/select/layer{}"
 		def select_search_res(a,i):
 			i = self.osc_server.osc_value(i)
 			layer = self.osc_server.find_num_in_addr(a)
@@ -204,6 +205,19 @@ class Magi:
 				self.select_clip(clip,layer)
 		for i in range(NO_LAYERS):
 			self.osc_server.map(select_addr.format(i),select_search_res)
+
+	def map_select_funs(self):
+		# select from col
+		col_select_addr = "/magi/cur_col/select/layer{}"
+		def gen_sel_fun(layer):
+			l = layer
+			def fun_tor(_,n):
+				i = self.osc_server.osc_value(n)
+				self.select_col_clip(i,l)
+			return fun_tor
+		for i in range(NO_LAYERS):
+			sel_fun = gen_sel_fun(i)
+			self.osc_server.map(col_select_addr.format(i),sel_fun)
 
 	def debug_search_res(self):
 		if not DEBUG:
