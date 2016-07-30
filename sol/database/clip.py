@@ -8,7 +8,7 @@ class Clip:
 		but also params and tags
 
 	example params (inspired by previous sol version)
-		queue_points - point in time to jump to
+		cue_points - point in time to jump to
 		loop_points - collection of pairs of points between which can loop
 		 -> loop_type - default (d) or bounce (b)
 		loop_selection - which loop points are chosen
