@@ -43,6 +43,7 @@ class Magi:
 		self.map_pb_funs()
 		self.map_search_funs()
 		self.map_col_funs()
+		self.map_loop_funs()
 
 	def track_vars(self):
 		# keeps track of our clip_positions
@@ -455,6 +456,9 @@ class TerminalGui:
 		name_line = []
 		pos_line =  []
 		spd_line =  []
+		qp_line_0 = []
+		qp_line_1 = []
+		half_qp = 4
 		for i in range(NO_LAYERS):
 			cur_clip = self.magi.clip_storage.current_clips[i]
 			if cur_clip is None:
@@ -466,6 +470,12 @@ class TerminalGui:
 					cur_spd = cur_clip.params['playback_speed']
 				else:
 					cur_spd = 0
+				qp = cur_clip.params['cue_points']
+				# half_qp = len(qp) // 2
+				qp_line_0 += [ "[x]" if qp[j] is not None else "[_]" \
+								for j in range(half_qp)]
+				qp_line_1 += [ "[x]" if qp[i+half_qp] is not None else "[_]" \
+								for j in range(half_qp)]
 			spd_line += ["   spd : {0: 2.2f}  ".format(cur_spd)]
 
 			cur_pos = self.magi.model.current_clip_pos[i]
@@ -473,8 +483,11 @@ class TerminalGui:
 				cur_pos = 0.00
 			pos_line += ["   pos : {0: .3f} ".format(cur_pos)]
 		return " | ".join(name_line) + "\n" + " | ".join(pos_line) + \
-				"\n" + " | ".join(spd_line)
-
+				"\n" + " | ".join(spd_line) + \
+				"\n   " + "".join(qp_line_0[:half_qp]) + "  |   " + \
+				"".join(qp_line_0[half_qp:]) + "\n   " + \
+				"".join(qp_line_1[:half_qp]) + "  |   " + \
+				"".join(qp_line_1[half_qp:])
 	def print_cur_col(self):
 		cur_col_text = []
 		for i in range(len(self.magi.clip_storage.clip_col.clips)):
