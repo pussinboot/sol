@@ -30,7 +30,9 @@ class Database:
 	def add_clip(self,clip):
 		# add default params (if they dont exist)
 		def_params = {
-		'queue_points'   : [None] * NO_QP,
+		'play_direction' : 'p',
+		'playback_speed' : 1.0,
+		'cue_points'     : [None] * NO_QP,
 		'loop_points'    : [None] * NO_LP,
 		'loop_selection' : -1 ,
 		'loop_on'        : False
