@@ -74,15 +74,14 @@ class Magi:
 		self.osc_client.build_n_send(clip.command,1)
 		self.clip_storage.current_clips[layer] = clip
 		# perform the play command
-		if 'play_direction' in clip.params:
-			play_dir_to_fun = { 'f' : self.model.play,
-								'p' : self.model.pause,
-								'b' : self.model.reverse,
-								'r' : self.model.random
-								}
-			pd = clip.params['play_direction']
-			(pb_addr, pb_msg) = play_dir_to_fun[pd](layer)
-			self.osc_client.build_n_send(pb_addr,pb_msg)
+		play_dir_to_fun = { 'f' : self.model.play,
+							'p' : self.model.pause,
+							'b' : self.model.reverse,
+							'r' : self.model.random
+							}
+		pd = clip.params['play_direction']
+		(pb_addr, pb_msg) = play_dir_to_fun[pd](layer)
+		self.osc_client.build_n_send(pb_addr,pb_msg)
 
 	def clear_clip(self,layer):
 		model_addr, model_msg = self.model.clear_clip(layer)
@@ -115,9 +114,8 @@ class Magi:
 						self.osc_client.send(osc_cmd)
 						cur_clip = self.clip_storage.current_clips[i]
 						if cur_clip is not None:
-							if 'play_direction' in cur_clip.params:
-								cur_clip.params['play_direction'] =  \
-														play_fun_to_dir[key]
+							cur_clip.params['play_direction'] =  \
+											play_fun_to_dir[key]
 				except:
 					if DEBUG: print('oh no',osc_cmd)
 					pass
@@ -163,8 +161,7 @@ class Magi:
 				# update our clip representation
 				cur_clip = self.clip_storage.current_clips[i]
 				if cur_clip is not None:
-					if 'playback_speed' in cur_clip.params:
-						cur_clip.params['playback_speed'] = n
+					cur_clip.params['playback_speed'] = n
 			return spd_fun
 
 
@@ -268,6 +265,52 @@ class Magi:
 		for key in col_map:
 			col_addr = "/magi/cur_col/" + key
 			self.osc_server.map(col_addr,col_map[key])
+
+	def map_loop_funs(self):
+		# map loop & cue point functions
+		def gen_loop_funs(layer):
+			i = layer
+
+			def cue_point(_,n):
+				n = self.osc_server.osc_value(n)
+				cur_clip = self.clip_storage.current_clips[i]
+				if cur_clip is not None:
+					cue_points = cur_clip.params['cue_points']
+					if n > len(cue_points):
+						return
+					if cue_points[n] is not None:
+						(addr, msg) = self.model.set_clip_pos(i,cue_points[n])
+						self.osc_client.build_n_send(addr,msg)
+					else:
+						cur_clip.params['cue_points'][n] =  \
+						                self.model.current_clip_pos[i]
+			def toggle_loop(_,n):
+				if self.osc_server.osc_value(n):
+					cur_clip = self.clip_storage.current_clips[i]
+					if cur_clip is not None:
+						cur_clip.params['loop_on'] = not cur_clip.params['loop_on']
+
+			def loop_select(_,n):
+				n = self.osc_server.osc_value(n)
+				cur_clip = self.clip_storage.current_clips[i]
+				if cur_clip is not None:
+					if n > len(cur_clip.params['loop_points']):
+						return
+					cur_clip.params['loop_selection'] = n
+
+			return [cue_point,toggle_loop,loop_select]
+
+		base_addr = "/magi/layer{}/loop/"
+		cue_addr = base_addr + "cue"
+		tog_addr = base_addr + "on_off"
+		sel_addr = base_addr + "select"
+		addresses = [cue_addr,tog_addr,sel_addr]
+		for i in range(NO_LAYERS):
+			loop_funs = gen_loop_funs(i)
+			for j in range(len(addresses)):
+				self.osc_server.map(addresses[j].format(i),loop_funs[j])
+
+
 
 	def debug_search_res(self):
 		if not DEBUG:
@@ -498,8 +541,8 @@ if __name__ == '__main__':
 # load a clip, clear a clip, playback speed (these rely on model)
 	# done, tho not sure how to implement loading of a clip
 	# maybe by passing f_name ? 
-# loop on/off, loop_type, activate queue point
-# set loop points, set queue points
+# loop on/off, loop_type, activate cue point
+# set loop points, set cue points
 	# these 2 lines should be done after looping is implemented (go to line 56)
 
 ####  important  ########
