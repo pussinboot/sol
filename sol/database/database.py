@@ -9,6 +9,9 @@ except: # stupid for testing
 	from clip import Clip
 	from clip import ClipCollection
 
+NO_QP = 8
+NO_LP = 8
+
 class Database:
 	"""
 	hold everything together and has methods to save/load from disk
@@ -25,6 +28,17 @@ class Database:
 		return self.searcher.search_res
 
 	def add_clip(self,clip):
+		# add default params (if they dont exist)
+		def_params = {
+		'queue_points'   : [None] * NO_QP,
+		'loop_points'    : [None] * NO_LP,
+		'loop_selection' : -1 ,
+		'loop_on'        : False
+		}
+		for p, p_val in def_params.items():
+			if p not in clip.params:
+				clip.params[p] = p_val
+
 		self.clips[clip.f_name] = clip
 		self.searcher.add_clip(clip)
 
@@ -324,3 +338,5 @@ if __name__ == '__main__':
 	for i in range(8):
 		print(test_parsed_col[i])
 	print(test_parsed_col[2] == testdb.clips[test_fnames[2]])
+	for p,v in test_parsed_col[2].params.items():
+		print(p,v)
