@@ -285,6 +285,15 @@ class Magi:
 					else:
 						cur_clip.params['cue_points'][n] =  \
 						                self.model.current_clip_pos[i]
+
+			def clear_cue(_,n):
+				n = self.osc_server.osc_value(n)
+				cur_clip = self.clip_storage.current_clips[i]
+				if cur_clip is not None:
+					if n > len(cur_clip.params['cue_points']):
+						return
+					cur_clip.params['cue_points'][n] = None
+
 			def toggle_loop(_,n):
 				if self.osc_server.osc_value(n):
 					cur_clip = self.clip_storage.current_clips[i]
@@ -299,13 +308,14 @@ class Magi:
 						return
 					cur_clip.params['loop_selection'] = n
 
-			return [cue_point,toggle_loop,loop_select]
+			return [cue_point,clear_cue,toggle_loop,loop_select]
 
-		base_addr = "/magi/layer{}/loop/"
-		cue_addr = base_addr + "cue"
-		tog_addr = base_addr + "on_off"
-		sel_addr = base_addr + "select"
-		addresses = [cue_addr,tog_addr,sel_addr]
+		base_addr = "/magi/layer{}/"
+		cue_addr = base_addr + "/cue"
+		cue_clear_addr = base_addr + "/cue/clear"
+		tog_addr = base_addr + "/loop/on_off"
+		sel_addr = base_addr + "/loop/select"
+		addresses = [cue_addr,cue_clear_addr,tog_addr,sel_addr]
 		for i in range(NO_LAYERS):
 			loop_funs = gen_loop_funs(i)
 			for j in range(len(addresses)):
@@ -484,7 +494,7 @@ class TerminalGui:
 			pos_line += ["   pos : {0: .3f} ".format(cur_pos)]
 		return " | ".join(name_line) + "\n" + " | ".join(pos_line) + \
 				"\n" + " | ".join(spd_line) + \
-				"\n   " + "".join(qp_line_0[:half_qp]) + "  |   " + \
+				"\nQP:" + "".join(qp_line_0[:half_qp]) + "  |   " + \
 				"".join(qp_line_0[half_qp:]) + "\n   " + \
 				"".join(qp_line_1[:half_qp]) + "  |   " + \
 				"".join(qp_line_1[half_qp:])
