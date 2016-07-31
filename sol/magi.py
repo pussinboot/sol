@@ -275,24 +275,29 @@ class Magi:
 			def cue_point(_,n):
 				n = self.osc_server.osc_value(n)
 				cur_clip = self.clip_storage.current_clips[i]
-				if cur_clip is not None:
-					cue_points = cur_clip.params['cue_points']
-					if n > len(cue_points):
-						return
-					if cue_points[n] is not None:
-						(addr, msg) = self.model.set_clip_pos(i,cue_points[n])
-						self.osc_client.build_n_send(addr,msg)
-					else:
-						cur_clip.params['cue_points'][n] =  \
-						                self.model.current_clip_pos[i]
+				if cur_clip is None: return
+				cue_points = cur_clip.params['cue_points']
+				if n > len(cue_points):
+					return
+				if cue_points[n] is not None:
+					(addr, msg) = self.model.set_clip_pos(i,cue_points[n])
+					self.osc_client.build_n_send(addr,msg)
+				else:
+					cur_clip.params['cue_points'][n] =  \
+					                self.model.current_clip_pos[i]
 
 			def clear_cue(_,n):
 				n = self.osc_server.osc_value(n)
 				cur_clip = self.clip_storage.current_clips[i]
-				if cur_clip is not None:
-					if n > len(cur_clip.params['cue_points']):
-						return
-					cur_clip.params['cue_points'][n] = None
+				if cur_clip is None: return
+				if n > len(cur_clip.params['cue_points']): return
+				cur_clip.params['cue_points'][n] = None
+
+			def lp_create(cur_lp):
+				# function to create loop point if it doesnt exist yet
+				if cur_lp is None or len(cur_lp) != 3:
+					return [None, None, 'd']
+				return cur_lp
 
 			def toggle_loop(_,n):
 				if self.osc_server.osc_value(n):
@@ -300,25 +305,91 @@ class Magi:
 					if cur_clip is not None:
 						cur_clip.params['loop_on'] = not cur_clip.params['loop_on']
 
+			def set_loop_type(_,t):
+				# can either set to new type by supplying correct string
+				# or will toggle between the two types 'd'/'b' - default/bounce
+				lt = self.osc_server.osc_value(t)
+				cur_clip = self.clip_storage.current_clips[i]
+				if cur_clip is None: return
+				ls = cur_clip.params['loop_selection']
+				if ls < 0: return
+				# current loop points
+				cl = cur_clip.params['loop_points'][ls]
+				cl = lp_create(cl)
+				if lt in ['b','d']:
+					cl[2] = lt
+				else:
+					if cl[2] == 'b':
+						cl[2] = 'd'
+					else:
+						cl[2] = 'b'
+				cur_clip.params['loop_points'][ls] = cl
+
 			def loop_select(_,n):
 				n = self.osc_server.osc_value(n)
 				cur_clip = self.clip_storage.current_clips[i]
-				if cur_clip is not None:
-					if n > len(cur_clip.params['loop_points']):
-						return
-					cur_clip.params['loop_selection'] = n
+				if cur_clip is None: return
+				if n > len(cur_clip.params['loop_points']): return
+				cur_clip.params['loop_selection'] = n
+				print('current loop points\n',cur_clip.params['loop_points'][n])
 
-			return [cue_point,clear_cue,toggle_loop,loop_select]
+			def set_loop_a(_,n):
+				pos = self.osc_server.osc_value(n)
+				cur_clip = self.clip_storage.current_clips[i]
+				if cur_clip is None: return
+				ls = cur_clip.params['loop_selection']
+				if ls < 0: return
+				# current loop points
+				cl = cur_clip.params['loop_points'][ls]
+				cl = lp_create(cl)
+				cl[0] = pos
+				cur_clip.params['loop_points'][ls] = cl
 
-		base_addr = "/magi/layer{}/"
+			def set_loop_b(_,n):
+				pos = self.osc_server.osc_value(n)
+				cur_clip = self.clip_storage.current_clips[i]
+				if cur_clip is None: return
+				ls = cur_clip.params['loop_selection']
+				if ls < 0: return
+				# current loop points
+				cl = cur_clip.params['loop_points'][ls]
+				cl = lp_create(cl)
+				cl[1] = pos
+				cur_clip.params['loop_points'][ls] = cl
+
+			def set_loop_a_b(_,ns):
+				pos = self.osc_server.osc_value(ns)
+				print(pos)
+				if len(pos) != 2: return
+				pos.sort()
+				cur_clip = self.clip_storage.current_clips[i]
+				if cur_clip is None: return
+				ls = cur_clip.params['loop_selection']
+				if ls < 0: return
+				# current loop points
+				cl = cur_clip.params['loop_points'][ls]
+				cl = lp_create(cl)
+				cl[:2] = pos
+				cur_clip.params['loop_points'][ls] = cl
+
+			return [cue_point,clear_cue,toggle_loop,set_loop_type,loop_select,
+					set_loop_a, set_loop_b, set_loop_a_b]
+
+		base_addr = "/magi/layer{}"
 		cue_addr = base_addr + "/cue"
 		cue_clear_addr = base_addr + "/cue/clear"
 		tog_addr = base_addr + "/loop/on_off"
+		lp_type_addr = base_addr + "/loop/type"
 		sel_addr = base_addr + "/loop/select"
-		addresses = [cue_addr,cue_clear_addr,tog_addr,sel_addr]
+		set_addr = base_addr + "/loop/set/"
+
+		addresses = [cue_addr,cue_clear_addr,tog_addr,lp_type_addr,sel_addr,
+					 set_addr + "a", set_addr + "b", set_addr + "ab"]
+
 		for i in range(NO_LAYERS):
 			loop_funs = gen_loop_funs(i)
 			for j in range(len(addresses)):
+				# print('setting addr -- ',addresses[j])
 				self.osc_server.map(addresses[j].format(i),loop_funs[j])
 
 
@@ -358,12 +429,12 @@ class Magi:
 		storage_dict = fio.load_clip_storage(parsed_xml.find('clip_storage'),
 											 self.db.clips)
 		self.clip_storage = ClipStorage()
-		self.clip_storage.current_clips = storage_dict['current_clips']
+		# self.clip_storage.current_clips = storage_dict['current_clips']
 		self.clip_storage.clip_cols = storage_dict['clip_cols']
 		self.clip_storage.cur_clip_col = storage_dict['cur_clip_col']
 
 		for layer in range(len(self.clip_storage.current_clips)):
-			self.select_clip(self.clip_storage.current_clips[layer],layer)
+			self.select_clip(storage_dict['current_clips'][layer],layer)
 
 	def load_resolume_comp(self,filename):
 		from models.resolume import load_avc
