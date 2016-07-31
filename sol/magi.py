@@ -47,8 +47,54 @@ class Magi:
 
 	def track_vars(self):
 		# keeps track of our clip_positions
+		# and does looping
 		def gen_update_fun(layer):
 			i = layer
+
+			def loop_check():
+				# returns current loop points for layer if they are complete
+				# otherwise returns none (if no clip selected etc)
+				cur_clip = self.clip_storage.current_clips[i]
+				if cur_clip is None: return
+				if not cur_clip.params['loop_on']: return
+				ls = cur_clip.params['loop_selection']
+				if ls < 0: return
+				# current loop points
+				cl = cur_clip.params['loop_points'][ls]
+				if None in cl: return
+				return [cur_clip, cl]
+
+			loop_lookup = {'f':1,'b':-1}
+
+			def common_loop(cur_clip):
+				play_dir = cur_clip.params['play_direction'] 
+				if play_dir in ['p','r']: return
+				return loop_lookup[play_dir]
+
+			def default_loop(lp,pos,cur_clip):
+				play_dir = common_loop(cur_clip)
+				if play_dir is None: return
+				if play_dir > 0 and pos - lp[1] >= 0:
+					addr, msg = self.model.set_clip_pos(i,lp[0])
+					self.osc_client.build_n_send(addr,msg)
+				elif play_dir < 0 and pos - lp[0] <= 0:
+					addr, msg = self.model.set_clip_pos(i,lp[1])
+					self.osc_client.build_n_send(addr,msg)
+
+			def bounce_loop(lp,pos,cur_clip):
+				play_dir = common_loop(cur_clip)
+				if play_dir is None: return
+				if play_dir > 0 and pos - lp[1] >= 0:
+					addr, msg = self.model.reverse(i)
+					self.osc_client.build_n_send(addr,msg)
+					cur_clip.params['play_direction'] = 'b'
+				elif play_dir < 0 and pos - lp[0] <= 0:
+					addr, msg = self.model.play(i)
+					self.osc_client.build_n_send(addr,msg)
+					cur_clip.params['play_direction'] = 'f'
+
+			lp_to_fun = {'d':default_loop,'b':bounce_loop}
+
 			def update_fun(_,msg):
 				try:
 					new_val = float(msg)
@@ -56,6 +102,11 @@ class Magi:
 					self.model.current_clip_pos[i] = new_val
 					#### #### #### #### #### #### #### ####
 					# this is where looping logic comes in
+					lp = loop_check()
+					if lp is None: return
+					if lp[1][2] in lp_to_fun:
+						lp_to_fun[lp[1][2]](lp[1],new_val,lp[0])
+
 				except:
 					pass
 			return update_fun
