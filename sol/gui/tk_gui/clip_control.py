@@ -8,6 +8,9 @@ class ClipControl:
 		self.layer = layer
 
 		# tk
+
+		self.width = 300
+
 		self.root = root
 		self.setup_gui()
 
@@ -17,11 +20,17 @@ class ClipControl:
 		self.info_frame = tk.Frame(self.frame) # name, mayb add tags/way to edit/add/delete these things
 		self.timeline_frame = tk.Frame(self.frame)
 		self.control_frame = tk.Frame(self.frame)
+		self.cue_button_frame = tk.Frame(self.control_frame)
+		self.control_frame_l = tk.Frame(self.control_frame)
+		self.control_frame_r = tk.Frame(self.control_frame)
+		self.control_button_frame = tk.Frame(self.control_frame_r)
+		
+		# info
 		self.name_var = tk.StringVar()
 		self.name_label = tk.Label(self.info_frame,textvariable=self.name_var)#,relief=tk.RIDGE)
-		
+		self.name_var.set('no clip')
 		# timeline
-		self.timeline = ProgressBar(self)
+		self.timeline = ProgressBar(self.timeline_frame,self.width)
 		def set_cue(i,pos):
 			self.backend.set_cue_point(self.layer,i,pos)
 		self.timeline.drag_release_action = set_cue
@@ -30,14 +39,65 @@ class ClipControl:
 			self.backend.fun_store[seek_addr]('',pos)
 		self.timeline.seek_action = seek
 
+		# controls
+		# top part is cues
+		# left side is looping stuff
+		# right side is playback
+
+		self.cue_buttons = []
+		self.setup_cue_buttons()
+
+		# self.looping_controls = []
+		# self.looping_vars = {}
+		# self.setup_looping()
+
+		self.control_buttons = []
+		self.setup_control_buttons()
+
 		# pack
 		self.name_label.pack(side=tk.TOP,fill=tk.X)
 		self.info_frame.pack(side=tk.TOP)
 		self.timeline_frame.pack(side=tk.TOP)
+		self.control_button_frame.pack(side=tk.BOTTOM)
 		self.control_frame.pack(side=tk.TOP)
+		self.cue_button_frame.pack(side=tk.TOP)
+		self.control_frame_l.pack(side=tk.LEFT)
+		self.control_frame_r.pack(side=tk.LEFT)
+		self.frame.pack()
 
+	def setup_control_buttons(self):
+		pad_x,pad_y = 8, 0 # 8, 8
+		playbut = tk.Button(self.control_button_frame,text=">",padx=pad_x,pady=pad_y,
+			command=lambda:self.osc_client.play(self.layer,self.clip))
+		pausebut = tk.Button(self.control_button_frame,text="||",padx=(pad_x-1),pady=pad_y,
+			command=lambda:self.osc_client.pause(self.layer,self.clip))
+		rvrsbut = tk.Button(self.control_button_frame,text="<",padx=pad_x,pady=pad_y,
+			command=lambda:self.osc_client.reverse(self.layer,self.clip))
+		rndbut = tk.Button(self.control_button_frame,text="*",padx=pad_x,pady=pad_y,
+			command=lambda:self.osc_client.random_play(self.layer,self.clip))
+		clearbut = tk.Button(self.control_button_frame,text="X",padx=pad_x,pady=pad_y,
+			command=lambda:self.osc_client.clear(self.layer))
+
+		for but in [playbut, pausebut, rvrsbut, rndbut, clearbut]:
+			but.pack(side=tk.LEFT)
+
+	def setup_cue_buttons(self):
+		n_buts = NO_Q #len(self.clip.vars['qp'])
+		n_rows = 1
+		padding = self.width // 8 - 7
+		if n_buts > 4:
+			n_rows = n_buts // 4
+			if n_buts % 4 != 0: n_rows += 1 # yuck
+
+		for r in range(n_rows):
+			for c in range(4):
+				i = r*4 + c
+				but = tk.Button(self.cue_button_frame,text=str(i),padx=padding,pady=1,relief='flat') 
+				but.grid(row=r,column=c)
+				if i + 1 > n_buts: but.config(state='disabled')
+				self.cue_buttons.append(but)
 class ProgressBar:
-	def __init__(self,parent,root=None,width=330,height=50):
+	def __init__(self,root,width=300,height=50):
 		self.width, self.height = width, height
 		self._drag_data = {"x": 0, "y": 0, "item": None,"label":None}
 		self.drag_release_action = None # action to perform when moving qp line
@@ -49,12 +109,7 @@ class ProgressBar:
 		self.lines = [None]*NO_Q
 		self.labels = [None]*NO_Q
 
-		self.parent = parent
-
-		if not root:
-			self.root = parent.root
-		else:
-			self.root = root
+		self.root = root
 
 		self.frame = tk.Frame(self.root)
 		self.canvas_frame = tk.Frame(self.frame)
@@ -198,3 +253,13 @@ class ProgressBar:
 		# self.loop_update()
 		pass
 
+if __name__ == '__main__':
+	root = tk.Tk()
+	root.title('cc_test_0')
+	root.call('wm', 'attributes', '.', '-topmost', '1')
+	testgui = ClipControl(root,None,0)
+	# for k,v in testgui.magi.fun_store.items():
+	# 	print(k)#,v)
+	# testgui.magi.load('./test_save.xml')
+	
+	root.mainloop()
