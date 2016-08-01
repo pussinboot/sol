@@ -45,24 +45,22 @@ class Magi:
 		self.map_col_funs()
 		self.map_loop_funs()
 
+	###
+	# internal state funs
+
 	def track_vars(self):
 		# keeps track of our clip_positions
 		# and does looping
+		# and control hax (if i decide to add them)
+		#	need to keep track of another address
+		# gna need to think about how i want to do this
+		# because the way i did it was very hacky
+		# maybe just duplicate resomeme's control scheme myself
+		# everything will change anyways since i'm going with 
+		# a different controller style..
+		
 		def gen_update_fun(layer):
 			i = layer
-
-			def loop_check():
-				# returns current loop points for layer if they are complete
-				# otherwise returns none (if no clip selected etc)
-				cur_clip = self.clip_storage.current_clips[i]
-				if cur_clip is None: return
-				if not cur_clip.params['loop_on']: return
-				ls = cur_clip.params['loop_selection']
-				if ls < 0: return
-				# current loop points
-				cl = cur_clip.params['loop_points'][ls]
-				if None in cl: return
-				return [cur_clip, cl]
 
 			loop_lookup = {'f':1,'b':-1}
 
@@ -102,7 +100,7 @@ class Magi:
 					self.model.current_clip_pos[i] = new_val
 					#### #### #### #### #### #### #### ####
 					# this is where looping logic comes in
-					lp = loop_check()
+					lp = self.loop_check(i)
 					if lp is None: return
 					if lp[1][2] in lp_to_fun:
 						lp_to_fun[lp[1][2]](lp[1],new_val,lp[0])
@@ -114,6 +112,9 @@ class Magi:
 		for i in range(NO_LAYERS):
 			update_fun = gen_update_fun(i)
 			self.osc_server.map(self.model.clip_pos_addr[i],update_fun)
+
+	###
+	# helper funs
 
 	def select_clip(self,clip,layer):
 		# can't select a clip that's already been activated
@@ -148,6 +149,31 @@ class Magi:
 		if i >= len(the_col): return # dont access a clip that isnt there
 		self.select_clip(the_col[i],layer)
 
+	def loop_check(self,layer):
+		# returns current loop points for layer if they are complete
+		# otherwise returns none (if no clip selected etc)
+		cur_clip = self.clip_storage.current_clips[layer]
+		if cur_clip is None: return
+		if not cur_clip.params['loop_on']: return
+		ls = cur_clip.params['loop_selection']
+		if ls < 0: return
+		# current loop points
+		cl = cur_clip.params['loop_points'][ls]
+		if None in cl: return
+		return [cur_clip, cl]
+
+	def cur_range(self,layer):
+		# returns the current range for playback
+		# if just a clip (or no clip) then whole range 0 - 1
+		# if a clip is looping then the range of the loop
+		lc = self.loop_check(layer)
+		default_tor = [0.0, 1.0]
+		if lc is None: return default_tor
+		return lc[1][:2]
+
+	###
+	# mapping funs
+
 	def map_pb_funs(self):
 		# map playback functions
 		base_addr = "/magi/layer{}/playback/"
@@ -177,13 +203,7 @@ class Magi:
 
 		# for something as time-critical as seeking would rather reduce complexity
 		# by pre-instantiating the layer rather than doing regex and figuring it out
-
-		# def seek_fun(a,pos):
-		# 	sub_addr = a.split("/")[2]
-		# 	i = self.osc_server.find_num_in_addr(sub_addr)
-		# 	pos = self.osc_server.osc_value(pos)
-		# 	(addr, msg) = self.model.set_clip_pos(i,pos)
-		# 	self.osc_client.build_n_send(addr,msg)
+		# eh, just gonna apply same logic to everything that's running on osc_server
 
 		def gen_seek_fun(layer):
 			i = layer
@@ -443,13 +463,14 @@ class Magi:
 				# print('setting addr -- ',addresses[j])
 				self.osc_server.map(addresses[j].format(i),loop_funs[j])
 
-
-
 	def debug_search_res(self):
 		if not DEBUG:
 			return
 		for i,clip in enumerate(self.db.last_search):
 			print("[{}] {}".format(i,clip.name))
+
+	###
+	# "administrative" things
 
 	def start(self):
 		self.osc_server.start()
@@ -494,7 +515,6 @@ class Magi:
 			new_clip = clip.Clip(*parsed_clip_vals)
 			self.db.add_clip(new_clip)
 		self.db.searcher.refresh()
-
 
 			
 
@@ -677,35 +697,3 @@ if __name__ == '__main__':
 			testit.stop()
 			testit.save_to_file('./test_save.xml')
 			break
-
-### TO DO
-# add some methods to actually control what's going on 
-# ie from an ipython notebook that sends osc commands
-
-# clip_collection / organization
-# load a clip, clear a clip, playback speed (these rely on model)
-	# done, tho not sure how to implement loading of a clip
-	# maybe by passing f_name ? 
-# loop on/off, loop_type, activate cue point
-# set loop points, set cue points
-	# these 2 lines should be done after looping is implemented (go to line 56)
-
-####  important  ########
-#####  | | | |  ########
-###### V V V V ########
-# save/load library state from disk or whatnot
-# load savefile
-# (optionally) load from resolume xml file 
-#	everything else delete activation fun
-# 		so saving all params per clip regardless of composition
-# maybe something like
-
-# def add_resolume_clip(self,parsed_clip_params):
-# 	new_clip = clip.Clip(*parsed_clip_params)
-# 	if new_clip.f_name in self.db.clips:
-# 		self.db.clips[new_clip.f_name].command = new_clip.command
-# 		# maybe update thumbnail if it was none
-# 	else:
-# 		self.db.clips[new_clip.f_name] = new_clip
-
-# looping (duh), control hax (?)
