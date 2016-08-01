@@ -156,6 +156,13 @@ class Magi:
 		if i >= len(the_col): return # dont access a clip that isnt there
 		self.select_clip(the_col[i],layer)
 
+	def set_cue_point(layer,n,pos):
+		cur_clip = self.clip_storage.current_clips[layer]
+		if cur_clip is None: return
+		cue_points = cur_clip.params['cue_points']
+		if n > len(cue_points):	return
+		cur_clip.params['cue_points'][n] = pos
+
 	def loop_check(self,layer):
 		# returns current loop points for layer if they are complete
 		# otherwise returns none (if no clip selected etc)
