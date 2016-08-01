@@ -27,11 +27,18 @@ class Magi:
 		self.db = database.Database()
 		# inputs
 		self.osc_server = osc.OscServer()
+		self.fun_store = {} # dictionary containing address to function
+							# duplicating osc_server (allows for guis to do things)
+		def backup_map(addr,fun):
+			self.osc_server.map(addr,fun)
+			self.fun_store[addr] = fun
+
+		self.osc_server.mapp = backup_map
 		self.osc_client = osc.OscClient()
 		# model (resomeme for now)
 		self.model = model.Resolume(NO_LAYERS)
 		# gui (to-do)
-		self.gui = TerminalGui(self)
+		# self.gui = TerminalGui(self)
 
 		# clip storage 
 		self.clip_storage = ClipStorage()
@@ -58,7 +65,7 @@ class Magi:
 		# maybe just duplicate resomeme's control scheme myself
 		# everything will change anyways since i'm going with 
 		# a different controller style..
-		
+
 		def gen_update_fun(layer):
 			i = layer
 
@@ -111,7 +118,7 @@ class Magi:
 
 		for i in range(NO_LAYERS):
 			update_fun = gen_update_fun(i)
-			self.osc_server.map(self.model.clip_pos_addr[i],update_fun)
+			self.osc_server.mapp(self.model.clip_pos_addr[i],update_fun)
 
 	###
 	# helper funs
@@ -243,19 +250,19 @@ class Magi:
 				osc_cmd_msg = self.osc_client.build_msg(addr,msg)
 				cmd_fun = gen_pb_fun(osc_cmd_msg,i,fun)
 				map_addr = base_addr.format(i) + fun
-				self.osc_server.map(map_addr,cmd_fun)
+				self.osc_server.mapp(map_addr,cmd_fun)
 
 			seek_addr = base_addr.format(i) + 'seek'
 			seek_fun = gen_seek_fun(i)
-			self.osc_server.map(seek_addr,seek_fun)
+			self.osc_server.mapp(seek_addr,seek_fun)
 
 			clear_addr = base_addr.format(i) + 'clear'
 			clear_fun = gen_clear_fun(i)
-			self.osc_server.map(clear_addr,clear_fun)	
+			self.osc_server.mapp(clear_addr,clear_fun)	
 
 			spd_addr = base_addr.format(i) + 'speed'
 			spd_fun = gen_spd_fun(i)
-			self.osc_server.map(spd_addr,spd_fun)		
+			self.osc_server.mapp(spd_addr,spd_fun)		
 
 	def map_search_funs(self):
 		# perform search
@@ -264,7 +271,7 @@ class Magi:
 			search_term = str(msg).strip("'.,")
 			self.db.search(search_term)
 			self.debug_search_res()
-		self.osc_server.map(search_addr,do_search)
+		self.osc_server.mapp(search_addr,do_search)
 
 		# select clip from last search res to certain layer
 		select_addr = "/magi/search/select/layer{}"
@@ -275,7 +282,7 @@ class Magi:
 				clip = self.db.last_search[i]
 				self.select_clip(clip,layer)
 		for i in range(NO_LAYERS):
-			self.osc_server.map(select_addr.format(i),select_search_res)
+			self.osc_server.mapp(select_addr.format(i),select_search_res)
 
 	def map_col_funs(self):
 		# select from col
@@ -288,7 +295,7 @@ class Magi:
 			return fun_tor
 		for i in range(NO_LAYERS):
 			sel_fun = gen_sel_fun(i)
-			self.osc_server.map(col_select_addr.format(i),sel_fun)
+			self.osc_server.mapp(col_select_addr.format(i),sel_fun)
 		def add_col(_,msg):
 			name = self.osc_server.osc_value(msg)
 			if not isinstance(name,str):
@@ -336,7 +343,7 @@ class Magi:
 
 		for key in col_map:
 			col_addr = "/magi/cur_col/" + key
-			self.osc_server.map(col_addr,col_map[key])
+			self.osc_server.mapp(col_addr,col_map[key])
 
 	def map_loop_funs(self):
 		# map loop & cue point functions
@@ -461,7 +468,7 @@ class Magi:
 			loop_funs = gen_loop_funs(i)
 			for j in range(len(addresses)):
 				# print('setting addr -- ',addresses[j])
-				self.osc_server.map(addresses[j].format(i),loop_funs[j])
+				self.osc_server.mapp(addresses[j].format(i),loop_funs[j])
 
 	def debug_search_res(self):
 		if not DEBUG:
@@ -686,6 +693,7 @@ if __name__ == '__main__':
 	# testit.save_to_file('./test_save.xml')
 
 	testit.load('./test_save.xml')
+	testit.gui = TerminalGui(testit)
 	testit.start()
 	import time
 	while True:
