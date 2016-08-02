@@ -2,6 +2,7 @@
 test gui made with tkinter and re-using many parts 
 from past sol versions
 """
+NO_LAYERS = 2
 
 import tkinter as tk
 import tkinter.filedialog as tkfd
@@ -15,16 +16,23 @@ class MainGui:
 		# tk
 		self.root = root
 		self.mainframe = tk.Frame(root,pady=0,padx=0)
-		self.cc_frame = tk.Frame(root,pady=0,padx=0)
+		self.cc_frame = tk.Frame(self.mainframe,pady=0,padx=0)
+		self.cc_frames = []
 
 		# sol
 		self.magi = Magi()
 		self.magi.gui = self
-		self.c_c = clip_control.ClipControl(self.cc_frame,self.magi,0)
-
+		self.clip_controls = []
+		for i in range(NO_LAYERS):
+			new_frame = tk.Frame(self.cc_frame,pady=0,padx=0)
+			self.clip_controls.append(clip_control.ClipControl(new_frame,self.magi,i))
+			self.cc_frames.append(new_frame)
 		# pack it
 		self.mainframe.pack()
 		self.cc_frame.pack(side=tk.TOP,fill=tk.X)
+
+		for frame in self.cc_frames:
+			frame.pack(side=tk.LEFT)
 		
 	def start(self):
 		self.magi.start()
@@ -36,11 +44,15 @@ class MainGui:
 
 	def update_clip(self,layer,clip):
 		# if clip is none.. clear
-		pass
+		self.clip_controls[layer].update_clip(clip)
 
 	def update_clip_params(self,layer,clip,param):
 		# dispatch things according to param
-		pass
+		self.clip_controls[layer].update_clip_params(clip,param)
+
+	def update_cur_pos(self,layer,pos):
+		# pass along the current position
+		self.clip_controls[layer].update_cur_pos(pos)
 
 	def update_search(self):
 		# display search results
