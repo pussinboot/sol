@@ -21,6 +21,8 @@ class Magi:
 
 	this is basically an osc server that also keeps track of
 	the state, so every action has an associated address 
+
+
 	"""
 	def __init__(self):
 		# database
@@ -38,7 +40,15 @@ class Magi:
 		# model (resomeme for now)
 		self.model = model.Resolume(NO_LAYERS)
 		# gui (to-do)
+		self.gui = None
 		# self.gui = TerminalGui(self)
+		# gui needs to implement
+		# update_clip - select or clear clip
+		# update_clip_params - takes param and updates that part of gui..
+		# collection funs
+		# 	select, add, remove, go left, go right, swap
+
+
 
 		# clip storage 
 		self.clip_storage = ClipStorage()
@@ -105,6 +115,9 @@ class Magi:
 					new_val = float(msg)
 					# if DEBUG: print("clip_{0} : {1}".format(i,new_val))
 					self.model.current_clip_pos[i] = new_val
+					####
+					# may need to add sending new_val to gui as well
+
 					#### #### #### #### #### #### #### ####
 					# this is where looping logic comes in
 					lp = self.loop_check(i)
@@ -142,12 +155,14 @@ class Magi:
 		pd = clip.params['play_direction']
 		(pb_addr, pb_msg) = play_dir_to_fun[pd](layer)
 		self.osc_client.build_n_send(pb_addr,pb_msg)
+		if self.gui is not None: self.gui.update_clip(layer,clip)
 
 	def clear_clip(self,layer):
 		model_addr, model_msg = self.model.clear_clip(layer)
 		self.osc_client.build_n_send(model_addr,model_msg)
 		self.clip_storage.current_clips[layer] = None
 		self.model.current_clip_pos[layer] = None # clear cur pos
+		if self.gui is not None: self.gui.update_clip(layer,None)
 
 	def select_col_clip(self,i,layer,col_i=None):
 		if col_i is None:
@@ -162,6 +177,9 @@ class Magi:
 		cue_points = cur_clip.params['cue_points']
 		if n > len(cue_points):	return
 		cur_clip.params['cue_points'][n] = pos
+		if self.gui is not None: self.gui.update_clip_params(layer,cur_clip,
+															 'cue_points')
+
 
 	def loop_check(self,layer):
 		# returns current loop points for layer if they are complete
@@ -246,8 +264,10 @@ class Magi:
 				self.osc_client.build_n_send(spd_addr,spd_msg)
 				# update our clip representation
 				cur_clip = self.clip_storage.current_clips[i]
-				if cur_clip is not None:
-					cur_clip.params['playback_speed'] = n
+				if cur_clip is None: return
+				cur_clip.params['playback_speed'] = n
+				if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
+															   'playback_speed')
 			return spd_fun
 
 
@@ -278,6 +298,7 @@ class Magi:
 			search_term = str(msg).strip("'.,")
 			self.db.search(search_term)
 			self.debug_search_res()
+			if self.gui is not None: self.gui.update_search()
 		self.osc_server.mapp(search_addr,do_search)
 
 		# select clip from last search res to certain layer
