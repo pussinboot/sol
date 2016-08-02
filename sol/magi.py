@@ -45,7 +45,9 @@ class Magi:
 		# gui needs to implement
 		# update_clip - select or clear clip
 		# update_clip_params - takes param and updates that part of gui..
-		# collection funs
+		# update_current_pos
+		# update_search -- TODO
+		# collection funs -- TODO
 		# 	select, add, remove, go left, go right, swap
 
 
@@ -97,16 +99,21 @@ class Magi:
 					self.osc_client.build_n_send(addr,msg)
 
 			def bounce_loop(lp,pos,cur_clip):
+				# flip direction and also scram to the right place
 				play_dir = common_loop(cur_clip)
 				if play_dir is None: return
-				if play_dir > 0 and pos - lp[1] >= 0:
+				if pos - lp[1] > 0:
 					addr, msg = self.model.reverse(i)
 					self.osc_client.build_n_send(addr,msg)
 					cur_clip.params['play_direction'] = 'b'
-				elif play_dir < 0 and pos - lp[0] <= 0:
+					addr, msg = self.model.set_clip_pos(i,lp[1])
+					self.osc_client.build_n_send(addr,msg)
+				elif pos - lp[0] < 0:
 					addr, msg = self.model.play(i)
 					self.osc_client.build_n_send(addr,msg)
 					cur_clip.params['play_direction'] = 'f'
+					addr, msg = self.model.set_clip_pos(i,lp[0])
+					self.osc_client.build_n_send(addr,msg)
 
 			lp_to_fun = {'d':default_loop,'b':bounce_loop}
 
@@ -115,9 +122,8 @@ class Magi:
 					new_val = float(msg)
 					# if DEBUG: print("clip_{0} : {1}".format(i,new_val))
 					self.model.current_clip_pos[i] = new_val
-					####
-					# may need to add sending new_val to gui as well
-
+					# send new_val to gui as well
+					if self.gui is not None: self.gui.update_cur_pos(i,new_val)
 					#### #### #### #### #### #### #### ####
 					# this is where looping logic comes in
 					lp = self.loop_check(i)
@@ -140,6 +146,7 @@ class Magi:
 		# can't select a clip that's already been activated
 		# (at least in resolume..)
 		if clip in self.clip_storage.current_clips: return
+		# if DEBUG: print(clip.name)
 		# do model prep work
 		model_addr, model_msg = self.model.select_clip(layer)
 		self.osc_client.build_n_send(model_addr,model_msg)
@@ -171,7 +178,7 @@ class Magi:
 		if i >= len(the_col): return # dont access a clip that isnt there
 		self.select_clip(the_col[i],layer)
 
-	def set_cue_point(layer,n,pos):
+	def set_cue_point(self,layer,n,pos):
 		cur_clip = self.clip_storage.current_clips[layer]
 		if cur_clip is None: return
 		cue_points = cur_clip.params['cue_points']
@@ -223,9 +230,10 @@ class Magi:
 					if self.osc_server.osc_value(n):
 						self.osc_client.send(osc_cmd)
 						cur_clip = self.clip_storage.current_clips[i]
-						if cur_clip is not None:
-							cur_clip.params['play_direction'] =  \
-											play_fun_to_dir[key]
+						if cur_clip is None: return
+						cur_clip.params['play_direction'] = play_fun_to_dir[key]
+						if self.gui is None: return
+						self.gui.update_clip_params(i,cur_clip,'play_direction')
 				except:
 					if DEBUG: print('oh no',osc_cmd)
 					pass
