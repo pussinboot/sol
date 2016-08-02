@@ -76,9 +76,11 @@ class ClipControl:
 		for fun_name in pb_fun_names:
 			pb_funs.append(gen_pb_fun(fun_name))
 
-		cue_funs = [None] * 2
-		cue_funs[0] = self.backend.fun_store[gen_addr + '/cue']
-		cue_funs[1] = self.backend.fun_store[gen_addr + '/cue/clear']
+		cue_funs = [self.backend.fun_store[gen_addr + '/cue'],
+					self.backend.fun_store[gen_addr + '/cue/clear']]
+
+		loop_set_funs = [self.backend.fun_store[gen_addr + '/loop/set/a'],
+						 self.backend.fun_store[gen_addr + '/loop/set/b']]
 
 
 		# info
@@ -93,6 +95,9 @@ class ClipControl:
 		self.timeline.seek_action = seek
 
 		self.timeline.check_cur_range = lambda: self.backend.cur_range(self.layer)
+
+		self.timeline.set_loop_funs = loop_set_funs
+		self.timeline.cue_fun = cue_funs[0]
 
 		# controls
 		# top part is cues
@@ -200,15 +205,14 @@ class ProgressBar:
 		self.drag_release_action = None # action to perform when moving qp line
 		self.seek_action = None # action to perform when moving the progress line
 		self.check_cur_range = None
-
+		self.set_loop_funs = None
+		self.cue_fun = None
 
 		self.pbar_pos = 0
 		self.refresh_interval = 100
 
 		self.lines = [None]*NO_Q
 		self.labels = [None]*NO_Q
-		self.left_lp = None
-		self.right_lp = None
 
 		self.root = root
 
@@ -227,6 +231,10 @@ class ProgressBar:
 		self.canvas.pack(anchor=tk.W)
 		self.canvas_frame.pack(anchor=tk.W,side=tk.LEFT,expand=tk.YES,fill=tk.BOTH)
 	
+		# loop point stuff
+		self.left_lp = self.canvas.create_rectangle(0,height+30,10,height+15,fill='#555',tag='lp')
+		self.right_lp = self.canvas.create_rectangle(width,height+30,width-10,height+15,fill='#555',tag='lp')
+		self.lp_line = self.canvas.create_line(10,height+23,width-10,height+23,fill='#ccc',width=3,dash=(2,))
 		self.frame.pack(anchor=tk.W,side=tk.TOP,expand=tk.YES,fill=tk.BOTH)
 		self.actions_binding()
 		self.refresh()
@@ -240,6 +248,9 @@ class ProgressBar:
 		self.canvas.tag_bind("line","<ButtonPress-3>",self.drag_begin)
 		self.canvas.tag_bind("line","<ButtonRelease-3>",self.drag_end)
 		self.canvas.tag_bind("line","<B3-Motion>",self.drag)
+		self.canvas.tag_bind("lp","<ButtonPress-3>",self.drag_begin_lp)
+		self.canvas.tag_bind("lp","<ButtonRelease-3>",self.drag_end_lp)
+		self.canvas.tag_bind("lp","<B3-Motion>",self.drag_lp)
 		self.canvas.tag_bind("line","<ButtonPress-1>",self.find_nearest)
 		self.canvas.tag_bind("label","<ButtonPress-1>",self.find_nearest)
 
@@ -266,10 +277,16 @@ class ProgressBar:
 	def drag_begin(self, event):
 		# record the item and its location
 		item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y),halo=5)[0]
-		if 'line' not in self.canvas.gettags(item):
-			return
+		if 'line' not in self.canvas.gettags(item): return
 		self._drag_data["item"] = item
 		self._drag_data["label"] = self.labels[self.lines.index(item)]
+		self._drag_data["x"] = event.x
+
+	def drag_begin_lp(self, event):
+		# record the item and its location
+		item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y),halo=5)[0]
+		if 'lp' not in self.canvas.gettags(item): return
+		self._drag_data["item"] = item
 		self._drag_data["x"] = event.x
 
 	def drag_end(self, event):
@@ -287,16 +304,35 @@ class ProgressBar:
 		self._drag_data["label"] = None
 		self._drag_data["x"] = 0
 
+	def drag_end_lp(self, event):
+		if self._drag_data["item"] is None: return
+		newx = self.canvas.canvasx(event.x)
+		if newx < 0:
+			newx = 0
+		elif newx > self.width:
+			newx = self.width - 2
+		if self.set_loop_funs is not None:
+			if self._drag_data["item"] == self.left_lp: 
+				self.set_loop_funs[0]('',newx/self.width)
+			else:
+				self.set_loop_funs[1]('',newx/self.width)
+
+		# reset the drag information
+		self._drag_data["item"] = None
+		self._drag_data["x"] = 0
+		self.loop_update()
+
+
 	def drag(self, event):
 		# compute how much this object has moved
 		delta_x = event.x - self._drag_data["x"]
 		# move the object the appropriate amount
 		if self._drag_data["item"]:
-			curx = self.canvas.coords(self._drag_data["item"])[0]
-			if curx + delta_x < 0:
+			coord = self.canvas.coords(self._drag_data["item"])
+			if coord[0] + delta_x < 0:
 				delta_x = -curx
-			elif curx + delta_x > self.width:
-				delta_x = self.width - curx
+			elif coord[2] + delta_x > self.width:
+				delta_x = self.width - coord[2]
 
 			self.canvas.move(self._drag_data["item"], delta_x, 0)# delta_y)
 			for label_item in self._drag_data["label"]: 
@@ -305,10 +341,33 @@ class ProgressBar:
 		# record the new position
 		self._drag_data["x"] = event.x
 
+	def drag_lp(self, event):
+		# compute how much this object has moved
+		delta_x = event.x - self._drag_data["x"]
+		# move the object the appropriate amount
+		if self._drag_data["item"]:
+			coord = self.canvas.coords(self._drag_data["item"])
+			if coord[0] + delta_x < 0:
+				delta_x = -coord[0]
+			elif coord[2] + delta_x > self.width:
+				delta_x = self.width - coord[2]
+
+			self.canvas.move(self._drag_data["item"], delta_x, 0)# delta_y)
+			
+		# record the new position
+		self._drag_data["x"] = event.x
+
 	def find_nearest(self,event):
+		if self.cue_fun is None: return
 		item = self.canvas.find_closest(event.x, event.y,halo=5)[0]
-		if any(tag in ['line','label'] for tag in self.canvas.gettags(item)):
-			x_to_send = self.canvas.coords(item)[0]
+		print(event.x,event.y)
+		if 'label' in self.canvas.gettags(item):
+			item = self.canvas.find_closest(event.x - 10, event.y - 20,halo=5)[0]
+		if 'line' in self.canvas.gettags(item):
+			i = self.lines.index(item)
+		else:
+			return
+		self.cue_fun('',i)
 			# self.parent.osc_client.build_n_send(self.send_addr,x_to_send/self.width)
 
 	# draw lines for cue points
@@ -348,7 +407,13 @@ class ProgressBar:
 		# coordz = self.canvas.bbox('temploop')
 		lw = 3 # linewidth
 		x1, x2 = check[0] * self.width, check[1] * self.width
-		self.canvas.coords(self.looprect,x1,0,x2,self.height)
+		# top loop rect
+		# self.canvas.coords(self.looprect,x1,0,x2,self.height)
+		# bottom loop points
+		self.canvas.coords(self.left_lp,x1,self.height+30,x1+10,self.height+15)
+		self.canvas.coords(self.right_lp,x2-10,self.height+30,x2,self.height+15)
+		self.canvas.coords(self.lp_line,x1+10,self.height+23,x2-10,self.height+23)
+
 		# self.canvas.coords(self.looprect,coordz[0]+lw,0,coordz[2]-lw,self.height)
 		# for line in lelines:
 		# 	self.canvas.dtag(line,'temploop')
@@ -356,4 +421,3 @@ class ProgressBar:
 	def refresh(self):
 		# refresh where things are on screen if vars have changed
 		self.loop_update()
-		pass
