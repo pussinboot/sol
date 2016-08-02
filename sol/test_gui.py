@@ -19,6 +19,7 @@ class MainGui:
 
 		# sol
 		self.magi = Magi()
+		self.magi.gui = self
 		self.c_c = clip_control.ClipControl(self.cc_frame,self.magi,0)
 
 		# pack it
@@ -31,6 +32,19 @@ class MainGui:
 	def quit(self):
 		self.magi.stop()
 
+	# funs required by magi
+
+	def update_clip(self,layer,clip):
+		# if clip is none.. clear
+		pass
+
+	def update_clip_params(self,layer,clip,param):
+		# dispatch things according to param
+		pass
+
+	def update_search(self):
+		# display search results
+		pass
 
 
 
