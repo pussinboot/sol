@@ -21,8 +21,11 @@ class ClipControl:
 			'cue_points' : self.update_cues,
 			'loop_points' : self.update_loop,
 			'loop_on' : self.update_loop,
+			'loop_type' : self.update_loop,
 			'loop_selection' : self.update_loop
 		}
+
+		self.refresh_looping()
 
 	def update_clip(self,clip):
 		if clip is None:
@@ -45,6 +48,7 @@ class ClipControl:
 
 	def update_loop(self,clip):
 		self.timeline.loop_update()
+		self.refresh_looping(clip)
 
 	def setup_gui(self):
 		# top lvl
@@ -52,7 +56,9 @@ class ClipControl:
 		self.info_frame = tk.Frame(self.frame) # name, mayb add tags/way to edit/add/delete these things
 		self.timeline_frame = tk.Frame(self.frame)
 		self.control_frame = tk.Frame(self.frame)
-		self.cue_button_frame = tk.Frame(self.control_frame)
+		self.cue_or_loop_frame = tk.Frame(self.control_frame) 
+		self.cue_button_frame = tk.Frame(self.cue_or_loop_frame)
+		self.loop_select_frame = tk.Frame(self.cue_or_loop_frame)
 		self.control_frame_l = tk.Frame(self.control_frame)
 		self.control_frame_r = tk.Frame(self.control_frame)
 		self.control_button_frame = tk.Frame(self.control_frame_r)
@@ -80,7 +86,10 @@ class ClipControl:
 					self.backend.fun_store[gen_addr + '/cue/clear']]
 
 		loop_set_funs = [self.backend.fun_store[gen_addr + '/loop/set/a'],
-						 self.backend.fun_store[gen_addr + '/loop/set/b']]
+						 self.backend.fun_store[gen_addr + '/loop/set/b'],
+						 self.backend.fun_store[gen_addr + '/loop/on_off'],
+						 self.backend.fun_store[gen_addr + '/loop/type'],
+						 self.backend.fun_store[gen_addr + '/loop/select']]
 
 
 		# info
@@ -89,25 +98,27 @@ class ClipControl:
 		self.name_var.set('------')
 		# timeline
 		self.timeline = ProgressBar(self.timeline_frame,self.width)
-		
+
 		self.timeline.drag_release_action = set_cue
-		
 		self.timeline.seek_action = seek
-
-		self.timeline.check_cur_range = lambda: self.backend.cur_range(self.layer)
-
-		self.timeline.set_loop_funs = loop_set_funs
+		self.timeline.check_cur_range = lambda: self.backend.loop_get(self.layer)
+		self.timeline.set_loop_funs = loop_set_funs[:2]
 		self.timeline.cue_fun = cue_funs[0]
 
 		# controls
-		# top part is cues
+		# top part is cues / loop select
 		# left side is looping stuff
 		# right side is playback
 
+		# top cue
 		self.cue_buttons = []
 		self.cue_active_funs = []
 		self.setup_cue_buttons(cue_funs)
 
+		# top loop
+
+		# left loop
+		self.setup_left_looping(loop_set_funs[2:])
 		# self.looping_controls = []
 		# self.looping_vars = {}
 		# self.setup_looping()
@@ -121,7 +132,10 @@ class ClipControl:
 		self.timeline_frame.pack(side=tk.TOP)
 		self.control_button_frame.pack(side=tk.BOTTOM)
 		self.control_frame.pack(side=tk.TOP)
-		self.cue_button_frame.pack(side=tk.TOP)
+		self.cue_or_loop_frame.pack(side=tk.TOP)
+		self.cue_button_frame.grid(row=0, column=0, sticky='news')
+		self.loop_select_frame.grid(row=0, column=0, sticky='news')
+		self.cue_button_frame.tkraise()
 		self.control_frame_l.pack(side=tk.LEFT)
 		self.control_frame_r.pack(side=tk.LEFT)
 		self.frame.pack()
@@ -176,6 +190,102 @@ class ClipControl:
 				self.cue_buttons.append(but)
 				self.cue_active_funs.append(gen_active_fun(i))
 
+	def setup_left_looping(self,loop_set_funs):
+		self.loop_on_off = False
+		self.selecting_loop = False
+		self.loop_type_tk = tk.StringVar()
+		self.loop_select_tk = tk.StringVar()
+
+		self.loop_type_convert = {'d':'dflt','b':'bnce'}
+
+		loop_on_off_fun = loop_set_funs[0]
+		loop_type_fun = loop_set_funs[1]
+		loop_select_fun = loop_set_funs[2]
+
+		loop_type_poss = ['dflt','bnce']
+		self.loop_type_tk.set(loop_type_poss[0])
+		loop_poss = ["-1"] + [str(i) for i in range(NO_Q)]
+
+		# button / selection funs
+		def loop_on_off_toggle(*args):
+			self.loop_on_off = not self.loop_on_off
+			self.toggle_behavior_loop_on_off()
+			loop_on_off_fun('',True) # toggle needs to be true to do it
+
+		def loop_select_toggle(*args):
+			self.selecting_loop= not self.selecting_loop
+			self.toggle_behavior_loop_select()
+
+		def loop_type_set(*args):
+			selected_type = self.loop_type_tk.get()
+			loop_type_fun('',selected_type[0])
+
+		def loop_select_set(*args):
+			selection = self.loop_select_tk.get()
+			loop_select_fun('',selection)
+
+		self.loop_type_tk.trace('w',loop_type_set)
+		self.loop_select_tk.trace('w',loop_select_set)
+
+		self.loop_on_off_but = tk.Button(self.control_frame_l,text='loop on',
+										 pady=2,width=10,command=loop_on_off_toggle) 
+		self.selecting_loop_but = tk.Button(self.control_frame_l,text='select',
+											pady=2,width=10, command=loop_select_toggle) 
+
+		self.loop_select_dropdown = tk.OptionMenu(self.control_frame_l,self.loop_select_tk,*loop_poss)
+		self.loop_select_dropdown.config(width=4)
+
+		self.loop_type_dropdown = tk.OptionMenu(self.control_frame_l,self.loop_type_tk,*loop_type_poss)
+		self.loop_type_dropdown.config(width=4)
+
+
+		# pack it
+		self.loop_on_off_but.grid(row=0,column=0)
+		self.selecting_loop_but.grid(row=1,column=0)
+		self.loop_type_dropdown.grid(row=0,column=1)
+		self.loop_select_dropdown.grid(row=1,column=1)
+
+
+	def toggle_behavior_loop_on_off(self):
+		if self.loop_on_off:
+			self.loop_on_off_but.config(relief='sunken')
+		else:
+			self.loop_on_off_but.config(relief='raised')
+
+	def toggle_behavior_loop_select(self):
+		if self.selecting_loop:
+			self.selecting_loop_but.config(relief='sunken')
+			self.loop_select_frame.tkraise()
+		else:
+			self.selecting_loop_but.config(relief='raised')
+			self.cue_button_frame.tkraise()
+
+	def refresh_looping(self,clip=None):
+		control_buts = [self.loop_on_off_but,self.selecting_loop_but,
+						self.loop_type_dropdown, self.loop_select_dropdown]
+		if clip is None:
+			for but in control_buts:
+				but.config(state='disabled')
+				but.config(relief='flat')
+				self.loop_type_tk.set(self.loop_type_convert['d'])
+				self.loop_select_tk.set('-1')
+			return
+		for but in control_buts:
+			but.config(state='active')
+			but.config(relief='raised')
+		self.loop_on_off = clip.params['loop_on']
+		self.toggle_behavior_loop_on_off()
+		self.toggle_behavior_loop_select()
+		cl = clip.params['loop_selection']
+		self.loop_select_tk.set(str(cl))
+		clp = clip.params['loop_points'][cl]
+		if clp is None:
+			self.loop_type_tk.set(self.loop_type_convert['d'])
+		else:
+			self.loop_type_tk.set(self.loop_type_convert[clp[2]])
+		
+
+
 	def update_cues(self,clip):
 		if clip is None:
 			for i in range(NO_Q):
@@ -200,42 +310,51 @@ class ClipControl:
 
 class ProgressBar:
 	def __init__(self,root,width=300,height=33):
+		# data
 		self.width, self.height = width, height
 		self._drag_data = {"x": 0, "y": 0, "item": None,"label":None}
-		self.drag_release_action = None # action to perform when moving qp line
-		self.seek_action = None # action to perform when moving the progress line
-		self.check_cur_range = None
-		self.set_loop_funs = None
-		self.cue_fun = None
-
 		self.pbar_pos = 0
 		self.refresh_interval = 100
 
+		# external functions
+		self.drag_release_action = None # action to perform when moving qp line
+		self.seek_action = None # action to perform when moving the progress line
+		self.check_cur_range = None # check the current loop range
+		self.set_loop_funs = None # functions for setting loop points a & b
+		self.cue_fun = None # function for activating/setting cue points
+
+		# for cue points
 		self.lines = [None]*NO_Q
 		self.labels = [None]*NO_Q
 
+		# tk stuff
 		self.root = root
-
 		self.frame = tk.Frame(self.root)
 		self.canvas_frame = tk.Frame(self.frame)
 		self.canvas = tk.Canvas(self.canvas_frame,width=width,height=height+30,bg="#aaa",scrollregion=(0,0,width,height))
 		
 		self.canvasbg = self.canvas.create_rectangle(0,0,width,height,fill='black',tag='bg')
 		self.loopbg = self.canvas.create_rectangle(0,height+30,width,height+15,fill='#333',tag='bg')
-		self.hbar = tk.Scrollbar(self.canvas_frame,orient=tk.HORIZONTAL)
-		self.hbar.config(command=self.canvas.xview)
-		self.canvas.config(xscrollcommand=self.hbar.set)
+
+		# for scrolling ?
+		# self.hbar = tk.Scrollbar(self.canvas_frame,orient=tk.HORIZONTAL)
+		# self.hbar.config(command=self.canvas.xview)
+		# self.canvas.config(xscrollcommand=self.hbar.set)
 
 		self.pbar = self.canvas.create_line(0,0,0,height,fill='gray',width=3)
-		self.looprect = self.canvas.create_rectangle(0,0,0,0,fill='gray',stipple='gray12',tag='bg')
-		self.canvas.pack(anchor=tk.W)
-		self.canvas_frame.pack(anchor=tk.W,side=tk.LEFT,expand=tk.YES,fill=tk.BOTH)
 	
 		# loop point stuff
 		self.left_lp = self.canvas.create_rectangle(0,height+30,10,height+15,fill='#555',tag='lp')
 		self.right_lp = self.canvas.create_rectangle(width,height+30,width-10,height+15,fill='#555',tag='lp')
-		self.lp_line = self.canvas.create_line(10,height+23,width-10,height+23,fill='#ccc',width=3,dash=(2,))
+		# self.looprect = self.canvas.create_rectangle(0,0,0,0,fill='gray',stipple='gray12',tag='bg')
+		self.outside_loop_rect_l = self.canvas.create_rectangle(0,0,0,0,fill='#333',stipple='gray50',tag='bg')
+		self.outside_loop_rect_r = self.canvas.create_rectangle(0,0,0,0,fill='#333',stipple='gray50',tag='bg')
+		self.lp_line = self.canvas.create_line(10,height+23,width-10,height+23,fill='#ccc',width=2,dash=(2,))
+		
+		self.canvas.pack(anchor=tk.W)
+		self.canvas_frame.pack(anchor=tk.W,side=tk.LEFT,expand=tk.YES,fill=tk.BOTH)
 		self.frame.pack(anchor=tk.W,side=tk.TOP,expand=tk.YES,fill=tk.BOTH)
+
 		self.actions_binding()
 		self.refresh()
 		self.root.after(self.refresh_interval,self.update_pbar)
@@ -322,7 +441,6 @@ class ProgressBar:
 		self._drag_data["x"] = 0
 		self.loop_update()
 
-
 	def drag(self, event):
 		# compute how much this object has moved
 		delta_x = event.x - self._drag_data["x"]
@@ -337,7 +455,6 @@ class ProgressBar:
 			self.canvas.move(self._drag_data["item"], delta_x, 0)# delta_y)
 			for label_item in self._drag_data["label"]: 
 				self.canvas.move(label_item, delta_x, 0)
-			# self.loop_update()
 		# record the new position
 		self._drag_data["x"] = event.x
 
@@ -351,16 +468,13 @@ class ProgressBar:
 				delta_x = -coord[0]
 			elif coord[2] + delta_x > self.width:
 				delta_x = self.width - coord[2]
-
 			self.canvas.move(self._drag_data["item"], delta_x, 0)# delta_y)
-			
 		# record the new position
 		self._drag_data["x"] = event.x
 
 	def find_nearest(self,event):
 		if self.cue_fun is None: return
 		item = self.canvas.find_closest(event.x, event.y,halo=5)[0]
-		print(event.x,event.y)
 		if 'label' in self.canvas.gettags(item):
 			item = self.canvas.find_closest(event.x - 10, event.y - 20,halo=5)[0]
 		if 'line' in self.canvas.gettags(item):
@@ -368,10 +482,9 @@ class ProgressBar:
 		else:
 			return
 		self.cue_fun('',i)
-			# self.parent.osc_client.build_n_send(self.send_addr,x_to_send/self.width)
 
-	# draw lines for cue points
 	def add_line(self,x_float,i):
+		# draw lines for cue points
 		x_coord = x_float*self.width
 		if self.lines[i] is not None: return
 		self.lines[i] = self.canvas.create_line(x_coord,0,x_coord,self.height,
@@ -392,31 +505,31 @@ class ProgressBar:
 
 	def loop_update(self,clip=None):
 		if self.check_cur_range is None: return
+		things_to_clear = [self.lp_line,
+			self.outside_loop_rect_l,self.outside_loop_rect_r]
 		check = self.check_cur_range()
 		if check is None: 
-			self.canvas.coords(self.looprect,0,0,0,0)
+			for thing in things_to_clear:
+				self.canvas.coords(thing,0,0,0,0)
 			return
 
+		if check[1][0] is None: check[1][0] = 0
+		if check[1][1] is None: check[1][1] = 1.0
 
-		# lelines = [self.lines[i] for i in clip.params['lp'] if self.lines[i] is not None]
-		# if not any(lelines) or len(lelines) < 2: # if the ii activated in the looping are not lines no need to draw this
-			# self.canvas.coords(self.looprect,0,0,0,0)
-			# return
-		# for line in lelines:
-		# 	self.canvas.addtag_withtag('temploop',line)
-		# coordz = self.canvas.bbox('temploop')
-		lw = 3 # linewidth
-		x1, x2 = check[0] * self.width, check[1] * self.width
-		# top loop rect
-		# self.canvas.coords(self.looprect,x1,0,x2,self.height)
+		x1, x2 = check[1][0] * self.width, check[1][1] * self.width
+
+		if not check[0]:
+			for thing in things_to_clear:
+				self.canvas.coords(thing,0,0,0,0)
+		else:
+			# black out outside of range?
+			self.canvas.coords(self.outside_loop_rect_l,0,0,x1,self.height)
+			self.canvas.coords(self.outside_loop_rect_r,x2,0,self.width,self.height)
+			self.canvas.coords(self.lp_line,x1+10,self.height+23,x2-10,self.height+23)
+			
 		# bottom loop points
 		self.canvas.coords(self.left_lp,x1,self.height+30,x1+10,self.height+15)
 		self.canvas.coords(self.right_lp,x2-10,self.height+30,x2,self.height+15)
-		self.canvas.coords(self.lp_line,x1+10,self.height+23,x2-10,self.height+23)
-
-		# self.canvas.coords(self.looprect,coordz[0]+lw,0,coordz[2]-lw,self.height)
-		# for line in lelines:
-		# 	self.canvas.dtag(line,'temploop')
 
 	def refresh(self):
 		# refresh where things are on screen if vars have changed
