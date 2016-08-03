@@ -396,7 +396,7 @@ class Magi:
 				cp = cue_points[n]
 				if cp is not None:
 					# check that it's within the current range
-					check = self.cur_range()
+					check = self.cur_range(i)
 					if check is not None:
 						if cp > check[1] or cp < check[0]:
 							return
