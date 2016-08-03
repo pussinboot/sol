@@ -22,7 +22,8 @@ class ClipControl:
 			'loop_points' : self.update_loop,
 			'loop_on' : self.update_loop,
 			'loop_type' : self.update_loop,
-			'loop_selection' : self.update_loop
+			'loop_selection' : self.update_loop,
+			'playback_speed' : self.update_speed
 		}
 
 		self.refresh_looping()
@@ -41,6 +42,13 @@ class ClipControl:
 		else:
 			for fun in self.param_dispatch.values():
 				fun(clip)
+
+	def update_speed(self,clip):
+		if clip is None:
+			spd = 0.0
+		else:
+			spd = clip.params['playback_speed']
+		self.speed_tk.set(str(spd))
 
 	def update_cur_pos(self,pos):
 		self.cur_pos = pos
@@ -62,6 +70,7 @@ class ClipControl:
 		self.control_frame_l = tk.Frame(self.control_frame)
 		self.control_frame_r = tk.Frame(self.control_frame)
 		self.control_button_frame = tk.Frame(self.control_frame_r)
+		self.speed_frame = tk.Frame(self.control_frame_r)
 		
 		########
 		# all funs from the backend
@@ -91,7 +100,7 @@ class ClipControl:
 						 self.backend.fun_store[gen_addr + '/loop/type'],
 						 self.backend.fun_store[gen_addr + '/loop/select']]
 
-
+		speedfun = self.backend.fun_store[gen_addr + '/playback/speed']
 		# info
 		self.name_var = tk.StringVar()
 		self.name_label = tk.Label(self.info_frame,textvariable=self.name_var)#,relief=tk.RIDGE)
@@ -125,12 +134,14 @@ class ClipControl:
 
 		self.control_buttons = []
 		self.setup_control_buttons(pb_funs)
+		self.setup_speed_control(speedfun)
 
 		# pack
 		self.name_label.pack(side=tk.TOP,fill=tk.X)
 		self.info_frame.pack(side=tk.TOP)
 		self.timeline_frame.pack(side=tk.TOP)
-		self.control_button_frame.pack(side=tk.BOTTOM)
+		self.control_button_frame.pack(side=tk.TOP)
+		self.speed_frame.pack(side=tk.TOP)
 		self.control_frame.pack(side=tk.TOP)
 		self.cue_or_loop_frame.pack(side=tk.TOP)
 		self.cue_button_frame.grid(row=0, column=0, sticky='news')
@@ -155,6 +166,26 @@ class ClipControl:
 
 		for but in [playbut, pausebut, rvrsbut, rndbut, clearbut]:
 			but.pack(side=tk.LEFT)
+
+	def setup_speed_control(self,speedfun):
+		self.speed_tk = tk.StringVar()
+		self.speed_scale = tk.Scale(self.speed_frame,from_=0.0,to=10.0,resolution=0.05,variable=self.speed_tk,
+							   orient=tk.HORIZONTAL, showvalue = 0,length = 80)
+		self.speed_box = tk.Spinbox(self.speed_frame,from_=0.0,to=10.0,increment=0.1,format="%.2f",
+							   textvariable=self.speed_tk, width=4)
+		self.speed_label = tk.Label(self.speed_frame,text='spd')
+		def send_speed(*args): #### TO-DO add global speedvar
+			speed = float(self.speed_tk.get())
+			speedfun('',speed)
+			# self.osc_client.build_n_send(speed_addr,speed)
+
+		self.speed_scale.config(command=send_speed)
+		self.speed_box.config(command=send_speed)
+		self.speed_box.bind("<Return>",send_speed)
+		self.speed_label.pack(side=tk.LEFT)
+		self.speed_scale.pack(side=tk.LEFT)
+		self.speed_box.pack(side=tk.LEFT)
+
 
 	def setup_cue_buttons(self,cue_funs):
 		act_fun, deact_fun = cue_funs[0],cue_funs[1]
