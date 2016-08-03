@@ -10,6 +10,8 @@ import tkinter.filedialog as tkfd
 from magi import Magi
 
 from gui.tk_gui import clip_control
+from gui.tk_gui import clip_collections
+
 
 class MainGui:
 	def __init__(self,root):
@@ -18,6 +20,7 @@ class MainGui:
 		self.mainframe = tk.Frame(root,pady=0,padx=0)
 		self.cc_frame = tk.Frame(self.mainframe,pady=0,padx=0)
 		self.cc_frames = []
+		self.clip_col_frame = tk.Frame(self.mainframe,pady=0,padx=0)
 
 		# sol
 		self.magi = Magi()
@@ -27,9 +30,12 @@ class MainGui:
 			new_frame = tk.Frame(self.cc_frame,pady=0,padx=0)
 			self.clip_controls.append(clip_control.ClipControl(new_frame,self.magi,i))
 			self.cc_frames.append(new_frame)
+		self.clip_conts = clip_collections.ContainerCollection(self.clip_col_frame,
+								self.magi.clip_storage.clip_col,self.magi.select_clip)
 		# pack it
 		self.mainframe.pack()
 		self.cc_frame.pack(side=tk.TOP,fill=tk.X)
+		self.clip_col_frame.pack(side=tk.TOP,fill=tk.BOTH)
 
 		for frame in self.cc_frames:
 			frame.pack(side=tk.LEFT)
@@ -76,6 +82,11 @@ if __name__ == '__main__':
 	# for k,v in testgui.magi.fun_store.items():
 	# 	print(k)#,v)
 	testgui.magi.load('./test_save.xml')
+	# testgui.magi.db.search('gundam')
+	# testgui.magi.debug_search_res()
+	# for i in range(len(testgui.magi.clip_storage.clip_col)):
+	# 	testgui.magi.clip_storage.clip_col[i] = testgui.magi.db.last_search[i]
 	testgui.start()
 	root.mainloop()
 	testgui.quit()
+	# testgui.magi.save_to_file('./test_save.xml')
