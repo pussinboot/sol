@@ -162,6 +162,10 @@ class Magi:
 		pd = clip.params['play_direction']
 		(pb_addr, pb_msg) = play_dir_to_fun[pd](layer)
 		self.osc_client.build_n_send(pb_addr,pb_msg)
+		# correct speed???
+		spd = clip.params['playback_speed']
+		spd_addr, spd_msg = self.model.set_playback_speed(layer,spd)
+		self.osc_client.build_n_send(spd_addr,spd_msg)
 		if self.gui is not None: self.gui.update_clip(layer,clip)
 
 	def clear_clip(self,layer):
