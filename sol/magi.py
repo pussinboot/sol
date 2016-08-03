@@ -187,6 +187,11 @@ class Magi:
 		if self.gui is not None: self.gui.update_clip_params(layer,cur_clip,
 															 'cue_points')
 
+	def lp_create(self,cur_lp):
+		# function to create loop point if it doesnt exist yet
+		if cur_lp is None or len(cur_lp) != 3:
+			return [None, None, 'd']
+		return cur_lp
 
 	def loop_check(self,layer):
 		# returns current loop points for layer if they are complete
@@ -200,6 +205,17 @@ class Magi:
 		cl = cur_clip.params['loop_points'][ls]
 		if None in cl: return
 		return [cur_clip, cl]
+
+	def loop_get(self,layer):
+		# returns currently selected lp, even if incomplete
+		cur_clip = self.clip_storage.current_clips[layer]
+		if cur_clip is None: return
+		ls = cur_clip.params['loop_selection']
+		if ls < 0: return
+		# current loop points
+		cl = cur_clip.params['loop_points'][ls]
+		cl = self.lp_create(cl)
+		return [cur_clip.params['loop_on'], cl]
 
 	def cur_range(self,layer):
 		# returns the current range for playback
@@ -413,17 +429,14 @@ class Magi:
 				if n > len(cur_clip.params['cue_points']): return
 				cur_clip.params['cue_points'][n] = None
 
-			def lp_create(cur_lp):
-				# function to create loop point if it doesnt exist yet
-				if cur_lp is None or len(cur_lp) != 3:
-					return [None, None, 'd']
-				return cur_lp
 
 			def toggle_loop(_,n):
 				if self.osc_server.osc_value(n):
 					cur_clip = self.clip_storage.current_clips[i]
-					if cur_clip is not None:
-						cur_clip.params['loop_on'] = not cur_clip.params['loop_on']
+					if cur_clip is None: return
+					cur_clip.params['loop_on'] = not cur_clip.params['loop_on']
+					if self.gui is not None: self.gui.update_clip_params(i,
+													cur_clip,'loop_on')
 
 			def set_loop_type(_,t):
 				# can either set to new type by supplying correct string
@@ -435,7 +448,7 @@ class Magi:
 				if ls < 0: return
 				# current loop points
 				cl = cur_clip.params['loop_points'][ls]
-				cl = lp_create(cl)
+				cl = self.lp_create(cl)
 				if lt in ['b','d']:
 					cl[2] = lt
 				else:
@@ -444,6 +457,8 @@ class Magi:
 					else:
 						cl[2] = 'b'
 				cur_clip.params['loop_points'][ls] = cl
+				if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
+																	'loop_type')
 
 			def loop_select(_,n):
 				n = self.osc_server.osc_value(n)
@@ -451,7 +466,9 @@ class Magi:
 				if cur_clip is None: return
 				if n > len(cur_clip.params['loop_points']): return
 				cur_clip.params['loop_selection'] = n
-				print('current loop points\n',cur_clip.params['loop_points'][n])
+				# print('current loop points\n',cur_clip.params['loop_points'][n])
+				if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
+															   'loop_selection')
 
 			def set_loop_a(_,n):
 				pos = self.osc_server.osc_value(n)
@@ -461,7 +478,7 @@ class Magi:
 				if ls < 0: return
 				# current loop points
 				cl = cur_clip.params['loop_points'][ls]
-				cl = lp_create(cl)
+				cl = self.lp_create(cl)
 				cl[0] = pos
 				cur_clip.params['loop_points'][ls] = cl
 
@@ -473,7 +490,7 @@ class Magi:
 				if ls < 0: return
 				# current loop points
 				cl = cur_clip.params['loop_points'][ls]
-				cl = lp_create(cl)
+				cl = self.lp_create(cl)
 				cl[1] = pos
 				cur_clip.params['loop_points'][ls] = cl
 
@@ -488,9 +505,11 @@ class Magi:
 				if ls < 0: return
 				# current loop points
 				cl = cur_clip.params['loop_points'][ls]
-				cl = lp_create(cl)
+				cl = self.lp_create(cl)
 				cl[:2] = pos
 				cur_clip.params['loop_points'][ls] = cl
+				if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
+															      'loop_points')
 
 			return [cue_point,clear_cue,toggle_loop,set_loop_type,loop_select,
 					set_loop_a, set_loop_b, set_loop_a_b]
