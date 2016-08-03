@@ -391,10 +391,16 @@ class Magi:
 				cur_clip = self.clip_storage.current_clips[i]
 				if cur_clip is None: return
 				cue_points = cur_clip.params['cue_points']
-				if n > len(cue_points):
-					return
-				if cue_points[n] is not None:
-					(addr, msg) = self.model.set_clip_pos(i,cue_points[n])
+				if n > len(cue_points): return 
+				# if cue point exists
+				cp = cue_points[n]
+				if cp is not None:
+					# check that it's within the current range
+					check = self.cur_range()
+					if check is not None:
+						if cp > check[1] or cp < check[0]:
+							return
+					(addr, msg) = self.model.set_clip_pos(i,cp)
 					self.osc_client.build_n_send(addr,msg)
 				else:
 					cur_clip.params['cue_points'][n] =  \
