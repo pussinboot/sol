@@ -86,6 +86,7 @@ if __name__ == '__main__':
 	# testgui.magi.debug_search_res()
 	# for i in range(len(testgui.magi.clip_storage.clip_col)):
 	# 	testgui.magi.clip_storage.clip_col[i] = testgui.magi.db.last_search[i]
+	print(testgui.magi.clip_storage.clip_col[0])
 	testgui.start()
 	root.mainloop()
 	testgui.quit()
