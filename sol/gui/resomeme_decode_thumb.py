@@ -1,3 +1,8 @@
+# ignore this file
+# doesn't work 
+# i've got a better solution now..
+# shouts out to resolume's joris for the help tho
+
 import base64 
 import string
 import xml.etree.ElementTree as ET
