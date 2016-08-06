@@ -1,7 +1,6 @@
 # this class will make thumbnails for you
 import subprocess
 import os #, ntpath
-import base64
 
 # import shlex
 
@@ -32,31 +31,62 @@ class ThumbMaker:
 		if not os.path.exists(f_name): return
 
 		# create output name
-		output_base_name = './scrot/' + os.path.split(os.path.splitext(f_name)[0])[1]
-		bad_hash = self.nice_num(f_name)
+		split_f_name = os.path.split(os.path.splitext(f_name)[0])
+		output_base_name = './scrot/' + split_f_name[1]
+		bad_hash = self.nice_num(split_f_name[0]) * self.nice_num(split_f_name[1])
 		while True:
-			output_name = output_base_name + "_" + str(bad_hash) + '.png'
+			output_name = output_base_name + "_" + str(bad_hash) + "_0.png"
 			if not os.path.exists(output_name): break
 			bad_hash += 1
 
-		f_name = '"{}"'.format(f_name)#shlex.quote(f_name)
+		# f_name = '"{}"'.format(f_name) #shlex.quote(f_name)
 
 		desired_height = int(desired_width * aspect_height / aspect_width)
 
 
 		if n_frames > 1:
+			# list of all the thumbs
+			tor = []
 			# want total length of video
 			file_info = ''
 			try:
-				file_info = subprocess.check_output('ffprobe -i {} -show_entries format=duration -v quiet -of csv="p=0"'.format(f_name), 
+				file_info = subprocess.check_output('ffprobe -i "{}" -show_entries format=duration -v quiet -of csv="p=0"'.format(f_name), 
 							stderr=subprocess.STDOUT, shell=True)
 			except subprocess.CalledProcessError as e:
 				file_info = e.output
-			file_info = file_info.decode('utf-8')
+			file_info = float(file_info.decode('utf-8'))
+			# then get n frames spread out throughout the range of the entire clip
+			interval = file_info / (n_frames + 1)
+			for i in range(n_frames):
+				seek_time = interval / 2 + i * interval
+				command = 'ffmpeg -ss {0:.3f} -y -i "{1}" -vf "thumbnail" -q:v 2 -vframes 1 "./scrot/temp.png" -hide_banner -loglevel panic'.format(seek_time, f_name)
+				print(command)
+				print('#'*40)
+				process = subprocess.Popen(command) # -ss to seek to frame
+				process.communicate()
+
+				i_output_name = output_name[:-5] + '{}.png'.format(i)
+				print(i_output_name)
+				if os.path.exists('./scrot/temp.png'):
+					self.make_thumbnail('./scrot/temp.png',i_output_name,
+										 new_size=(desired_width,desired_height))
+					tor += [i_output_name]
+				else:
+					break
+			return tor
 
 		else:
-			command = 'ffmpeg -y -i "{0}" -vf "thumbnail" -q:v 2 -vframes 1 "./scrot/temp.png"'.format(f_name)
-
+			command = 'ffmpeg -y -i "{0}" -vf "thumbnail" -q:v 2 -vframes 1 "./scrot/temp.png" -hide_banner -loglevel panic'.format(f_name)
+			print(command)
+			print('#'*40)
+			process = subprocess.Popen(command) # -ss to seek to frame
+			process.communicate()
+			if os.path.exists('./scrot/temp.png'):
+				self.make_thumbnail('./scrot/temp.png',output_name,
+									 new_size=(desired_width,desired_height))
+				return [output_name]
+			else:
+				return
 
 	def make_thumbnail(self,f_in, f_out, new_size=(100,100), pad=True):
 		# makes a thumbnail from a screenshot, pads it if the aspect ratio is off
@@ -76,5 +106,5 @@ class ThumbMaker:
 if __name__ == '__main__':
 	test_tm = ThumbMaker()
 	test_file = "C:\VJ\__clips__\gundam\dxv\gundam bad blue guy kills feds.mov"
-	test_tm.gen_thumbnail(test_file,192,5)
+	print(test_tm.gen_thumbnail(test_file,192,5))
 	
