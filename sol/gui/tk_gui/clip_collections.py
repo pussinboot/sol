@@ -1,5 +1,5 @@
 NO_Q = 8
-THUMB_W = 100
+THUMB_W = 192
 import tkinter as tk
 from tkinter import ttk
 from .tkdnd import dnd_start
@@ -31,7 +31,7 @@ class ClipContainer:
 		
 	def activate(self,*args,layer=-1):
 		if self.clip is None or self.selectfun is None: return
-		self.selectfun(layer,self.clip)
+		self.selectfun(self.clip,layer)
 		self.active = True
 
 	def activate_l(self,*args):
@@ -149,6 +149,12 @@ class ContainerCollection:
 
 		self.frame.grid(row=0, column=0, sticky='news')
 		#self.frame.tkraise()
+
+	def update_clip_col(self,clip_col):
+		self.clip_collection = clip_col
+		for i in range(NO_Q):
+			self.clip_conts[i].change_clip(clip_col[i])
+
 	def clear(self):
 		for clip_cont in self.clip_conts:
 			clip_cont.remove_clip()
