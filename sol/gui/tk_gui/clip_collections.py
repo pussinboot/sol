@@ -5,6 +5,7 @@ from tkinter import ttk
 from .tkdnd import dnd_start
 
 from PIL import ImageTk,Image
+import os
 # import ntpath, os
 
 class ClipContainer:
