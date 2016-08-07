@@ -550,6 +550,7 @@ class Magi:
 
 	def stop(self):
 		self.osc_server.stop()
+		self.thumb_maker.quit()
 
 	def save(self):
 		fio = self.db.file_ops
@@ -746,34 +747,47 @@ class TerminalGui:
 	def print_a_line(self):
 		return "=" * 73
 
+	# magi required funs
+	def update_clip(self,layer,clip):
+		pass
+
+	def update_clip_params(self,layer,clip,param):
+		pass
+
+	def update_cur_pos(self,layer,pos):
+		pass
+
+	def update_search(self):
+		pass
+
 
 if __name__ == '__main__':
 	testit = Magi()
-
+	testit.gui = TerminalGui(testit)
 
 	### load and save test resolume library
-	# testfile = "C:/Users/shapil/Documents/Resolume Arena 5/compositions/vjcomp.avc"
-	# testit.load_resolume_comp(testfile)
-	# clipz = testit.db.search('gundam')
-	# # testit.debug_search_res()
-	# testit.select_clip(clipz[0],0)
-	# testit.select_clip(clipz[1],1)
-	# for i in range(8):
-	# 	testit.clip_storage.set_clip_in_col(clipz[i+2],i)
-	# testit.gui.print_current_state()
+	testfile = "C:/Users/shapil/Documents/Resolume Arena 5/compositions/vjcomp.avc"
+	testit.load_resolume_comp(testfile)
+	testit.gen_thumbs(192,5)
+	clipz = testit.db.search('gundam')
+	# testit.debug_search_res()
+	testit.select_clip(clipz[0],0)
+	testit.select_clip(clipz[1],1)
+	for i in range(8):
+		testit.clip_storage.set_clip_in_col(clipz[i+2],i)
+	testit.gui.print_current_state()
 
-	# testit.save_to_file('./test_save.xml')
+	testit.save_to_file('./test_save.xml')
 
-	testit.load('./test_save.xml')
-	testit.gui = TerminalGui(testit)
-	testit.start()
-	import time
-	while True:
-		try:
-			time.sleep(1)
-			testit.gui.print_current_state()
-		except (KeyboardInterrupt, SystemExit):
-			print("exiting...")
-			testit.stop()
-			testit.save_to_file('./test_save.xml')
-			break
+	# testit.load('./test_save.xml')
+	# testit.start()
+	# import time
+	# while True:
+	# 	try:
+	# 		time.sleep(1)
+	# 		testit.gui.print_current_state()
+	# 	except (KeyboardInterrupt, SystemExit):
+	# 		print("exiting...")
+	# 		testit.stop()
+	# 		testit.save_to_file('./test_save.xml')
+	# 		break

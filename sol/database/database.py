@@ -178,7 +178,8 @@ class FileOPs:
 		clip_element.set('filename',clip.f_name) # should be unique..
 		# thumbnails
 		thumbs = ET.SubElement(clip_element,'thumbnails')
-		thumbs.text = ','.join(clip.t_names)
+		if clip.t_names is not None:
+			thumbs.text = ','.join(clip.t_names)
 		# name
 		name = ET.SubElement(clip_element,'name')
 		name.text = clip.name 
@@ -204,7 +205,7 @@ class FileOPs:
 			parsed_rep[child.tag] = child
 		# build dict out of params
 		parsed_params = self.load_settings(parsed_rep['params'])
-		parsed_thumbs = parsed_rep['thumbnails']
+		parsed_thumbs = parsed_rep['thumbnails'].text
 		if parsed_thumbs is None:
 			thumbs = None
 		else:

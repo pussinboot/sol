@@ -43,6 +43,9 @@ class MainGui:
 	def start(self):
 		self.magi.start()
 
+	def refresh_after_load(self):
+		self.clip_conts.update_clip_col(self.magi.clip_storage.clip_col)
+
 	def quit(self):
 		self.magi.stop()
 
@@ -82,6 +85,7 @@ if __name__ == '__main__':
 	# for k,v in testgui.magi.fun_store.items():
 	# 	print(k)#,v)
 	testgui.magi.load('./test_save.xml')
+	testgui.refresh_after_load()
 	# testgui.magi.db.search('gundam')
 	# testgui.magi.debug_search_res()
 	# for i in range(len(testgui.magi.clip_storage.clip_col)):
