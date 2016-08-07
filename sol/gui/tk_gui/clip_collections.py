@@ -61,11 +61,11 @@ class ClipContainer:
 
 	def change_clip(self,clip):
 		self.clip = clip
-		if self.clip.t_name is None:
+		if self.clip.t_names is None:
 			self.change_img_from_img(self.default_img)
 			# self.clip.t_name = './scrot/{}.png'.format(ntpath.basename(self.clip.fname))
-		if self.clip.t_name and os.path.exists(self.clip.t_name):
-			self.change_img_from_file(self.clip.t_name)
+		if self.clip.t_names is not None and os.path.exists(self.clip.t_names[0]):
+			self.change_img_from_file(self.clip.t_names[0])
 		#print('clip changed to',self.clip.name)
 		self.toggle_dnd()
 		# add to clip collection

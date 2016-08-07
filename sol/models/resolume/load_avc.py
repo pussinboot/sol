@@ -35,10 +35,6 @@ class ResolumeLoader:
 
 			name = xml_clip[0][1].get('value')
 			f_name = xml_clip[1][0].get('name')
-
-			# thumbnail hack...
-			# file_id = xml_clip[1][0].get('fileId')
-			# to be continued ................. maybe
 	
 			# params
 			params = {}
