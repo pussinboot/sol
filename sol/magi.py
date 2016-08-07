@@ -1,5 +1,4 @@
-from database import database
-from database import clip
+from database import database, clip, thumbs
 from inputs import osc
 from models.resolume import model
 
@@ -27,6 +26,8 @@ class Magi:
 	def __init__(self):
 		# database
 		self.db = database.Database()
+		# thumbnail generator
+		self.thumb_maker = thumbs.ThumbMaker()
 		# inputs
 		self.osc_server = osc.OscServer()
 		self.fun_store = {} # dictionary containing address to function
@@ -587,6 +588,12 @@ class Magi:
 			new_clip = clip.Clip(*parsed_clip_vals)
 			self.db.add_clip(new_clip)
 		self.db.searcher.refresh()
+
+	def gen_thumbs(self,desired_width,n_frames=1):
+		for clip in self.db.clips.values():
+			clip.t_names = self.thumb_maker.gen_thumbnail(clip.f_name,
+											desired_width, n_frames)
+
 
 			
 

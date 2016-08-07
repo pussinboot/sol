@@ -22,7 +22,7 @@ class Clip:
 					thumbnail_path=None,params={},tags=[]):
 
 		self.f_name = filepath
-		self.t_name = thumbnail_path
+		self.t_names = thumbnail_path
 
 		self.command = activation_string
 		self.params = params

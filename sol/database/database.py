@@ -176,6 +176,9 @@ class FileOPs:
 		clip_element = ET.Element('clip')
 		# filename goes into overarching tag
 		clip_element.set('filename',clip.f_name) # should be unique..
+		# thumbnails
+		thumbs = ET.SubElement(clip_element,'thumbnails')
+		thumbs.text = ','.join(clip.t_names)
 		# name
 		name = ET.SubElement(clip_element,'name')
 		name.text = clip.name 
@@ -188,9 +191,6 @@ class FileOPs:
 		# params 
 		params = self.save_settings(clip.params,'params')
 		clip_element.append(params)
-		# thumbnail
-		thumb = ET.SubElement(clip_element,'thumbnail')
-		thumb.text = clip.t_name 
 		
 		return clip_element
 
@@ -204,13 +204,18 @@ class FileOPs:
 			parsed_rep[child.tag] = child
 		# build dict out of params
 		parsed_params = self.load_settings(parsed_rep['params'])
+		parsed_thumbs = parsed_rep['thumbnails']
+		if parsed_thumbs is None:
+			thumbs = None
+		else:
+			thumbs = parsed_thumbs.split(',')
 		parsed_tags = parsed_rep['tags'].text
 		if parsed_tags is None:
 			tags = []
 		else:
 			tags = parsed_tags.split(',')
 		clip_tor = Clip(filename,parsed_rep['activate'].text,
-						parsed_rep['name'].text,parsed_rep['thumbnail'].text,
+						parsed_rep['name'].text,thumbs,
 						params=parsed_params,tags=tags)
 		return clip_tor
 		
