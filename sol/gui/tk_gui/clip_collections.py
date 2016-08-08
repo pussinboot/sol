@@ -3,10 +3,10 @@ THUMB_W = 192
 import tkinter as tk
 from tkinter import ttk
 from .tkdnd import dnd_start
+import tkinter.simpledialog as tksimpledialog
 
 from PIL import ImageTk,Image
 import os
-# import ntpath, os
 
 class ClipContainer:
 	# gui element that holds a single clip
@@ -128,8 +128,8 @@ class ContainerCollection:
 	# gui element that holds multiple clips
 	# mayb i need to be able to save/load as clipcollections (would add to sol_backend)
 	def __init__(self,parent_frame,clipcol,select_cmd):
-		for i in range(len(clipcol)):
-			print(clipcol[i])
+		# for i in range(len(clipcol)):
+		# 	print(clipcol[i])
 		self.clip_conts = []
 		self.clip_collection = clipcol
 		self.frame = tk.Frame(parent_frame)
@@ -149,7 +149,7 @@ class ContainerCollection:
 				self.clip_conts[i].grid(row=r,column=c)
 
 		self.frame.grid(row=0, column=0, sticky='news')
-		#self.frame.tkraise()
+		self.frame.tkraise()
 
 	def update_clip_col(self,clip_col):
 		self.clip_collection = clip_col
@@ -160,3 +160,90 @@ class ContainerCollection:
 		for clip_cont in self.clip_conts:
 			clip_cont.remove_clip()
 
+class CollectionsHolder:
+	# gui element that holds multiple containercollections
+	def __init__(self,parent_frame,clip_storage,select_cmd):
+		self.clip_storage = clip_storage
+		self.select_cmd = select_cmd
+
+		self.frame = parent_frame
+		self.collections_frame = tk.Frame(self.frame)
+		self.collections_labels_frame = tk.Frame(self.frame)
+
+		self.containers = []
+		self.container_labels = []
+
+		self.setup_labels()
+
+		self.collections_frame.pack(side=tk.TOP)
+		self.collections_labels_frame.pack(side=tk.TOP,fill=tk.X)
+
+	def setup_labels(self):
+		self.add_col_but = tk.Button(self.collections_labels_frame,text='+',command=self.add_collection)
+		self.go_l_but = tk.Button(self.collections_labels_frame,text='<',command=self.go_left)
+		self.go_l_but.bind("<Button-3>",self.swap_left)
+		self.go_r_but = tk.Button(self.collections_labels_frame,text='>',command=self.go_right)
+		self.go_r_but.bind("<Button-3>",self.swap_right)
+		self.add_col_but.pack(side=tk.RIGHT)
+		self.go_r_but.pack(side=tk.RIGHT)
+		self.go_l_but.pack(side=tk.RIGHT)
+
+	def refresh_after_load(self):
+		for c in self.containers:
+			c.destroy()
+		for l in self.container_labels:
+			l.destroy()
+
+		for collection in self.clip_storage.clip_cols:
+			self.add_collection_frame(collection)
+
+		self.highlight_col()
+
+	def go_left(self):
+		self.clip_storage.go_left()
+
+	def go_right(self):
+		self.clip_storage.go_right()
+
+	def swap_left(self):
+		self.clip_storage.swap_left()
+
+	def swap_right(self):
+		self.clip_storage.swap_right()
+
+	def highlight_col(self,index=-1):
+		if index < 0:
+			index = self.clip_storage.cur_clip_col
+
+		self.containers[index].frame.tkraise()
+		for cl in self.container_labels:
+			cl.configure(relief=tk.FLAT)
+		self.container_labels[index].configure(relief=tk.SUNKEN)
+
+		self.clip_storage.select_collection(index)
+
+	def add_collection(self):
+		self.clip_storage.add_collection()
+		self.add_collection_frame(self.clip_storage.clip_cols[-1])
+
+	def add_collection_frame(self,collection):
+		new_cont = ContainerCollection(self.collections_frame,collection,self.select_cmd)
+		self.containers.append(new_cont)
+		self.add_collection_label(collection)
+		self.highlight_col()
+
+	def add_collection_label(self,collection):
+		index = len(self.container_labels)
+		newlabel = tk.Label(self.collections_labels_frame,text=collection.name,bd=4)
+		newlabel.bind('<ButtonPress-1>',lambda *args: self.highlight_col(index))
+		newlabel.bind("<Double-1>",lambda *args: self.change_name_dialog(index))
+		newlabel.bind('<ButtonPress-2>',lambda *args: self.remove_collection(index))
+		newlabel.pack(side=tk.LEFT)
+		self.container_labels.append(newlabel)
+
+	def change_name_dialog(self,index):
+		new_name = tksimpledialog.askstring("rename collection",self.containers[index].clip_collection.name)
+		if new_name and new_name != self.containers[index].clip_collection.name:
+			# change name
+			self.containers[index].clip_collection.name = new_name
+			self.container_labels[index].configure(text=new_name)

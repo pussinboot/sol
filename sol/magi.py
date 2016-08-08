@@ -55,7 +55,7 @@ class Magi:
 
 
 		# clip storage 
-		self.clip_storage = ClipStorage()
+		self.clip_storage = ClipStorage(self.gui)
 		# if nothing loaded
 		self.clip_storage.add_collection()
 		self.clip_storage.select_collection(0)
@@ -354,6 +354,7 @@ class Magi:
 		for i in range(NO_LAYERS):
 			sel_fun = gen_sel_fun(i)
 			self.osc_server.mapp(col_select_addr.format(i),sel_fun)
+
 		def add_col(_,msg):
 			name = self.osc_server.osc_value(msg)
 			if not isinstance(name,str):
@@ -604,10 +605,11 @@ class ClipStorage:
 	for storing currently active clips / all clip collections
 	and methods on interacting with clip collections
 	"""
-	def __init__(self):
+	def __init__(self,gui=None):
 		self.current_clips = clip.ClipCollection(NO_LAYERS,"current_clips")
 		self.cur_clip_col = -1
 		self.clip_cols = []
+		self.gui = gui
 
 	@property
 	def clip_col(self):
@@ -620,9 +622,12 @@ class ClipStorage:
 			name = str(len(self.clip_cols))
 		new_clip_col = clip.ClipCollection(name=name)
 		self.clip_cols.append(new_clip_col)
+		if self.gui is not None: self.gui.update_cols('add')
+
 
 	def select_collection(self,i):
 		self.cur_clip_col = i
+		if self.gui is not None: self.gui.update_cols('select',i)
 
 	def go_left(self):
 		new_i = self.cur_clip_col - 1
@@ -637,6 +642,8 @@ class ClipStorage:
 		if i > len(self.clip_cols) or j > len(self.clip_cols):
 			return
 		self.clip_cols[i], self.clip_cols[j] = self.clip_cols[j], self.clip_cols[i]
+		if self.gui is not None: self.gui.update_cols('swap',(i,j))
+
 
 	def swap_left(self):
 		self.swap_collections(self.cur_clip_col,self.cur_clip_col-1)
@@ -650,6 +657,8 @@ class ClipStorage:
 		del self.clip_cols[i]
 		if i <= self.cur_clip_col:
 			self.cur_clip_col -= 1
+		if self.gui is not None: self.gui.update_cols('remove',i)
+
 
 	# clip management
 	# for setting/getting current clips just have to access self.current_clips
