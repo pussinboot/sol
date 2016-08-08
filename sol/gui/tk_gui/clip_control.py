@@ -61,16 +61,19 @@ class ClipControl:
 	def setup_gui(self):
 		# top lvl
 		self.frame = tk.Frame(self.root)
-		self.info_frame = tk.Frame(self.frame) # name, mayb add tags/way to edit/add/delete these things
-		self.timeline_frame = tk.Frame(self.frame)
-		self.control_frame = tk.Frame(self.frame)
-		self.cue_or_loop_frame = tk.Frame(self.control_frame) 
-		self.cue_button_frame = tk.Frame(self.cue_or_loop_frame)
-		self.loop_select_frame = tk.Frame(self.cue_or_loop_frame)
-		self.control_frame_l = tk.Frame(self.control_frame)
-		self.control_frame_r = tk.Frame(self.control_frame)
-		self.control_button_frame = tk.Frame(self.control_frame_r)
-		self.speed_frame = tk.Frame(self.control_frame_r)
+		self.info_frame = tk.Frame(self.frame,relief=tk.RIDGE,borderwidth = 2) # top - just info
+		self.middle_frame = tk.Frame(self.frame) # middle - left is timeline/qp, right is various control
+		self.bottom_frame = tk.Frame(self.frame) # bottom - loop pointz
+
+		self.timeline_cue_frame = tk.Frame(self.middle_frame)
+		self.timeline_frame = tk.Frame(self.timeline_cue_frame)
+		self.cue_button_frame = tk.Frame(self.timeline_cue_frame)
+
+		self.control_frame = tk.Frame(self.middle_frame)
+		self.control_button_frame = tk.Frame(self.control_frame)
+		self.control_frame_speed = tk.Frame(self.control_frame)
+		self.control_frame_sens = tk.Frame(self.control_frame)
+		self.control_frame_loop = tk.Frame(self.control_frame)
 		
 		########
 		# all funs from the backend
@@ -103,10 +106,10 @@ class ClipControl:
 		speedfun = self.backend.fun_store[gen_addr + '/playback/speed']
 		# info
 		self.name_var = tk.StringVar()
-		self.name_label = tk.Label(self.info_frame,textvariable=self.name_var)#,relief=tk.RIDGE)
+		self.name_label = tk.Label(self.info_frame,textvariable=self.name_var)
 		self.name_var.set('------')
 		# timeline
-		self.timeline = ProgressBar(self.timeline_frame,self.width)
+		self.timeline = ProgressBar(self.timeline_frame,self.width,60)
 
 		self.timeline.drag_release_action = set_cue
 		self.timeline.seek_action = seek
@@ -135,49 +138,51 @@ class ClipControl:
 		self.control_buttons = []
 		self.setup_control_buttons(pb_funs)
 		self.setup_speed_control(speedfun)
+		self.setup_sens_control()
 
 		# pack
-		self.name_label.pack(side=tk.TOP,fill=tk.X)
-		self.info_frame.pack(side=tk.TOP)
+		self.name_label.pack(side=tk.TOP)
+		self.info_frame.pack(side=tk.TOP,fill=tk.X,expand=True)
+		self.middle_frame.pack(side=tk.TOP)
+		self.bottom_frame.pack(side=tk.TOP)
+		#
+		self.timeline_cue_frame.pack(side=tk.LEFT)
 		self.timeline_frame.pack(side=tk.TOP)
-		self.control_button_frame.pack(side=tk.TOP)
-		self.speed_frame.pack(side=tk.TOP)
+		self.cue_button_frame.pack(side=tk.TOP)
+		
 		self.control_frame.pack(side=tk.TOP)
-		self.cue_or_loop_frame.pack(side=tk.TOP)
-		self.cue_button_frame.grid(row=0, column=0, sticky='news')
-		self.loop_select_frame.grid(row=0, column=0, sticky='news')
-		self.cue_button_frame.tkraise()
-		self.control_frame_l.pack(side=tk.LEFT)
-		self.control_frame_r.pack(side=tk.LEFT)
-		self.frame.pack()
+		self.control_button_frame.pack(side=tk.TOP)
+		self.control_frame_speed.pack(side=tk.TOP)
+		self.control_frame_sens.pack(side=tk.TOP)
+		self.control_frame_loop.pack(side=tk.TOP)
+		self.frame.pack(fill=tk.X,expand=True)
 
 	def setup_control_buttons(self,pb_funs):
-		pad_x,pad_y = 8, 0 # 8, 8
+		pad_x,pad_y = 9, 1 # 8, 8
 		playbut = tk.Button(self.control_button_frame,text=">",padx=pad_x,pady=pad_y,
 			command=lambda: pb_funs[0]())
 		pausebut = tk.Button(self.control_button_frame,text="||",padx=(pad_x-1),pady=pad_y,
 			command=lambda: pb_funs[1]())
 		rvrsbut = tk.Button(self.control_button_frame,text="<",padx=pad_x,pady=pad_y,
 			command=lambda: pb_funs[2]())
-		rndbut = tk.Button(self.control_button_frame,text="*",padx=pad_x,pady=pad_y,
-			command=lambda: pb_funs[3]())
+		# rndbut = tk.Button(self.control_button_frame,text="*",padx=pad_x,pady=pad_y,
+		# 	command=lambda: pb_funs[3]())
 		clearbut = tk.Button(self.control_button_frame,text="X",padx=pad_x,pady=pad_y,
 			command=lambda: pb_funs[4]())
 
-		for but in [playbut, pausebut, rvrsbut, rndbut, clearbut]:
+		for but in [playbut, pausebut, rvrsbut, clearbut]: #rndbut,
 			but.pack(side=tk.LEFT)
 
 	def setup_speed_control(self,speedfun):
 		self.speed_tk = tk.StringVar()
-		self.speed_scale = tk.Scale(self.speed_frame,from_=0.0,to=10.0,resolution=0.05,variable=self.speed_tk,
-							   orient=tk.HORIZONTAL, showvalue = 0,length = 80)
-		self.speed_box = tk.Spinbox(self.speed_frame,from_=0.0,to=10.0,increment=0.1,format="%.2f",
+		self.speed_scale = tk.Scale(self.control_frame_speed,from_=0.0,to=10.0,resolution=0.05,variable=self.speed_tk,
+							   orient=tk.HORIZONTAL, showvalue = 0,length = 55)
+		self.speed_box = tk.Spinbox(self.control_frame_speed,from_=0.0,to=10.0,increment=0.1,format="%.2f",
 							   textvariable=self.speed_tk, width=4)
-		self.speed_label = tk.Label(self.speed_frame,text='spd')
+		self.speed_label = tk.Label(self.control_frame_speed,text='spd',width=3)
 		def send_speed(*args): #### TO-DO add global speedvar
 			speed = float(self.speed_tk.get())
 			speedfun('',speed)
-			# self.osc_client.build_n_send(speed_addr,speed)
 
 		self.speed_scale.config(command=send_speed)
 		self.speed_box.config(command=send_speed)
@@ -185,6 +190,25 @@ class ClipControl:
 		self.speed_label.pack(side=tk.LEFT)
 		self.speed_scale.pack(side=tk.LEFT)
 		self.speed_box.pack(side=tk.LEFT)
+
+	def setup_sens_control(self):
+		self.sens_tk = tk.StringVar()
+		self.sens_scale = tk.Scale(self.control_frame_sens,from_=0.0,to=10.0,resolution=0.05,variable=self.sens_tk,
+							   orient=tk.HORIZONTAL, showvalue = 0,length = 55)
+		self.sens_box = tk.Spinbox(self.control_frame_sens,from_=0.0,to=10.0,increment=0.1,format="%.2f",
+							   textvariable=self.sens_tk, width=4)
+		self.sens_label = tk.Label(self.control_frame_sens,text='sens',width=3)
+		def send_sens(*args): #### TO-DO add global speedvar
+			sens = float(self.sens_tk.get())
+			pass
+			#sensfun('',sens)
+
+		self.sens_scale.config(command=send_sens)
+		self.sens_box.config(command=send_sens)
+		self.sens_box.bind("<Return>",send_sens)
+		self.sens_label.pack(side=tk.LEFT)
+		self.sens_scale.pack(side=tk.LEFT)
+		self.sens_box.pack(side=tk.LEFT)
 
 
 	def setup_cue_buttons(self,cue_funs):
@@ -223,7 +247,6 @@ class ClipControl:
 
 	def setup_left_looping(self,loop_set_funs):
 		self.loop_on_off = False
-		self.selecting_loop = False
 		self.loop_type_tk = tk.StringVar()
 		self.loop_select_tk = tk.StringVar()
 
@@ -243,10 +266,6 @@ class ClipControl:
 			self.toggle_behavior_loop_on_off()
 			loop_on_off_fun('',True) # toggle needs to be true to do it
 
-		def loop_select_toggle(*args):
-			self.selecting_loop= not self.selecting_loop
-			self.toggle_behavior_loop_select()
-
 		def loop_type_set(*args):
 			selected_type = self.loop_type_tk.get()
 			loop_type_fun('',selected_type[0])
@@ -258,22 +277,23 @@ class ClipControl:
 		self.loop_type_tk.trace('w',loop_type_set)
 		self.loop_select_tk.trace('w',loop_select_set)
 
-		self.loop_on_off_but = tk.Button(self.control_frame_l,text='loop on',
-										 pady=2,width=10,command=loop_on_off_toggle) 
-		self.selecting_loop_but = tk.Button(self.control_frame_l,text='select',
-											pady=2,width=10, command=loop_select_toggle) 
+		self.loop_on_off_but = tk.Button(self.control_frame_loop,text='loop on',
+										 pady=2,width=8,command=loop_on_off_toggle) 
+		
+		self.loop_select_label = tk.Label(self.control_frame_loop,text='select',
+										  pady=2,width=8)
 
-		self.loop_select_dropdown = tk.OptionMenu(self.control_frame_l,self.loop_select_tk,*loop_poss)
+		self.loop_select_dropdown = tk.OptionMenu(self.control_frame_loop,self.loop_select_tk,*loop_poss)
 		self.loop_select_dropdown.config(width=4)
 
-		self.loop_type_dropdown = tk.OptionMenu(self.control_frame_l,self.loop_type_tk,*loop_type_poss)
+		self.loop_type_dropdown = tk.OptionMenu(self.control_frame_loop,self.loop_type_tk,*loop_type_poss)
 		self.loop_type_dropdown.config(width=4)
 
 
 		# pack it
 		self.loop_on_off_but.grid(row=0,column=0)
-		self.selecting_loop_but.grid(row=1,column=0)
 		self.loop_type_dropdown.grid(row=0,column=1)
+		self.loop_select_label.grid(row=1,column=0)
 		self.loop_select_dropdown.grid(row=1,column=1)
 
 
@@ -283,16 +303,8 @@ class ClipControl:
 		else:
 			self.loop_on_off_but.config(relief='raised')
 
-	def toggle_behavior_loop_select(self):
-		if self.selecting_loop:
-			self.selecting_loop_but.config(relief='sunken')
-			self.loop_select_frame.tkraise()
-		else:
-			self.selecting_loop_but.config(relief='raised')
-			self.cue_button_frame.tkraise()
-
 	def refresh_looping(self,clip=None):
-		control_buts = [self.loop_on_off_but,self.selecting_loop_but,
+		control_buts = [self.loop_on_off_but,
 						self.loop_type_dropdown, self.loop_select_dropdown]
 		if clip is None:
 			for but in control_buts:
@@ -306,7 +318,6 @@ class ClipControl:
 			but.config(relief='raised')
 		self.loop_on_off = clip.params['loop_on']
 		self.toggle_behavior_loop_on_off()
-		self.toggle_behavior_loop_select()
 		cl = clip.params['loop_selection']
 		self.loop_select_tk.set(str(cl))
 		clp = clip.params['loop_points'][cl]
@@ -362,10 +373,10 @@ class ProgressBar:
 		self.root = root
 		self.frame = tk.Frame(self.root)
 		self.canvas_frame = tk.Frame(self.frame)
-		self.canvas = tk.Canvas(self.canvas_frame,width=width,height=height+30,bg="#aaa",scrollregion=(0,0,width,height))
+		self.canvas = tk.Canvas(self.canvas_frame,width=width,height=height+15,bg="#aaa",scrollregion=(0,0,width,height))
 		
 		self.canvasbg = self.canvas.create_rectangle(0,0,width,height,fill='black',tag='bg')
-		self.loopbg = self.canvas.create_rectangle(0,height+30,width,height+15,fill='#333',tag='bg')
+		# self.loopbg = self.canvas.create_rectangle(0,height+30,width,height+15,fill='#333',tag='bg')
 
 		# for scrolling ?
 		# self.hbar = tk.Scrollbar(self.canvas_frame,orient=tk.HORIZONTAL)
@@ -375,12 +386,12 @@ class ProgressBar:
 		self.pbar = self.canvas.create_line(0,0,0,height,fill='gray',width=3)
 	
 		# loop point stuff
-		self.left_lp = self.canvas.create_rectangle(0,height+30,10,height+15,fill='#555',tag='lp')
-		self.right_lp = self.canvas.create_rectangle(width,height+30,width-10,height+15,fill='#555',tag='lp')
-		# self.looprect = self.canvas.create_rectangle(0,0,0,0,fill='gray',stipple='gray12',tag='bg')
+		# self.left_lp = self.canvas.create_rectangle(0,height+30,10,height+15,fill='#555',tag='lp')
+		# self.right_lp = self.canvas.create_rectangle(width,height+30,width-10,height+15,fill='#555',tag='lp')
+		# # self.looprect = self.canvas.create_rectangle(0,0,0,0,fill='gray',stipple='gray12',tag='bg')
 		self.outside_loop_rect_l = self.canvas.create_rectangle(0,0,0,0,fill='#333',stipple='gray50',tag='bg')
 		self.outside_loop_rect_r = self.canvas.create_rectangle(0,0,0,0,fill='#333',stipple='gray50',tag='bg')
-		self.lp_line = self.canvas.create_line(10,height+23,width-10,height+23,fill='#ccc',width=2,dash=(2,))
+		# self.lp_line = self.canvas.create_line(10,height+23,width-10,height+23,fill='#ccc',width=2,dash=(2,))
 		
 		self.canvas.pack(anchor=tk.W)
 		self.canvas_frame.pack(anchor=tk.W,side=tk.LEFT,expand=tk.YES,fill=tk.BOTH)
@@ -398,9 +409,9 @@ class ProgressBar:
 		self.canvas.tag_bind("line","<ButtonPress-3>",self.drag_begin)
 		self.canvas.tag_bind("line","<ButtonRelease-3>",self.drag_end)
 		self.canvas.tag_bind("line","<B3-Motion>",self.drag)
-		self.canvas.tag_bind("lp","<ButtonPress-3>",self.drag_begin_lp)
-		self.canvas.tag_bind("lp","<ButtonRelease-3>",self.drag_end_lp)
-		self.canvas.tag_bind("lp","<B3-Motion>",self.drag_lp)
+		# self.canvas.tag_bind("lp","<ButtonPress-3>",self.drag_begin_lp)
+		# self.canvas.tag_bind("lp","<ButtonRelease-3>",self.drag_end_lp)
+		# self.canvas.tag_bind("lp","<B3-Motion>",self.drag_lp)
 		self.canvas.tag_bind("line","<ButtonPress-1>",self.find_nearest)
 		self.canvas.tag_bind("label","<ButtonPress-1>",self.find_nearest)
 
@@ -536,7 +547,7 @@ class ProgressBar:
 
 	def loop_update(self,clip=None):
 		if self.check_cur_range is None: return
-		things_to_clear = [self.lp_line,
+		things_to_clear = [ #self.lp_line,
 			self.outside_loop_rect_l,self.outside_loop_rect_r]
 		check = self.check_cur_range()
 		if check is None: 
@@ -559,8 +570,8 @@ class ProgressBar:
 			self.canvas.coords(self.lp_line,x1+10,self.height+23,x2-10,self.height+23)
 			
 		# bottom loop points
-		self.canvas.coords(self.left_lp,x1,self.height+30,x1+10,self.height+15)
-		self.canvas.coords(self.right_lp,x2-10,self.height+30,x2,self.height+15)
+		# self.canvas.coords(self.left_lp,x1,self.height+30,x1+10,self.height+15)
+		# self.canvas.coords(self.right_lp,x2-10,self.height+30,x2,self.height+15)
 
 	def refresh(self):
 		# refresh where things are on screen if vars have changed
