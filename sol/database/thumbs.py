@@ -7,13 +7,53 @@ import os #, ntpath
 from PIL import Image, ImageChops, ImageOps
 
 class ThumbMaker:
-	def __init__(self):
+	def __init__(self,desired_width,aspect_width=16,aspect_height=9):
 		if not os.path.exists('./scrot/'): os.makedirs('./scrot/')
+		self.desired_width = desired_width
+		self.desired_height = int(desired_width * aspect_height / aspect_width)
 
 	def quit(self):
 		# clean up after yourself
 		if os.path.exists('./scrot/temp.png'):
 			os.remove('./scrot/temp.png')
+
+	def create_shot(self,f_in,f_out,seek_time=0):
+		# makes a screenshot (used for when need to make a one-off thumbnail)
+		# seek time is float from 0.0 to 1.0
+		if not os.path.exists(f_in): return
+		if seek_time > 0:
+			# want total length of video
+			file_info = ''
+			try:
+				file_info = subprocess.check_output('ffprobe -i "{}" -show_entries format=duration -v quiet -of csv="p=0"'.format(f_in), 
+							stderr=subprocess.STDOUT, shell=True)
+			except subprocess.CalledProcessError as e:
+				file_info = e.output
+			file_info = float(file_info.decode('utf-8'))
+			ss_param = seek_time * file_info
+			command = 'ffmpeg -ss {0:.3f} -y -i "{1}" -vf "thumbnail" -q:v 2 -vframes 1 "./scrot/temp.png" -hide_banner -loglevel panic'.format(ss_param, f_in)
+			print(command)
+			print('#'*40)
+			process = subprocess.Popen(command) # -ss to seek to frame
+			process.communicate() 
+			if os.path.exists('./scrot/temp.png'):
+				self.make_thumbnail('./scrot/temp.png',f_out,
+									 new_size=(self.desired_width,self.desired_height))
+				return f_out
+			else:
+				return
+		else:
+			command = 'ffmpeg -y -i "{0}" -vf "thumbnail" -q:v 2 -vframes 1 "./scrot/temp.png" -hide_banner -loglevel panic'.format(f_in)
+			print(command)
+			print('#'*40)
+			process = subprocess.Popen(command) # -ss to seek to frame
+			process.communicate()
+			if os.path.exists('./scrot/temp.png'):
+				self.make_thumbnail('./scrot/temp.png',f_out,
+									 new_size=(self.desired_width,self.desired_height))
+				return f_out
+			else:
+				return
 
 	def nice_num(self,input_str):
 		# takes a string and gives you a number to append 
@@ -22,8 +62,7 @@ class ThumbMaker:
 		# unique : _ )
 		return sum([ord(c) for c in input_str])
 
-	def gen_thumbnail(self,f_name,desired_width,n_frames=1,
-					  aspect_width=16,aspect_height=9):
+	def gen_thumbnail(self,f_name,n_frames=1):
 		# give a filename of a clip plus desired width and it will try to make a
 		# thumbnail. alternatively tell it how many thumbnails you'd like and 
 		# the total number of frames and it will generate however many thumbnails 
@@ -40,9 +79,6 @@ class ThumbMaker:
 			bad_hash += 1
 
 		# f_name = '"{}"'.format(f_name) #shlex.quote(f_name)
-
-		desired_height = int(desired_width * aspect_height / aspect_width)
-
 
 		if n_frames > 1:
 			# list of all the thumbs
@@ -69,22 +105,16 @@ class ThumbMaker:
 				print(i_output_name)
 				if os.path.exists('./scrot/temp.png'):
 					self.make_thumbnail('./scrot/temp.png',i_output_name,
-										 new_size=(desired_width,desired_height))
+										 new_size=(self.desired_width,self.desired_height))
 					tor += [i_output_name]
 				else:
 					break
 			return tor
 
 		else:
-			command = 'ffmpeg -y -i "{0}" -vf "thumbnail" -q:v 2 -vframes 1 "./scrot/temp.png" -hide_banner -loglevel panic'.format(f_name)
-			print(command)
-			print('#'*40)
-			process = subprocess.Popen(command) # -ss to seek to frame
-			process.communicate()
-			if os.path.exists('./scrot/temp.png'):
-				self.make_thumbnail('./scrot/temp.png',output_name,
-									 new_size=(desired_width,desired_height))
-				return [output_name]
+			tor = self.create_shot(f_name,output_name)
+			if tor is not None:
+				return [tor]
 			else:
 				return
 
@@ -104,7 +134,8 @@ class ThumbMaker:
 
 
 if __name__ == '__main__':
-	test_tm = ThumbMaker()
+	test_tm = ThumbMaker(192)
 	test_file = "C:\VJ\__clips__\gundam\dxv\gundam bad blue guy kills feds.mov"
-	print(test_tm.gen_thumbnail(test_file,192,5))
+	test_five = test_tm.gen_thumbnail(test_file,5)
+	new_test = test_tm.create_shot(test_file,test_five[1][:-5]+'lp_0.png',0.5)
 	

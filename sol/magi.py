@@ -5,6 +5,7 @@ from models.resolume import model
 # Constants
 NO_LAYERS = 2
 DEBUG = True
+THUMBNAIL_WIDTH = 192
 
 class Magi:
 	"""
@@ -27,7 +28,7 @@ class Magi:
 		# database
 		self.db = database.Database()
 		# thumbnail generator
-		self.thumb_maker = thumbs.ThumbMaker()
+		self.thumb_maker = thumbs.ThumbMaker(THUMBNAIL_WIDTH)
 		# inputs
 		self.osc_server = osc.OscServer()
 		self.fun_store = {} # dictionary containing address to function
