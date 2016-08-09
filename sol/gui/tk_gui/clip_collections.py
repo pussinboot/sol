@@ -1,5 +1,7 @@
 NO_Q = 8
-THUMB_W = 192
+THUMB_W = 160
+REFRESH_INTERVAL = 166
+
 import tkinter as tk
 from tkinter import ttk
 from .tkdnd import dnd_start
@@ -13,21 +15,31 @@ class ClipContainer:
 	def __init__(self,parent,index,selectfun=None,clip=None):
 		self.index = index # index in parent collection
 		self.selectfun = selectfun
-		self.clip = clip
 		self.last_clip = None
+
 		self.parent = parent
+		self.root = parent.root
 		self.frame = tk.Frame(self.parent.frame,padx=5,pady=0)
 		self.grid = self.frame.grid
 
-		self.default_img = self.img = ImageTk.PhotoImage(Image.open('./gui/tk_gui/sample_clip.png'))
-		self.label = tk.Label(self.frame,image=self.img,text='test',compound='top',width=THUMB_W,bd=2) # width of clip preview
-		self.label.image = self.img
+		self.imgs = []
+		self.default_img = self.current_img = ImageTk.PhotoImage(Image.open('./gui/tk_gui/sample_clip.png'))
+		self.current_img_i = 0
+		self.hovered = False
+
+		self.label = tk.Label(self.frame,image=self.current_img,text='test',compound='top',width=THUMB_W,bd=2) # width of clip preview
+		self.label.image = self.current_img
 		self.label.pack()
 		self.label.bind('<Double-1>',self.activate_l)
 		self.label.bind('<Double-3>',self.activate_r)
+		self.label.bind("<Enter>", self.start_hover)
+		self.label.bind("<Leave>", self.end_hover)
+
 		self.frame.dnd_accept = self.dnd_accept
 
-		self.toggle_dnd()
+		self.clip = None
+		self.change_clip(clip)
+		
 		
 	def activate(self,*args,layer=-1):
 		if self.clip is None or self.selectfun is None: return
@@ -40,19 +52,46 @@ class ClipContainer:
 		self.activate(*args,layer=1)
 
 	def change_img_from_file(self,new_img):
-		self.img = ImageTk.PhotoImage(Image.open(new_img))
-		self.label.config(image=self.img) # necessary to do twice to preserve image across garbage collection
-		self.label.image = self.img
+		self.current_img = ImageTk.PhotoImage(Image.open(new_img))
+		self.label.config(image=self.current_img) # necessary to do twice to preserve image across garbage collection
+		self.label.image = self.current_img
 
 	def change_img_from_img(self,new_img):
-		self.img = new_img
-		self.label.config(image=self.img)
-		self.label.image = self.img
+		self.current_img = new_img
+		self.label.config(image=self.current_img)
+		self.label.image = self.current_img
+
+	def next_img(self):
+		if len(self.imgs) == 0: return
+		self.current_img_i = (self.current_img_i + 1) % len(self.imgs)
+		self.change_img_from_img(self.imgs[self.current_img_i])
+
+	def hover_animate(self,*args):
+		if len(self.imgs) == 0: return
+		if not self.hovered: 
+			self.current_img_i = 0
+			self.change_img_from_img(self.imgs[self.current_img_i])
+			return
+		self.next_img()
+		self.root.after(REFRESH_INTERVAL,self.hover_animate)
+
+	def start_hover(self,*args):
+		self.hovered = True
+		self.hover_animate()
+
+	def end_hover(self,*args):
+		self.hovered = False
+
+	def setup_imgs(self):
+		f_names = [t_name for t_name in self.clip.t_names if os.path.exists(t_name)]
+		self.imgs = [ImageTk.PhotoImage(Image.open(f_name)) for f_name in f_names]
+		self.current_img_i = 0
+		self.change_img_from_img(self.imgs[self.current_img_i])
 
 	def change_text(self,new_text):
 		new_text = str(new_text)
-		if len(new_text) > 17:
-			new_text = new_text[:16] + ".."
+		if len(new_text) > 25:
+			new_text = new_text[:24] + ".."
 		self.label.config(text=new_text)
 
 	def change_clip(self,clip):
@@ -64,14 +103,16 @@ class ClipContainer:
 		if self.clip.t_names is None:
 			self.change_img_from_img(self.default_img)
 			# self.clip.t_name = './scrot/{}.png'.format(ntpath.basename(self.clip.fname))
-		if self.clip.t_names is not None and os.path.exists(self.clip.t_names[0]):
-			self.change_img_from_file(self.clip.t_names[0])
+		else:
+			self.setup_imgs()
 		#print('clip changed to',self.clip.name)
 		self.toggle_dnd()
 		# add to clip collection
 
 	def remove_clip(self,*args):
 		self.clip = None
+		self.imgs = []
+		self.hovered = False
 		self.toggle_dnd()
 
 	# tkdnd stuff here
@@ -137,12 +178,13 @@ class DragClip:
 class ContainerCollection:
 	# gui element that holds multiple clips
 	# mayb i need to be able to save/load as clipcollections (would add to sol_backend)
-	def __init__(self,parent_frame,clipcol,select_cmd):
+	def __init__(self,root,parent_frame,clipcol,select_cmd):
 		# for i in range(len(clipcol)):
 		# 	print(clipcol[i])
 		self.clip_conts = []
 		self.clip_collection = clipcol
 		self.frame = tk.Frame(parent_frame)
+		self.root = root
 
 		for i in range(NO_Q):
 			self.clip_conts.append(ClipContainer(self,i,select_cmd,self.clip_collection[i]))
@@ -173,10 +215,11 @@ class ContainerCollection:
 
 class CollectionsHolder:
 	# gui element that holds multiple containercollections
-	def __init__(self,parent_frame,clip_storage,select_cmd):
+	def __init__(self,root,parent_frame,clip_storage,select_cmd):
 		self.clip_storage = clip_storage
 		self.select_cmd = select_cmd
 
+		self.root = root
 		self.frame = parent_frame
 		self.collections_frame = tk.Frame(self.frame)
 		self.collections_labels_frame = tk.Frame(self.frame)
@@ -257,7 +300,7 @@ class CollectionsHolder:
 	def add_collection_frame(self,collection=None):
 		if collection is None:
 			collection = self.clip_storage.clip_cols[-1]
-		new_cont = ContainerCollection(self.collections_frame,collection,self.select_cmd)
+		new_cont = ContainerCollection(self.root,self.collections_frame,collection,self.select_cmd)
 		self.containers.append(new_cont)
 		self.add_collection_label(collection)
 

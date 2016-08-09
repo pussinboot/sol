@@ -31,7 +31,7 @@ class MainGui:
 			new_frame = tk.Frame(self.cc_frame,pady=0,padx=0)
 			self.clip_controls.append(clip_control.ClipControl(new_frame,self.magi,i))
 			self.cc_frames.append(new_frame)
-		self.clip_conts = clip_collections.CollectionsHolder(self.clip_col_frame,self.magi.clip_storage,self.magi.select_clip)
+		self.clip_conts = clip_collections.CollectionsHolder(self.root,self.clip_col_frame,self.magi.clip_storage,self.magi.select_clip)
 		#clip_collections.ContainerCollection(self.clip_col_frame,
 		#						self.magi.clip_storage.clip_col,self.magi.select_clip)
 		# pack it
@@ -83,7 +83,7 @@ class MainGui:
 			'swap' : self.clip_conts.swap,
 			'remove' : self.clip_conts.remove_collection_frame
 		}
-		
+
 		if what in what_to_do:
 			if ij is None:
 				what_to_do[what]()
