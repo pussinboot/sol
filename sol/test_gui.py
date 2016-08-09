@@ -25,6 +25,7 @@ class MainGui:
 		# sol
 		self.magi = Magi()
 		self.magi.gui = self
+		# self.magi.clip_storage.gui = self
 		self.clip_controls = []
 		for i in range(NO_LAYERS):
 			new_frame = tk.Frame(self.cc_frame,pady=0,padx=0)
@@ -45,7 +46,10 @@ class MainGui:
 		self.magi.start()
 
 	def refresh_after_load(self):
+		self.clip_conts.clip_storage = self.magi.clip_storage
 		self.clip_conts.refresh_after_load()
+		# for cc in self.clip_conts.containers:
+		# 	cc.update_clip_col
 		pass
 		# self.clip_conts.update_clip_col(self.magi.clip_storage.clip_col)
 
@@ -73,14 +77,16 @@ class MainGui:
 	def update_cols(self,what,ij=None):
 		# what - select, add, remove, swap
 		# ij - what index (swap returns a tuple..)
-		pass
-
-
-
-
-
-
-
+		what_to_do = {
+			'add' : self.clip_conts.add_collection_frame,
+			'select' : self.clip_conts.highlight_col
+		}
+		print(what,ij)
+		if what in what_to_do:
+			if ij is None:
+				what_to_do[what]()
+			else:
+				what_to_do[what](ij)
 
 
 if __name__ == '__main__':
@@ -93,6 +99,8 @@ if __name__ == '__main__':
 	# for k,v in testgui.magi.fun_store.items():
 	# 	print(k)#,v)
 	testgui.magi.load('./test_save.xml')
+	# for i in range(len(testgui.magi.clip_storage.clip_col)):
+	# 	print(testgui.magi.clip_storage.clip_col[i])
 	testgui.refresh_after_load()
 	# testgui.magi.db.search('gundam')
 	# testgui.magi.debug_search_res()

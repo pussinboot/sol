@@ -61,6 +61,10 @@ class Database:
 		clip.name = new_name
 		self.add_a_clip(clip)
 
+	def clear(self):
+		self.clips = {}
+		self.searcher.clear()
+
 
 
 class Search:
@@ -127,6 +131,10 @@ class ClipSearch(Search):
 			self.add_clip(clip)
 		self.refresh()
 		self.search_res = []
+
+	def clear(self):
+		self.search_res = []
+		self.index = []
 
 	def add_clip(self,clip):
 		super().add_thing(clip.name,clip)
@@ -282,6 +290,7 @@ class FileOPs:
 		return db_el
 
 	def load_database(self,database_el,database):
+		database.clear()
 		clip_dict = {}
 		for clip_el in database_el.findall('clip'):
 			new_clip = self.load_clip(clip_el)

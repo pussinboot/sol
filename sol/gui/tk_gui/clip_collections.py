@@ -190,25 +190,30 @@ class CollectionsHolder:
 
 	def refresh_after_load(self):
 		for c in self.containers:
-			c.destroy()
+			c.frame.destroy()
+		self.containers = []
 		for l in self.container_labels:
 			l.destroy()
+		self.container_labels = []
 
 		for collection in self.clip_storage.clip_cols:
+			print(collection.name)
+			for i in range(8):
+				print(collection[i])
 			self.add_collection_frame(collection)
 
 		self.highlight_col()
 
-	def go_left(self):
+	def go_left(self, *args):
 		self.clip_storage.go_left()
 
-	def go_right(self):
+	def go_right(self, *args):
 		self.clip_storage.go_right()
 
-	def swap_left(self):
+	def swap_left(self, *args):
 		self.clip_storage.swap_left()
 
-	def swap_right(self):
+	def swap_right(self, *args):
 		self.clip_storage.swap_right()
 
 	def highlight_col(self,index=-1):
@@ -219,18 +224,20 @@ class CollectionsHolder:
 		for cl in self.container_labels:
 			cl.configure(relief=tk.FLAT)
 		self.container_labels[index].configure(relief=tk.SUNKEN)
-
-		self.clip_storage.select_collection(index)
+		if index != self.clip_storage.cur_clip_col:
+			self.clip_storage.select_collection(index)
 
 	def add_collection(self):
 		self.clip_storage.add_collection()
-		self.add_collection_frame(self.clip_storage.clip_cols[-1])
+		# self.add_collection_frame(self.clip_storage.clip_cols[-1])
+		self.highlight_col(len(self.clip_storage.clip_cols)-1)
 
-	def add_collection_frame(self,collection):
+	def add_collection_frame(self,collection=None):
+		if collection is None:
+			collection = self.clip_storage.clip_cols[-1]
 		new_cont = ContainerCollection(self.collections_frame,collection,self.select_cmd)
 		self.containers.append(new_cont)
 		self.add_collection_label(collection)
-		self.highlight_col()
 
 	def add_collection_label(self,collection):
 		index = len(self.container_labels)
