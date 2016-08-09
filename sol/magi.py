@@ -644,7 +644,6 @@ class ClipStorage:
 		self.clip_cols[i], self.clip_cols[j] = self.clip_cols[j], self.clip_cols[i]
 		if self.magi.gui is not None: self.magi.gui.update_cols('swap',(i,j))
 
-
 	def swap_left(self):
 		self.swap_collections(self.cur_clip_col,self.cur_clip_col-1)
 
@@ -652,6 +651,7 @@ class ClipStorage:
 		self.swap_collections(self.cur_clip_col,self.cur_clip_col+1)
 
 	def remove_collection(self,i=None):
+		if len(self.clip_cols) <= 1: return
 		if i is None:
 			i = self.cur_clip_col
 		del self.clip_cols[i]

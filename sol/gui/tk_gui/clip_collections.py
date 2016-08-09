@@ -159,6 +159,7 @@ class ContainerCollection:
 	def clear(self):
 		for clip_cont in self.clip_conts:
 			clip_cont.remove_clip()
+		# may want to edit the actual clip collection too..
 
 class CollectionsHolder:
 	# gui element that holds multiple containercollections
@@ -197,9 +198,9 @@ class CollectionsHolder:
 		self.container_labels = []
 
 		for collection in self.clip_storage.clip_cols:
-			print(collection.name)
-			for i in range(8):
-				print(collection[i])
+			# print(collection.name)
+			# for i in range(8):
+			# 	print(collection[i])
 			self.add_collection_frame(collection)
 
 		self.highlight_col()
@@ -215,6 +216,17 @@ class CollectionsHolder:
 
 	def swap_right(self, *args):
 		self.clip_storage.swap_right()
+
+	def swap(self,ij):
+		if len(ij) != 2: return
+		# labels
+		text_i = self.container_labels[ij[0]].cget('text')
+		text_j = self.container_labels[ij[1]].cget('text')
+		self.container_labels[ij[0]].config(text=text_j)
+		self.container_labels[ij[1]].config(text=text_i)
+		# do the swap
+		self.containers[ij[0]],self.containers[ij[1]] = self.containers[ij[1]],self.containers[ij[0]]
+		self.highlight_col()
 
 	def highlight_col(self,index=-1):
 		if index < 0:
@@ -242,11 +254,23 @@ class CollectionsHolder:
 	def add_collection_label(self,collection):
 		index = len(self.container_labels)
 		newlabel = tk.Label(self.collections_labels_frame,text=collection.name,bd=4)
-		newlabel.bind('<ButtonPress-1>',lambda *args: self.highlight_col(index))
-		newlabel.bind("<Double-1>",lambda *args: self.change_name_dialog(index))
-		newlabel.bind('<ButtonPress-2>',lambda *args: self.remove_collection(index))
+		newlabel.bind('<ButtonPress-1>',lambda *args: self.highlight_col(self.container_labels.index(newlabel)))
+		newlabel.bind("<Double-1>",lambda *args: self.change_name_dialog(self.container_labels.index(newlabel)))
+		newlabel.bind('<ButtonPress-2>',lambda *args: self.remove_collection(self.container_labels.index(newlabel)))
 		newlabel.pack(side=tk.LEFT)
 		self.container_labels.append(newlabel)
+
+	def remove_collection(self,index):
+		if len(self.containers) <= 1:
+			self.containers[0].clear()
+			return
+		self.clip_storage.remove_collection(index)
+
+	def remove_collection_frame(self,index):
+		self.containers[index].frame.destroy()
+		del self.containers[index]
+		self.container_labels[index].destroy()
+		del self.container_labels[index]
 
 	def change_name_dialog(self,index):
 		new_name = tksimpledialog.askstring("rename collection",self.containers[index].clip_collection.name)

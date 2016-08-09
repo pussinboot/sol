@@ -79,9 +79,11 @@ class MainGui:
 		# ij - what index (swap returns a tuple..)
 		what_to_do = {
 			'add' : self.clip_conts.add_collection_frame,
-			'select' : self.clip_conts.highlight_col
+			'select' : self.clip_conts.highlight_col,
+			'swap' : self.clip_conts.swap,
+			'remove' : self.clip_conts.remove_collection_frame
 		}
-		print(what,ij)
+		
 		if what in what_to_do:
 			if ij is None:
 				what_to_do[what]()
