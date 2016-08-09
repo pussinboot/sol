@@ -61,6 +61,8 @@ class ClipControl:
 	def setup_gui(self):
 		# top lvl
 		self.frame = tk.Frame(self.root)
+		self.frame.dnd_accept = self.dnd_accept # for dnd
+
 		self.info_frame = tk.Frame(self.frame,relief=tk.RIDGE,borderwidth = 2) # top - just info
 		self.middle_frame = tk.Frame(self.frame) # middle - left is timeline/qp, right is various control
 		self.bottom_frame = tk.Frame(self.frame) # bottom - loop pointz
@@ -348,6 +350,29 @@ class ClipControl:
 				but.config(relief='groove')
 				self.timeline.add_line(cp[i],i)
 
+	# tkdnd stuff
+	def dnd_accept(self, source, event):
+		# print("source:",source.fname,"event",event)
+		return self
+
+	def dnd_enter(self, source, event):
+		#self.label.focus_set() # Show highlight border
+		pass
+
+	def dnd_motion(self, source, event):
+		pass
+		
+	def dnd_leave(self, source, event):
+		#self.parent.focus_set() # Hide highlight border
+		pass
+		
+	def dnd_commit(self, source, event):
+		#print('source:',source)
+		if source.clip is None: return
+		self.backend.select_clip(source.clip,self.layer) 
+
+	def dnd_end(self,target,event):
+		pass
 
 
 class ProgressBar:

@@ -79,7 +79,6 @@ class ClipContainer:
 		if dnd_start(DragClip(self.clip,self), event):
 			pass
 			# print(self.clip.name,"selected")
-			
 
 	def dnd_accept(self, source, event):
 		# print("source:",source.fname,"event",event)
@@ -103,7 +102,8 @@ class ClipContainer:
 		self.dnd_leave(source, event)
 
 	def dnd_end(self,target,event):
-		print('target:',target)
+		pass
+		# print('target:',target)
 		# if target is not None and target != self:
 		# 	self.remove_clip()
 
@@ -129,7 +129,7 @@ class DragClip:
 		self.source = source
 
 	def dnd_end(self,target,event):
-		# print(type(self.source))
+		# print(type(target))
 		if self.source and type(target)==type(self.source):
 			self.source.change_clip(target.last_clip)
 
