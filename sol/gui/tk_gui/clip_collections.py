@@ -11,11 +11,10 @@ import os
 class ClipContainer:
 	# gui element that holds a single clip
 	def __init__(self,parent,index,selectfun=None,clip=None):
-		self.active = False
 		self.index = index # index in parent collection
 		self.selectfun = selectfun
 		self.clip = clip
-
+		self.last_clip = None
 		self.parent = parent
 		self.frame = tk.Frame(self.parent.frame,padx=5,pady=0)
 		self.grid = self.frame.grid
@@ -33,16 +32,12 @@ class ClipContainer:
 	def activate(self,*args,layer=-1):
 		if self.clip is None or self.selectfun is None: return
 		self.selectfun(self.clip,layer)
-		self.active = True
 
 	def activate_l(self,*args):
 		self.activate(*args,layer=0)
 
 	def activate_r(self,*args):
 		self.activate(*args,layer=1)
-
-	def deactivate(self,*args):
-		self.active = False
 
 	def change_img_from_file(self,new_img):
 		self.img = ImageTk.PhotoImage(Image.open(new_img))
@@ -61,6 +56,10 @@ class ClipContainer:
 		self.label.config(text=new_text)
 
 	def change_clip(self,clip):
+		if clip is None: 
+			self.remove_clip()
+			return
+		self.last_clip = self.clip
 		self.clip = clip
 		if self.clip.t_names is None:
 			self.change_img_from_img(self.default_img)
@@ -74,15 +73,13 @@ class ClipContainer:
 	def remove_clip(self,*args):
 		self.clip = None
 		self.toggle_dnd()
-		self.deactivate()
 
 	# tkdnd stuff here
 	def press(self, event):
-		# if dnd_start(TreeClip(self.fname,self.active,self), event):
-		pass
-			#print(self.clip.name,"selected")
-			#print(self.clip.name == self.label['text']) # it has correct name after change
-			#print(self.searcher.get_from_name(self.clip.name)) # it gets the right clip after change
+		if dnd_start(DragClip(self.clip,self), event):
+			pass
+			# print(self.clip.name,"selected")
+			
 
 	def dnd_accept(self, source, event):
 		# print("source:",source.fname,"event",event)
@@ -104,12 +101,11 @@ class ClipContainer:
 		if source.clip is None: return
 		self.change_clip(source.clip) #change_text
 		self.dnd_leave(source, event)
-		if source.active: self.activate()
 
 	def dnd_end(self,target,event):
 		print('target:',target)
-		if target is not None and target != self:
-			self.remove_clip()
+		# if target is not None and target != self:
+		# 	self.remove_clip()
 
 	def toggle_dnd(self):
 		if not self.clip:
@@ -123,6 +119,20 @@ class ClipContainer:
 			# change image, if clip_name is empty / our clip is none, set the img to default img -.-
 			self.label.bind("<ButtonPress-3>", self.press,add="+") # now we can drag it around
 			self.label.bind('<ButtonPress-2>',self.remove_clip) # middle click 2 remove clip
+
+class DragClip:
+	"""
+	used for dragging clips wherever
+	"""
+	def __init__(self, clip, source=None):
+		self.clip = clip
+		self.source = source
+
+	def dnd_end(self,target,event):
+		# print(type(self.source))
+		if self.source and type(target)==type(self.source):
+			self.source.change_clip(target.last_clip)
+
 
 class ContainerCollection:
 	# gui element that holds multiple clips
