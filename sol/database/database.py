@@ -44,6 +44,7 @@ class Database:
 		i.e. C:\VJ\__clips__\gundam\dxv\g gundam gettin changed.mov
 		would just return gundam for folders and full filename..
 		"""
+		if len(self.clips) == 0: return
 		hierarchy = FileHierarchy()
 		for clip in self.clips.values():
 			hierarchy.add_clip(clip)
