@@ -31,12 +31,12 @@ class MainGui:
 			new_frame = tk.Frame(self.cc_frame,pady=0,padx=0)
 			self.clip_controls.append(clip_control.ClipControl(new_frame,self.magi,i))
 			self.cc_frames.append(new_frame)
-		self.clip_conts = clip_collections.CollectionsHolder(self.root,self.clip_col_frame,self.magi.clip_storage,self.magi.select_clip)
+		self.clip_conts = clip_collections.CollectionsHolder(self.root,self.clip_col_frame,self.magi)
 		#clip_collections.ContainerCollection(self.clip_col_frame,
 		#						self.magi.clip_storage.clip_col,self.magi.select_clip)
 		# pack it
 		self.mainframe.pack()
-		self.cc_frame.pack(side=tk.TOP,fill=tk.X)
+		self.cc_frame.pack(side=tk.TOP,fill=tk.X,expand=True)
 		self.clip_col_frame.pack(side=tk.TOP,fill=tk.BOTH)
 
 		for frame in self.cc_frames:

@@ -27,6 +27,13 @@ class Database:
 	def last_search(self):
 		return self.searcher.search_res
 
+	@property
+	def alphabetical_listing(self):
+		all_clips = [(clip.name, clip) for clip in self.clips.values()]
+		all_clips.sort()
+		return all_clips
+	
+
 	def add_clip(self,clip):
 		# add default params (if they dont exist)
 		def_params = {

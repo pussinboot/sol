@@ -11,7 +11,7 @@ class ClipControl:
 
 		# tk
 		self.root = root
-		self.width = 300
+		self.width = 330
 
 
 		self.setup_gui()
