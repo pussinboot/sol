@@ -2,6 +2,8 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from bisect import bisect_left
 
+import os.path
+
 try:
 	from .clip import Clip
 	from .clip import ClipCollection
@@ -32,6 +34,42 @@ class Database:
 		all_clips = [(clip.name, clip) for clip in self.clips.values()]
 		all_clips.sort()
 		return all_clips
+
+	@property
+	def hierarchical_listing(self):
+		"""
+		builds out a tree from all clip filenames then flattens it 
+		and returns folder name / filenames but ignores top-level 
+		and redundant folders
+		i.e. C:\VJ\__clips__\gundam\dxv\g gundam gettin changed.mov
+		would just return gundam for folders and full filename..
+		"""
+		hierarchy = FileHierarchy()
+		for clip in self.clips.values():
+			hierarchy.add_clip(clip)
+		tor = []
+		def traverse(node):
+			if node.f_or_f == 'clip':
+				return [('clip',node.name,node.data)]
+			else:
+				if len(node.children) > 1:
+					tor = [('folder',node.name,node.data)]
+					for child in node.children:
+						tor += traverse(child)
+					return tor
+				elif len(node.children) == 1:
+					return traverse(node.children[0])
+				else:
+					return # shouldn't happe
+
+		tor += traverse(hierarchy.root_node)
+		return tor
+	# def __str__(self,prefix=""):
+	# 	tor = prefix + self.name + "\n"
+	# 	for child in self.children:
+	# 		tor += child.__str__(prefix+"\t")
+	# 	return tor
+
 	
 
 	def add_clip(self,clip):
@@ -312,11 +350,65 @@ class FileOPs:
 		root = tree.getroot()
 		return root
 
+class FileHierarchyNode:
+	def __init__(self,name,what,data=None):
+		self.name = name
+		self.f_or_f = what
+		self.data = data
+		self.children = []
+
+	def find_name_in_children(self,search_name):
+		to_search = [child.name for child in self.children]
+		if search_name not in to_search: return
+		tor_i = to_search.index(search_name)
+		return self.children[tor_i]
+
+	def __str__(self,prefix=""):
+		tor = prefix + self.name + "\n"
+		for child in self.children:
+			tor += child.__str__(prefix+"\t")
+		return tor
+
+class FileHierarchy:
+	def __init__(self):
+		self.root_node = FileHierarchyNode('File Browser','folder')
+
+	def add_clip(self,clip,cur_node=None,tail=None):
+		# start out
+		if cur_node is None:
+			cur_node = self.root_node
+		if tail is None:
+			tail = self.splitpath(clip.f_name)
+			# special fix for me because i put files into folder based on file extension
+			if 'dxv' in tail:
+				del tail[tail.index('dxv')]
+		head = tail[0]
+		# we've reached the filename (guaranteed to be unique i swear)
+		if len(tail) == 1:
+			clip_node = FileHierarchyNode(clip.name,'clip',clip.f_name)
+			cur_node.children.append(clip_node)
+			return
+		# traversal
+		next_node = cur_node.find_name_in_children(head)
+		# when next folder we need doesnt exist
+		if next_node is None:
+			new_node = FileHierarchyNode(head,'folder')
+			cur_node.children.append(new_node)
+			self.add_clip(clip,new_node,tail[1:])
+		else:
+			self.add_clip(clip,next_node,tail[1:])
+
+	def splitpath(self, path, maxdepth=20):
+		(head, tail) = os.path.split(path)
+		return self.splitpath(head, maxdepth - 1) + [tail] \
+			if maxdepth and head and head != path \
+			else [ head or tail ]
+
 if __name__ == '__main__':
 	testdb = Database()
-	test_fnames = ['bazin.mov','test.mov','really cool clip.mov']
-	for fname in test_fnames:
-		testdb.add_a_clip(Clip(fname,"fake act"))
+	# test_fnames = ['bazin.mov','test.mov','really cool clip.mov']
+	# for fname in test_fnames:
+	# 	testdb.add_a_clip(Clip(fname,"fake act"))
 	# print(testdb.search('c')[0])
 	# print(testdb.search('t')[0])
 	# print(testdb.search('clip')[0])
@@ -351,16 +443,28 @@ if __name__ == '__main__':
 	# print([testclip,test_testclip])
 	# print(test_testclip.params)
 
-	test_col = ClipCollection()
-	for i in range(len(test_fnames)):
-		test_col[i] = testdb.clips[test_fnames[i]]
-	testclipcol = testdb.file_ops.save_clip_col(test_col)
+	# test_col = ClipCollection()
+	# for i in range(len(test_fnames)):
+	# 	test_col[i] = testdb.clips[test_fnames[i]]
+	# testclipcol = testdb.file_ops.save_clip_col(test_col)
 	
-	print(testdb.file_ops.pretty_print(testclipcol))
-	test_parsed_col = testdb.file_ops.load_clip_col(testclipcol,testdb.clips)
-	print(len(test_parsed_col))
-	for i in range(8):
-		print(test_parsed_col[i])
-	print(test_parsed_col[2] == testdb.clips[test_fnames[2]])
-	for p,v in test_parsed_col[2].params.items():
-		print(p,v)
+	# print(testdb.file_ops.pretty_print(testclipcol))
+	# test_parsed_col = testdb.file_ops.load_clip_col(testclipcol,testdb.clips)
+	# print(len(test_parsed_col))
+	# for i in range(8):
+	# 	print(test_parsed_col[i])
+	# print(test_parsed_col[2] == testdb.clips[test_fnames[2]])
+	# for p,v in test_parsed_col[2].params.items():
+	# 	print(p,v)
+
+	test_fnames = ['C:\VJ\__clips__\gundam\dxv\g gundam gettin changed.mov',
+			'C:\VJ\__clips__\gundam\dxv\gundam bad blue guy kills feds.mov',
+			'C:\VJ\__clips__\gundam\dxv\gundam beamspam suicides etc.mov',
+			'C:\VJ\__clips__\gundum\dxv\gundam big battle.mov']
+
+	# test_fh = FileHierarchy()
+	for fname in test_fnames:
+		testdb.add_a_clip(Clip(fname,"fake act"))
+	test_listing = testdb.hierarchical_listing
+	# print(test_fh.root_node)
+	print(test_listing)
