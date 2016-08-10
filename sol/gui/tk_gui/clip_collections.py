@@ -349,29 +349,68 @@ class LibraryBrowser:
 		# db (has searcher & search fun)
 		self.db = self.backend.db
 
+		self.search_query = tk.StringVar()
 
 		self.parent_frame = parent_frame
 		self.frame = tk.Frame(self.parent_frame)
+		self.tree_frames = tk.Frame(self.frame)
+		self.tree_buts = tk.Frame(self.frame)
+		self.search_frame = tk.Frame(self.tree_frames)
+		self.browse_frame = tk.Frame(self.tree_frames)
 
-		self.search_query = tk.StringVar()
-		self.search_field = tk.Entry(self.frame,textvariable=self.search_query,width=5)
+		self.search_but = tk.Label(self.tree_buts,text='search')
+		self.browse_but = tk.Label(self.tree_buts,text='browse')
+
+		def search_select(*args):
+			self.search_frame.tkraise()
+
+		def browse_select(*args):
+			self.browse_frame.tkraise()
+
+		self.search_but.bind('<ButtonPress>',search_select)
+		self.browse_but.bind('<ButtonPress>',browse_select)
+
+		# setup the search tree
+		self.search_field = tk.Entry(self.search_frame,textvariable=self.search_query,width=5)
 		self.search_query.trace('w',self.search)
-
-		# setup the tree
-		self.search_frame = tk.Frame(self.frame)
-		self.search_tree = ttk.Treeview(self.search_frame,selectmode='extended', show='tree')#, height = 20)
+		self.search_inner_frame = tk.Frame(self.search_frame)
+		self.search_tree = ttk.Treeview(self.search_inner_frame,selectmode='extended', show='tree', height = 11)
 		self.search_tree.bind('<ButtonPress>',self.make_drag_clip, add="+")
 		self.search_tree.bind('<Double-1>',lambda e: self.activate_clip_to_layer(e,0))
 		self.search_tree.bind('<Double-3>',lambda e: self.activate_clip_to_layer(e,1))
-		self.tree_reset()
+		
+		# setup the browse tree
+		self.browse_tree = ttk.Treeview(self.browse_frame,selectmode='extended', show='tree', height = 13)
+		self.browse_tree.bind('<ButtonPress>',self.make_drag_clip, add="+")
+		self.browse_tree.bind('<Double-1>',lambda e: self.activate_clip_to_layer(e,0))
+		self.browse_tree.bind('<Double-3>',lambda e: self.activate_clip_to_layer(e,1))
 
+		self.tree_reset()
+		# srch tree
 		self.search_field.pack(side=tk.TOP,anchor=tk.N,fill=tk.X,pady=2)#.grid(row=1,column=1,sticky=tk.N)
 		self.search_tree.pack(side=tk.LEFT,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)#.grid(row=2,column=1,sticky=tk.N) 
-		self.ysb = ttk.Scrollbar(self.frame, orient='vertical', command=self.search_tree.yview)
+		self.ysb = ttk.Scrollbar(self.search_frame, orient='vertical', command=self.search_tree.yview)
 		self.search_tree.configure(yscrollcommand=self.ysb.set)
 		self.ysb.pack(side=tk.RIGHT,anchor=tk.N,fill=tk.Y)
-		self.search_frame.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)
+		self.search_inner_frame.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=True)
+		# brwse tree
+		self.browse_tree.pack(side=tk.LEFT,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)
+		self.ysbb = ttk.Scrollbar(self.browse_frame, orient='vertical', command=self.browse_tree.yview)
+		self.browse_tree.configure(yscrollcommand=self.ysbb.set)
+		self.ysbb.pack(side=tk.RIGHT,anchor=tk.N,fill=tk.Y)
+
+
+		self.tree_frames.pack(side=tk.TOP,fill=tk.BOTH,expand=True)
+		self.tree_buts.pack(side=tk.TOP)
+
+		self.search_frame.grid(row=0, column=0, sticky='news')
+		self.browse_frame.grid(row=0, column=0, sticky='news')
+
+		self.search_but.pack(side=tk.LEFT)
+		self.browse_but.pack(side=tk.LEFT)
+
 		self.frame.pack(fill=tk.BOTH,expand=tk.Y)
+		self.search_frame.tkraise()
 
 	def search(self,*args):
 		# print(self.search_query.get())
@@ -417,9 +456,21 @@ class LibraryBrowser:
 		self.backend.select_clip(the_clip,layer)
 
 	def tree_reset(self):
+		# search
 		clips = self.db.alphabetical_listing
 		if self.search_tree.exists("root"):
 			self.search_tree.delete("root")
-		self.tree_root = self.search_tree.insert('', 'end',iid="root", text='All',open=True,values=['category'])
+		self.s_tree_root = self.search_tree.insert('', 'end',iid="root", text='All',open=True,values=['category'])
 		for c_name_clip in clips:
-			self.search_tree.insert(self.tree_root, 'end', text=c_name_clip[0],values=["clip",c_name_clip[1].f_name])
+			self.search_tree.insert(self.s_tree_root, 'end', text=c_name_clip[0],values=["clip",c_name_clip[1].f_name])
+		# browse
+		files = self.db.hierarchical_listing
+		if self.browse_tree.exists("root"):
+			self.browse_tree.delete("root")
+		if files is None: 
+			return
+		for i in range(len(files)):
+			if files[i][0] == 'folder':
+				cur_folder = self.browse_tree.insert('', 'end',iid=files[i][1], text=files[i][1],open=True,values=['category'])
+
+
