@@ -215,14 +215,20 @@ class ContainerCollection:
 
 class CollectionsHolder:
 	# gui element that holds multiple containercollections
-	def __init__(self,root,parent_frame,clip_storage,select_cmd):
-		self.clip_storage = clip_storage
-		self.select_cmd = select_cmd
+	def __init__(self,root,parent_frame,backend):
+		self.backend = backend
+		self.clip_storage = backend.clip_storage
+		self.select_cmd = backend.select_clip
+
 
 		self.root = root
 		self.frame = parent_frame
-		self.collections_frame = tk.Frame(self.frame)
-		self.collections_labels_frame = tk.Frame(self.frame)
+		self.col_frame = tk.Frame(self.frame)
+		self.collections_frame = tk.Frame(self.col_frame)
+		self.collections_labels_frame = tk.Frame(self.col_frame)
+		self.search_frame = tk.Frame(self.frame)
+
+		self.library_browse = LibraryBrowser(self.backend,self.search_frame)
 
 		self.containers = []
 		self.container_labels = []
@@ -231,6 +237,8 @@ class CollectionsHolder:
 
 		self.collections_frame.pack(side=tk.TOP)
 		self.collections_labels_frame.pack(side=tk.TOP,fill=tk.X)
+		self.col_frame.pack(side=tk.LEFT)
+		self.search_frame.pack(side=tk.LEFT,fill=tk.Y)
 
 	def setup_labels(self):
 		self.add_col_but = tk.Button(self.collections_labels_frame,text='+',command=self.add_collection)
@@ -243,6 +251,7 @@ class CollectionsHolder:
 		self.go_l_but.pack(side=tk.RIGHT)
 
 	def refresh_after_load(self):
+		# clip collections
 		for c in self.containers:
 			c.frame.destroy()
 		self.containers = []
@@ -257,6 +266,8 @@ class CollectionsHolder:
 			self.add_collection_frame(collection)
 
 		self.highlight_col()
+		# search
+		self.library_browse.tree_reset()
 
 	def go_left(self, *args):
 		self.clip_storage.go_left()
@@ -331,3 +342,74 @@ class CollectionsHolder:
 			# change name
 			self.containers[index].clip_collection.name = new_name
 			self.container_labels[index].configure(text=new_name)
+
+class LibraryBrowser:
+	def __init__(self,backend,parent_frame):
+		self.backend = backend
+		# db (has searcher & search fun)
+		self.db = self.backend.db
+
+
+		self.parent_frame = parent_frame
+		self.frame = tk.Frame(self.parent_frame)
+
+		self.search_query = tk.StringVar()
+		self.search_field = tk.Entry(self.frame,textvariable=self.search_query,width=5)
+		self.search_query.trace('w',self.search)
+
+		# setup the tree
+		self.search_frame = tk.Frame(self.frame)
+		self.search_tree = ttk.Treeview(self.search_frame,selectmode='extended', show='tree')#, height = 20)
+		self.search_tree.bind('<ButtonPress>',self.make_drag_clip, add="+")
+
+		self.tree_reset()
+
+		self.search_field.pack(side=tk.TOP,anchor=tk.N,fill=tk.X,pady=2)#.grid(row=1,column=1,sticky=tk.N)
+		self.search_tree.pack(side=tk.LEFT,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)#.grid(row=2,column=1,sticky=tk.N) 
+		self.ysb = ttk.Scrollbar(self.frame, orient='vertical', command=self.search_tree.yview)
+		self.search_tree.configure(yscrollcommand=self.ysb.set)
+		self.ysb.pack(side=tk.RIGHT,anchor=tk.N,fill=tk.Y)
+		self.search_frame.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)
+		self.frame.pack(fill=tk.BOTH,expand=tk.Y)
+
+	def search(self,*args):
+		# print(self.search_query.get())
+		search_term = self.search_query.get()
+		if search_term != "":
+			res = self.db.search(search_term) # n = 3 # for limiting
+			self.search_tree.item("root",open=False)
+			if self.search_tree.exists("search"):
+				self.search_tree.delete("search")
+			search_res = self.search_tree.insert('', 'end',iid="search", text='Search Results',open=True,values=['category'])
+			for clip in res:
+				self.search_tree.insert(search_res, 'end', text=clip.name,values=["clip",clip.f_name])
+		else:
+			if self.search_tree.exists("search"):
+				self.search_tree.delete("search")
+			self.search_tree.item("root",open=True)
+
+	def make_drag_clip(self,event):
+		# print(event.state)
+		if event.state != 8: # sure numlock is on for 8 to work...
+			if event.state != 0:
+				return
+		tv = event.widget
+		if tv.identify_row(event.y) not in tv.selection():
+			tv.selection_set(tv.identify_row(event.y))    
+		if not tv.selection():
+			return
+		item = tv.selection()[0]
+		if tv.item(item,"values")[0] != 'clip':
+			return
+		clip_fname = tv.item(item,"values")[1]
+		if dnd_start(DragClip(self.db.clips[clip_fname]),event):
+			# print('dnd started')
+			pass
+
+	def tree_reset(self):
+		clips = self.db.alphabetical_listing
+		if self.search_tree.exists("root"):
+			self.search_tree.delete("root")
+		self.tree_root = self.search_tree.insert('', 'end',iid="root", text='All',open=True,values=['category'])
+		for c_name_clip in clips:
+			self.search_tree.insert(self.tree_root, 'end', text=c_name_clip[0],values=["clip",c_name_clip[1].f_name])
