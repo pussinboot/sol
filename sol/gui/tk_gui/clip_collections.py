@@ -361,7 +361,8 @@ class LibraryBrowser:
 		self.search_frame = tk.Frame(self.frame)
 		self.search_tree = ttk.Treeview(self.search_frame,selectmode='extended', show='tree')#, height = 20)
 		self.search_tree.bind('<ButtonPress>',self.make_drag_clip, add="+")
-
+		self.search_tree.bind('<Double-1>',lambda e: self.activate_clip_to_layer(e,0))
+		self.search_tree.bind('<Double-3>',lambda e: self.activate_clip_to_layer(e,1))
 		self.tree_reset()
 
 		self.search_field.pack(side=tk.TOP,anchor=tk.N,fill=tk.X,pady=2)#.grid(row=1,column=1,sticky=tk.N)
@@ -388,8 +389,7 @@ class LibraryBrowser:
 				self.search_tree.delete("search")
 			self.search_tree.item("root",open=True)
 
-	def make_drag_clip(self,event):
-		# print(event.state)
+	def get_clip_from_event(self,event):
 		if event.state != 8: # sure numlock is on for 8 to work...
 			if event.state != 0:
 				return
@@ -402,9 +402,19 @@ class LibraryBrowser:
 		if tv.item(item,"values")[0] != 'clip':
 			return
 		clip_fname = tv.item(item,"values")[1]
-		if dnd_start(DragClip(self.db.clips[clip_fname]),event):
-			# print('dnd started')
+		if clip_fname not in self.db.clips: return
+		return self.db.clips[clip_fname]
+
+	def make_drag_clip(self,event):
+		the_clip = self.get_clip_from_event(event)
+		if the_clip is None: return
+		if dnd_start(DragClip(the_clip),event):
 			pass
+
+	def activate_clip_to_layer(self,event,layer):
+		the_clip = self.get_clip_from_event(event)
+		if the_clip is None: return
+		self.backend.select_clip(the_clip,layer)
 
 	def tree_reset(self):
 		clips = self.db.alphabetical_listing
