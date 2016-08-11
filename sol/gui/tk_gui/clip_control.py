@@ -1,6 +1,9 @@
 import tkinter as tk
+from PIL import ImageTk,Image
+import os
 
 NO_Q = 8
+NO_LP = 8
 
 class ClipControl:
 	def __init__(self,root,backend,layer):
@@ -56,6 +59,7 @@ class ClipControl:
 
 	def update_loop(self,clip):
 		self.timeline.loop_update()
+		self.loop_screen.refresh()
 		self.refresh_looping(clip)
 
 	def setup_gui(self):
@@ -66,6 +70,7 @@ class ClipControl:
 		self.info_frame = tk.Frame(self.frame,relief=tk.RIDGE,borderwidth = 2) # top - just info
 		self.middle_frame = tk.Frame(self.frame) # middle - left is timeline/qp, right is various control
 		self.bottom_frame = tk.Frame(self.frame) # bottom - loop pointz
+
 
 		self.timeline_cue_frame = tk.Frame(self.middle_frame)
 		self.timeline_frame = tk.Frame(self.timeline_cue_frame)
@@ -104,6 +109,8 @@ class ClipControl:
 						 self.backend.fun_store[gen_addr + '/loop/on_off'],
 						 self.backend.fun_store[gen_addr + '/loop/type'],
 						 self.backend.fun_store[gen_addr + '/loop/select']]
+
+		self.loop_screen = LoopScreen(self.bottom_frame,self.backend,self.layer,self.width,loop_set_funs)
 
 		speedfun = self.backend.fun_store[gen_addr + '/playback/speed']
 		# info
@@ -592,7 +599,7 @@ class ProgressBar:
 			# black out outside of range?
 			self.canvas.coords(self.outside_loop_rect_l,0,0,x1,self.height)
 			self.canvas.coords(self.outside_loop_rect_r,x2,0,self.width,self.height)
-			self.canvas.coords(self.lp_line,x1+10,self.height+23,x2-10,self.height+23)
+			# self.canvas.coords(self.lp_line,x1+10,self.height+23,x2-10,self.height+23)
 			
 		# bottom loop points
 		# self.canvas.coords(self.left_lp,x1,self.height+30,x1+10,self.height+15)
@@ -601,3 +608,210 @@ class ProgressBar:
 	def refresh(self):
 		# refresh where things are on screen if vars have changed
 		self.loop_update()
+
+class LoopScreen:
+	def __init__(self,parent_frame,backend,layer,width,loop_set_funs):
+		self.parent_frame = parent_frame
+		self.backend = backend
+		self.layer = layer
+		self.width = width
+		self.height = 100
+		self.thumb_w = 125
+		self.thumb_h = 70
+		self.loop_set_funs = loop_set_funs 
+
+		# '/loop/set/a'
+		# '/loop/set/b'
+		# '/loop/on_off'
+		# '/loop/type'
+		# '/loop/select'
+
+		self.bg_color = "black"
+		self.lp_color = "#666"
+		self.lp_active_color = "#eee"
+
+		self.frame = tk.Frame(self.parent_frame)
+		self.canvas_frame = tk.Frame(self.frame)
+		self.canvas = tk.Canvas(self.canvas_frame,width=self.width,height=self.height,bg=self.bg_color,scrollregion=(0,0,self.width,self.height))
+
+		self.thumb_frame = tk.Frame(self.frame)
+		self.default_img = self.current_img = ImageTk.PhotoImage(Image.open('./gui/tk_gui/sample_thumb.png'))
+		self.loop_thumbs = [self.default_img]*NO_LP
+		self.thumb_label = tk.Label(self.thumb_frame,image=self.current_img,width=self.thumb_w)
+		self.but_frame = tk.Frame(self.thumb_frame)
+		
+
+		# everything associated with loop lines
+		self.loop_lines = []
+		d_y = self.height / NO_LP
+		for i in range(NO_LP):
+			start_y = i * d_y
+			end_y = start_y + d_y
+			new_line = self.canvas.create_rectangle(0,start_y,self.width,end_y,fill=self.bg_color,
+													activefill=self.bg_color,tag='l_l')
+			self.loop_lines.append(new_line)
+
+		self.canvas.tag_bind("l_l","<ButtonPress-1>",self.pick_loop_line)
+		self.canvas.tag_bind("l_l","<Enter>",self.hover_loop_line)
+		self.canvas.bind("<Leave>",self.unhover)
+
+		#thumbs n buts ha
+		self.set_a_but = tk.Button(self.but_frame,text='loop in',command=self.set_loop_a)
+		self.set_b_but = tk.Button(self.but_frame,text='loop out',command=self.set_loop_b)
+
+		self.canvas.pack()
+		self.canvas_frame.pack(side=tk.LEFT)
+		self.thumb_frame.pack(side=tk.LEFT)
+		self.thumb_label.pack(side=tk.TOP)
+		self.set_a_but.pack(side=tk.LEFT)
+		self.set_b_but.pack(side=tk.LEFT)
+		self.but_frame.pack(side=tk.TOP)
+
+		self.frame.pack()
+
+	def set_loop_a(self,*args):
+		cur_loc = self.backend.model.current_clip_pos[self.layer]
+		if cur_loc is None: return
+		self.loop_set_funs[0]('',cur_loc)
+		self.set_cur_loop_line()
+
+	def set_loop_b(self,*args):
+		cur_loc = self.backend.model.current_clip_pos[self.layer]
+		if cur_loc is None: return
+		self.loop_set_funs[1]('',cur_loc)
+		# print(self.cur_clip_lp)
+		self.set_cur_loop_line()
+
+	@property
+	def cur_clip_lp(self):
+		cur_clip = self.backend.clip_storage.current_clips[self.layer]
+		if cur_clip is None: return
+		tor = {
+			'loop_on' : cur_clip.params['loop_on'],
+			'loop_selection' : cur_clip.params['loop_selection'],
+			'loop_points' : cur_clip.params['loop_points']
+		}
+		return tor
+
+	def refresh(self):
+		cur_lp = self.set_loop_lines()
+
+		self.current_img = self.default_img
+		
+		if cur_lp is None:
+			self.loop_thumbs = [self.default_img]*NO_LP
+			self.thumb_label.unbind("<ButtonPress-1>")
+		else:
+			for i in range(NO_LP):
+				try:
+					self.loop_thumbs[i] = ImageTk.PhotoImage(Image.open(cur_lp['loop_points'][i][3]))
+				# if cur_lp['loop_points'][i] is None or cur_lp['loop_points'][i][3] is None:
+				except:
+					self.loop_thumbs[i] = self.default_img
+			if cur_lp['loop_selection'] > 0:
+				self.current_img = self.loop_thumbs[cur_lp['loop_selection']]
+			self.thumb_label.bind("<ButtonPress-1>",self.save_shot)
+
+		self.thumb_label.config(image=self.current_img)
+		self.thumb_label.image = self.current_img
+
+	def set_cur_loop_line(self):
+		cur_lp = self.cur_clip_lp
+		if cur_lp is None or cur_lp['loop_selection'] < 0: return
+		cur_i = cur_lp['loop_selection']
+		cur_coords = self.canvas.coords(self.loop_lines[cur_i])
+		start_x, end_x = self.width * cur_lp['loop_points'][cur_i][0], self.width * cur_lp['loop_points'][cur_i][1]
+		self.canvas.coords(self.loop_lines[cur_i],start_x,cur_coords[1],end_x,cur_coords[3])
+		self.canvas.itemconfig(self.loop_lines[cur_i],fill=self.lp_active_color,
+										activefill=self.lp_active_color)
+
+	def set_loop_lines(self):
+		# get the lp
+		cur_lp = self.cur_clip_lp
+		if cur_lp is None:
+			for i in range(NO_LP):
+				self.canvas.itemconfig(self.loop_lines[i],stipple='',fill=self.bg_color,activefill=self.bg_color)
+			self.set_a_but.config(state='disabled')
+			self.set_b_but.config(state='disabled') 
+			return
+
+		self.set_a_but.config(state='active')
+		self.set_b_but.config(state='active')
+
+		d_y = self.height / NO_LP
+		for i in range(len(cur_lp['loop_points'])):
+			self.canvas.itemconfig(self.loop_lines[i],stipple='')
+			start_y = i * d_y
+			end_y = start_y + d_y
+			if cur_lp['loop_points'][i] is None or None in cur_lp['loop_points'][i][:2]:
+				self.canvas.coords(self.loop_lines[i],0,start_y,self.width,end_y)
+				self.canvas.itemconfig(self.loop_lines[i],fill=self.bg_color,activefill=self.bg_color)
+			else:
+				start_x, end_x = self.width * cur_lp['loop_points'][i][0], self.width * cur_lp['loop_points'][i][1]
+				self.canvas.coords(self.loop_lines[i],start_x,start_y,end_x,end_y)
+				if cur_lp['loop_selection'] == i:
+					self.canvas.itemconfig(self.loop_lines[i],fill=self.lp_active_color,
+											activefill=self.lp_active_color)
+					if cur_lp['loop_on']:
+						self.canvas.itemconfig(self.loop_lines[i],stipple='gray50')
+				else:
+					self.canvas.itemconfig(self.loop_lines[i],fill=self.lp_color,
+											activefill=self.lp_active_color)
+		return cur_lp
+
+	def find_loop_line(self,event):
+		item = self.canvas.find_closest(event.x, event.y,halo=0)[0]
+		if 'l_l' in self.canvas.gettags(item):
+			return self.loop_lines.index(item)
+
+	def pick_loop_line(self,event):
+		i = self.find_loop_line(event)
+		if i is None: return
+		self.loop_set_funs[4]('',i)
+
+	def hover_loop_line(self,event):
+		i = self.find_loop_line(event)
+		if i is None: return
+		self.change_thumb_img(i)
+
+	def unhover(self,*args):
+		cur_lp = self.cur_clip_lp
+		self.current_img = self.default_img
+		if cur_lp is None: 
+			i = -1
+		else:
+			i = cur_lp['loop_selection']
+		if i >= 0:
+			self.current_img = self.loop_thumbs[i]
+		self.thumb_label.config(image=self.current_img)
+		self.thumb_label.image = self.current_img
+
+
+
+	def change_thumb_img(self,i):
+		self.current_img = self.loop_thumbs[i]
+		self.thumb_label.config(image=self.current_img)
+		self.thumb_label.image = self.current_img
+
+	def save_shot(self,*args):
+		cur_clip = self.backend.clip_storage.current_clips[self.layer]
+		if cur_clip is None: return
+		cur_lp = self.cur_clip_lp
+		if cur_lp is None: return
+		i = cur_lp['loop_selection']
+		cur_loc = self.backend.model.current_clip_pos[self.layer]
+		if cur_loc is None: return
+		split_f_name = os.path.split(os.path.splitext(cur_clip.f_name)[0])
+		output_base_name = './scrot/' + split_f_name[1]
+		bad_hash = self.backend.thumb_maker.nice_num(split_f_name[0]) * self.backend.thumb_maker.nice_num(split_f_name[1])
+		while True:
+			output_name = output_base_name + "_" + str(bad_hash) + "_lp_{}.png".format(i)
+			if not os.path.exists(output_name): break
+			bad_hash += 1
+
+		res = self.backend.thumb_maker.create_shot(cur_clip.f_name,output_name,cur_loc,self.thumb_w,self.thumb_h)
+		print(res)
+		if res is not None:
+			cur_clip.params['loop_points'][i][3] = res
+		self.loop_thumbs[i] = ImageTk.PhotoImage(Image.open(res))
+		self.change_thumb_img(i)
