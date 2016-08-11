@@ -111,5 +111,8 @@ if __name__ == '__main__':
 	# print(testgui.magi.clip_storage.clip_col[0])
 	testgui.start()
 	root.mainloop()
+	testgui.magi.gui = None
+	testgui.magi.fun_store['/magi/layer0/playback/clear']('',True)
+	testgui.magi.fun_store['/magi/layer1/playback/clear']('',True)
 	testgui.quit()
 	# testgui.magi.save_to_file('./test_save.xml')
