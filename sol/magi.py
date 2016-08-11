@@ -48,11 +48,9 @@ class Magi:
 		# update_clip - select or clear clip
 		# update_clip_params - takes param and updates that part of gui..
 		# update_current_pos
-		# update_search -- TODO
-		# collection funs -- TODO
+		# update_search -- if you searched for something elsewhere update the gui
+		# collection funs -- 
 		# 	select, add, remove, go left, go right, swap
-
-
 
 		# clip storage 
 		self.clip_storage = ClipStorage(self)
