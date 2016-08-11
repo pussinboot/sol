@@ -17,9 +17,11 @@ class ThumbMaker:
 		if os.path.exists('./scrot/temp.png'):
 			os.remove('./scrot/temp.png')
 
-	def create_shot(self,f_in,f_out,seek_time=0):
+	def create_shot(self,f_in,f_out,seek_time=0,width=0,height=0):
 		# makes a screenshot (used for when need to make a one-off thumbnail)
 		# seek time is float from 0.0 to 1.0
+		if width <= 0 or height <= 0:
+			width,height = self.desired_width,self.desired_height
 		if not os.path.exists(f_in): return
 		if seek_time > 0:
 			# want total length of video
@@ -38,7 +40,7 @@ class ThumbMaker:
 			process.communicate() 
 			if os.path.exists('./scrot/temp.png'):
 				self.make_thumbnail('./scrot/temp.png',f_out,
-									 new_size=(self.desired_width,self.desired_height))
+									 new_size=(width,height))
 				return f_out
 			else:
 				return
@@ -50,7 +52,7 @@ class ThumbMaker:
 			process.communicate()
 			if os.path.exists('./scrot/temp.png'):
 				self.make_thumbnail('./scrot/temp.png',f_out,
-									 new_size=(self.desired_width,self.desired_height))
+									 new_size=(width,height))
 				return f_out
 			else:
 				return

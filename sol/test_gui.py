@@ -96,6 +96,9 @@ if __name__ == '__main__':
 	root = tk.Tk()
 	root.title('sol')
 	root.call('wm', 'attributes', '.', '-topmost', '1')
+	# open on privacy screen =)
+	x, y = -1250, 900
+	root.geometry('+{}+{}'.format(x, y))
 
 	testgui = MainGui(root)
 	# for k,v in testgui.magi.fun_store.items():
