@@ -345,9 +345,14 @@ class CollectionsHolder:
 
 class LibraryBrowser:
 	def __init__(self,backend,parent_frame):
+		style = ttk.Style()
+		style.layout("Treeview", [
+		    ('Treeview.treearea', {'sticky': 'nswe'})
+		])
 		self.backend = backend
 		# db (has searcher & search fun)
 		self.db = self.backend.db
+		self.folders = {}
 
 		self.search_query = tk.StringVar()
 
@@ -358,14 +363,18 @@ class LibraryBrowser:
 		self.search_frame = tk.Frame(self.tree_frames)
 		self.browse_frame = tk.Frame(self.tree_frames)
 
-		self.search_but = tk.Label(self.tree_buts,text='search')
-		self.browse_but = tk.Label(self.tree_buts,text='browse')
+		self.search_but = tk.Label(self.tree_buts,text='search',relief=tk.GROOVE,width=13,pady=2)
+		self.browse_but = tk.Label(self.tree_buts,text='browse', width=13,pady=2)
 
 		def search_select(*args):
 			self.search_frame.tkraise()
+			self.search_but.config(relief=tk.GROOVE)
+			self.browse_but.config(relief=tk.FLAT)
 
 		def browse_select(*args):
 			self.browse_frame.tkraise()
+			self.search_but.config(relief=tk.FLAT)
+			self.browse_but.config(relief=tk.GROOVE)
 
 		self.search_but.bind('<ButtonPress>',search_select)
 		self.browse_but.bind('<ButtonPress>',browse_select)
@@ -465,12 +474,24 @@ class LibraryBrowser:
 			self.search_tree.insert(self.s_tree_root, 'end', text=c_name_clip[0],values=["clip",c_name_clip[1].f_name])
 		# browse
 		files = self.db.hierarchical_listing
-		if self.browse_tree.exists("root"):
-			self.browse_tree.delete("root")
+		for folder in self.folders.values():
+			if self.browse_tree.exists(folder):
+				self.browse_tree.delete(folder)
 		if files is None: 
 			return
+		self.folders = {}
+		cur_folder = ''
 		for i in range(len(files)):
-			if files[i][0] == 'folder':
-				cur_folder = self.browse_tree.insert('', 'end',iid=files[i][1], text=files[i][1],open=True,values=['category'])
+			node = files[i]
+			if node[0] == 'folder':
+				top_folder = ''
+				if node[2] in self.folders:
+					top_folder = self.folders[node[2]]
+					self.browse_tree.item(top_folder,open=True)
+				self.folders[node[1]] = cur_folder = self.browse_tree.insert(top_folder,'end',text=node[1],open=False,values=['folder'])
+
+			else:
+				self.browse_tree.insert(cur_folder, 'end', text=files[i][1],values=["clip",files[i][2]])
+
 
 

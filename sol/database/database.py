@@ -46,8 +46,10 @@ class Database:
 		"""
 		if len(self.clips) == 0: return
 		hierarchy = FileHierarchy()
-		for clip in self.clips.values():
-			hierarchy.add_clip(clip)
+		all_clips = [(clip.f_name, clip) for clip in self.clips.values()]
+		all_clips.sort()
+		for clip_n_c in all_clips:
+			hierarchy.add_clip(clip_n_c[1])
 		tor = []
 		def traverse(node):
 			if node.f_or_f == 'clip':
@@ -393,7 +395,7 @@ class FileHierarchy:
 		next_node = cur_node.find_name_in_children(head)
 		# when next folder we need doesnt exist
 		if next_node is None:
-			new_node = FileHierarchyNode(head,'folder')
+			new_node = FileHierarchyNode(head,'folder',cur_node.name)
 			cur_node.children.append(new_node)
 			self.add_clip(clip,new_node,tail[1:])
 		else:
