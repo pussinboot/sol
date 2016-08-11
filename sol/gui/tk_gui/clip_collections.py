@@ -437,6 +437,16 @@ class LibraryBrowser:
 				self.search_tree.delete("search")
 			self.search_tree.item("root",open=True)
 
+	def last_search(self,*args):
+		res = self.db.last_search
+		if res is None: return
+		self.search_tree.item("root",open=False)
+		if self.search_tree.exists("search"):
+			self.search_tree.delete("search")
+		search_res = self.search_tree.insert('', 'end',iid="search", text='Search Results',open=True,values=['category'])
+		for clip in res:
+			self.search_tree.insert(search_res, 'end', text=clip.name,values=["clip",clip.f_name])
+
 	def get_clip_from_event(self,event):
 		if event.state != 8: # sure numlock is on for 8 to work...
 			if event.state != 0:

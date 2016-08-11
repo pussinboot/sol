@@ -72,7 +72,7 @@ class MainGui:
 
 	def update_search(self):
 		# display search results
-		pass
+		self.clip_conts.library_browse.last_search()
 
 	def update_cols(self,what,ij=None):
 		# what - select, add, remove, swap
