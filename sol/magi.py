@@ -207,7 +207,7 @@ class Magi:
 		if ls < 0: return
 		# current loop points
 		cl = cur_clip.params['loop_points'][ls]
-		if None in cl: return
+		if None in cl[:2]: return
 		return [cur_clip, cl]
 
 	def loop_get(self,layer):
