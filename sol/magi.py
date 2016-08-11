@@ -195,8 +195,8 @@ class Magi:
 
 	def lp_create(self,cur_lp):
 		# function to create loop point if it doesnt exist yet
-		if cur_lp is None or len(cur_lp) != 3:
-			return [None, None, 'd']
+		if cur_lp is None or len(cur_lp) != 4:
+			return [None, None, 'd', None]
 		return cur_lp
 
 	def loop_check(self,layer):
