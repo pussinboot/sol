@@ -1,6 +1,7 @@
 import tkinter as tk
 from PIL import ImageTk,Image
 import os
+import tkinter.simpledialog as tksimpledialog
 
 NO_Q = 8
 NO_LP = 8
@@ -35,9 +36,11 @@ class ClipControl:
 		if clip is None:
 			self.name_var.set("------")
 			self.update_clip_params(clip)
+			self.name_label.unbind("<Double-Button-1>")
 			return
 		self.name_var.set(clip.name)
 		self.update_clip_params(clip)
+		self.name_label.bind("<Double-Button-1>",self.change_name_dialog)
 
 	def update_clip_params(self,clip,param=None):
 		if param in self.param_dispatch:
@@ -61,6 +64,18 @@ class ClipControl:
 		self.timeline.loop_update()
 		self.loop_screen.refresh()
 		self.refresh_looping(clip)
+
+	def change_name_dialog(self,*args):
+		new_name = tksimpledialog.askstring("rename clip",'',
+					initialvalue=self.name_var.get())
+		if new_name:
+			# change name
+			cur_clip = self.backend.clip_storage.current_clips[self.layer]
+			if cur_clip is None: return
+			self.backend.rename_clip(cur_clip,new_name) # have to do this to update search properly etc
+
+	def change_name(self,new_name):
+		self.name_var.set(new_name)
 
 	def setup_gui(self):
 		# top lvl

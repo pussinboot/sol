@@ -51,6 +51,7 @@ class Magi:
 		# update_search -- if you searched for something elsewhere update the gui
 		# collection funs -- 
 		# 	select, add, remove, go left, go right, swap
+		# update_clip_names - =)
 
 		# clip storage 
 		self.clip_storage = ClipStorage(self)
@@ -623,6 +624,10 @@ class Magi:
 		for clip in self.db.clips.values():
 			clip.t_names = self.thumb_maker.gen_thumbnail(clip.f_name,
 											desired_width, n_frames)
+
+	def rename_clip(self,clip,new_name):
+		self.db.rename_clip(clip,new_name)
+		if self.gui is not None: self.gui.update_clip_names()
 
 
 			

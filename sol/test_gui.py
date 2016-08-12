@@ -90,6 +90,16 @@ class MainGui:
 			else:
 				what_to_do[what](ij)
 
+	def update_clip_names(self):
+		for i in range(NO_LAYERS):
+			if self.magi.clip_storage.current_clips[i] is not None:
+				self.clip_controls[i].change_name(self.magi.clip_storage.current_clips[i].name)
+		active_col = self.magi.clip_storage.clip_col
+		for i in range(len(active_col)):
+			if active_col[i] is None: pass
+			self.clip_conts.containers[self.magi.clip_storage.cur_clip_col]\
+			.clip_conts[i].change_text(active_col[i].name)
+
 
 if __name__ == '__main__':
 
