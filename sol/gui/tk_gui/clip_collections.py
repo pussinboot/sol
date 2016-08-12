@@ -337,7 +337,8 @@ class CollectionsHolder:
 		del self.container_labels[index]
 
 	def change_name_dialog(self,index):
-		new_name = tksimpledialog.askstring("rename collection",self.containers[index].clip_collection.name)
+		new_name = tksimpledialog.askstring("rename collection",'',
+					initialvalue=self.containers[index].clip_collection.name)
 		if new_name and new_name != self.containers[index].clip_collection.name:
 			# change name
 			self.containers[index].clip_collection.name = new_name
