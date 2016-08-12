@@ -108,7 +108,8 @@ class ClipControl:
 						 self.backend.fun_store[gen_addr + '/loop/set/b'],
 						 self.backend.fun_store[gen_addr + '/loop/on_off'],
 						 self.backend.fun_store[gen_addr + '/loop/type'],
-						 self.backend.fun_store[gen_addr + '/loop/select']]
+						 self.backend.fun_store[gen_addr + '/loop/select'],
+						 self.backend.fun_store[gen_addr + '/loop/select/move']]
 
 		self.loop_screen = LoopScreen(self.bottom_frame,self.backend,self.layer,self.width,loop_set_funs)
 
@@ -615,7 +616,7 @@ class LoopScreen:
 		self.backend = backend
 		self.layer = layer
 		self.width = width
-		self.height = 100
+		self.height = 120
 		self.thumb_w = 125
 		self.thumb_h = 70
 		self.loop_set_funs = loop_set_funs 
@@ -635,10 +636,8 @@ class LoopScreen:
 		self.canvas = tk.Canvas(self.canvas_frame,width=self.width,height=self.height,bg=self.bg_color,scrollregion=(0,0,self.width,self.height))
 
 		self.thumb_frame = tk.Frame(self.frame)
-		self.default_img = self.current_img = ImageTk.PhotoImage(Image.open('./gui/tk_gui/sample_thumb.png'))
-		self.loop_thumbs = [self.default_img]*NO_LP
-		self.thumb_label = tk.Label(self.thumb_frame,image=self.current_img,width=self.thumb_w)
 		self.but_frame = tk.Frame(self.thumb_frame)
+		self.bottom_but_frame = tk.Frame(self.thumb_frame)
 		
 
 		# everything associated with loop lines
@@ -656,8 +655,14 @@ class LoopScreen:
 		self.canvas.bind("<Leave>",self.unhover)
 
 		#thumbs n buts ha
-		self.set_a_but = tk.Button(self.but_frame,text='loop in',command=self.set_loop_a)
-		self.set_b_but = tk.Button(self.but_frame,text='loop out',command=self.set_loop_b)
+		self.default_img = self.current_img = ImageTk.PhotoImage(Image.open('./gui/tk_gui/sample_thumb.png'))
+		self.loop_thumbs = [self.default_img]*NO_LP
+		self.thumb_label = tk.Label(self.thumb_frame,image=self.current_img,width=self.thumb_w)
+
+		self.set_a_but = tk.Button(self.but_frame,text='loop in',command=self.set_loop_a,width=8)
+		self.set_b_but = tk.Button(self.but_frame,text='loop out',command=self.set_loop_b,width=8)
+		self.move_up_but = tk.Button(self.bottom_but_frame,text='/\\',width=8, command = lambda: self.move_loop_sel(-1))
+		self.move_down_but = tk.Button(self.bottom_but_frame,text='\\/',width=8, command = lambda: self.move_loop_sel(1))
 
 		self.canvas.pack()
 		self.canvas_frame.pack(side=tk.LEFT)
@@ -666,6 +671,9 @@ class LoopScreen:
 		self.set_a_but.pack(side=tk.LEFT)
 		self.set_b_but.pack(side=tk.LEFT)
 		self.but_frame.pack(side=tk.TOP)
+		self.move_up_but.pack(side=tk.LEFT)
+		self.move_down_but.pack(side=tk.LEFT)
+		self.bottom_but_frame.pack(side=tk.TOP)
 
 		self.frame.pack()
 
@@ -681,6 +689,9 @@ class LoopScreen:
 		self.loop_set_funs[1]('',cur_loc)
 		# print(self.cur_clip_lp)
 		self.set_cur_loop_line()
+
+	def move_loop_sel(self,n):
+		self.loop_set_funs[5]('',n)
 
 	@property
 	def cur_clip_lp(self):
