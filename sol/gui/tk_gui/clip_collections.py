@@ -1,7 +1,3 @@
-NO_Q = 8
-THUMB_W = 160
-REFRESH_INTERVAL = 166
-
 import tkinter as tk
 from tkinter import ttk
 from .tkdnd import dnd_start
@@ -9,6 +5,8 @@ import tkinter.simpledialog as tksimpledialog
 
 from PIL import ImageTk,Image
 import os
+
+import config as C
 
 class ClipContainer:
 	# gui element that holds a single clip
@@ -28,7 +26,7 @@ class ClipContainer:
 		self.current_img_i = 0
 		self.hovered = False
 
-		self.label = tk.Label(self.frame,image=self.current_img,text='test',compound='top',width=THUMB_W,bd=2) # width of clip preview
+		self.label = tk.Label(self.frame,image=self.current_img,text='test',compound='top',width=C.THUMB_W,bd=2) # width of clip preview
 		self.label.image = self.current_img
 		self.label.pack()
 		self.label.bind('<Double-1>',self.activate_l)
@@ -74,7 +72,7 @@ class ClipContainer:
 			self.change_img_from_img(self.imgs[self.current_img_i])
 			return
 		self.next_img()
-		self.root.after(REFRESH_INTERVAL,self.hover_animate)
+		self.root.after(C.REFRESH_INTERVAL,self.hover_animate)
 
 	def start_hover(self,*args):
 		self.hovered = True
@@ -194,10 +192,10 @@ class ContainerCollection:
 		self.root = root
 		self.backend = backend
 
-		for i in range(NO_Q):
+		for i in range(C.NO_Q):
 			self.clip_conts.append(ClipContainer(self,i,select_cmd,self.clip_collection[i]))
 
-		n_buts = NO_Q
+		n_buts = C.NO_Q
 		n_rows = 1
 		if n_buts > 4:
 			n_rows = n_buts // 4
@@ -213,7 +211,7 @@ class ContainerCollection:
 
 	def update_clip_col(self,clip_col):
 		self.clip_collection = clip_col
-		for i in range(NO_Q):
+		for i in range(C.NO_Q):
 			self.clip_conts[i].change_clip(clip_col[i])
 
 	def clear(self):

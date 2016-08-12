@@ -1,11 +1,7 @@
 from database import database, clip, thumbs
 from inputs import osc
 from models.resolume import model
-
-# Constants
-NO_LAYERS = 2
-DEBUG = True
-THUMBNAIL_WIDTH = 192
+import config as C
 
 class Magi:
 	"""
@@ -28,7 +24,7 @@ class Magi:
 		# database
 		self.db = database.Database()
 		# thumbnail generator
-		self.thumb_maker = thumbs.ThumbMaker(THUMBNAIL_WIDTH)
+		self.thumb_maker = thumbs.ThumbMaker(C.THUMBNAIL_WIDTH)
 		# inputs
 		self.osc_server = osc.OscServer()
 		self.fun_store = {} # dictionary containing address to function
@@ -40,7 +36,7 @@ class Magi:
 		self.osc_server.mapp = backup_map
 		self.osc_client = osc.OscClient()
 		# model (resomeme for now)
-		self.model = model.Resolume(NO_LAYERS)
+		self.model = model.Resolume(C.NO_LAYERS)
 		# gui (to-do)
 		self.gui = None
 		# self.gui = TerminalGui(self)
@@ -121,7 +117,7 @@ class Magi:
 			def update_fun(_,msg):
 				try:
 					new_val = float(msg)
-					# if DEBUG: print("clip_{0} : {1}".format(i,new_val))
+					# if C.DEBUG: print("clip_{0} : {1}".format(i,new_val))
 					self.model.current_clip_pos[i] = new_val
 					# send new_val to gui as well
 					if self.gui is not None: self.gui.update_cur_pos(i,new_val)
@@ -136,7 +132,7 @@ class Magi:
 					pass
 			return update_fun
 
-		for i in range(NO_LAYERS):
+		for i in range(C.NO_LAYERS):
 			update_fun = gen_update_fun(i)
 			self.osc_server.mapp(self.model.clip_pos_addr[i],update_fun)
 
@@ -147,7 +143,7 @@ class Magi:
 		# can't select a clip that's already been activated
 		# (at least in resolume..)
 		if clip in self.clip_storage.current_clips: return
-		# if DEBUG: print(clip.name)
+		# if C.DEBUG: print(clip.name)
 		# do model prep work
 		model_addr, model_msg = self.model.select_clip(layer)
 		self.osc_client.build_n_send(model_addr,model_msg)
@@ -258,7 +254,7 @@ class Magi:
 						if self.gui is None: return
 						self.gui.update_clip_params(i,cur_clip,'play_direction')
 				except:
-					if DEBUG: print('oh no',osc_cmd)
+					if C.DEBUG: print('oh no',osc_cmd)
 					pass
 			return fun_tor
 
@@ -302,7 +298,7 @@ class Magi:
 			return spd_fun
 
 
-		for i in range(NO_LAYERS):
+		for i in range(C.NO_LAYERS):
 			for fun in play_fun_to_dir:
 				(addr, msg) = eval("self.model.{}({})".format(fun,i))
 				osc_cmd_msg = self.osc_client.build_msg(addr,msg)
@@ -340,7 +336,7 @@ class Magi:
 			if i < len(self.db.last_search) and layer >= 0:
 				clip = self.db.last_search[i]
 				self.select_clip(clip,layer)
-		for i in range(NO_LAYERS):
+		for i in range(C.NO_LAYERS):
 			self.osc_server.mapp(select_addr.format(i),select_search_res)
 
 	def map_col_funs(self):
@@ -352,7 +348,7 @@ class Magi:
 				i = self.osc_server.osc_value(n)
 				self.select_col_clip(i,l)
 			return fun_tor
-		for i in range(NO_LAYERS):
+		for i in range(C.NO_LAYERS):
 			sel_fun = gen_sel_fun(i)
 			self.osc_server.mapp(col_select_addr.format(i),sel_fun)
 
@@ -560,14 +556,14 @@ class Magi:
 		addresses = [cue_addr,cue_clear_addr,tog_addr,lp_type_addr,sel_addr,
 					 sel_move_addr, set_addr+"a", set_addr+"b", set_addr+"ab"]
 
-		for i in range(NO_LAYERS):
+		for i in range(C.NO_LAYERS):
 			loop_funs = gen_loop_funs(i)
 			for j in range(len(addresses)):
 				# print('setting addr -- ',addresses[j])
 				self.osc_server.mapp(addresses[j].format(i),loop_funs[j])
 
 	def debug_search_res(self):
-		if not DEBUG:
+		if not C.DEBUG:
 			return
 		for i,clip in enumerate(self.db.last_search):
 			print("[{}] {}".format(i,clip.name))
@@ -638,7 +634,7 @@ class ClipStorage:
 	and methods on interacting with clip collections
 	"""
 	def __init__(self,magi):
-		self.current_clips = clip.ClipCollection(NO_LAYERS,"current_clips")
+		self.current_clips = clip.ClipCollection(C.NO_LAYERS,"current_clips")
 		self.cur_clip_col = -1
 		self.clip_cols = []
 		self.magi = magi
@@ -733,7 +729,7 @@ class TerminalGui:
 		qp_line_0 = []
 		qp_line_1 = []
 		half_qp = 4
-		for i in range(NO_LAYERS):
+		for i in range(C.NO_LAYERS):
 			cur_clip = self.magi.clip_storage.current_clips[i]
 			if cur_clip is None:
 				name_line += [" -"*7 + " "]

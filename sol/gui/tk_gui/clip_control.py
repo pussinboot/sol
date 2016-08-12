@@ -3,8 +3,7 @@ from PIL import ImageTk,Image
 import os
 import tkinter.simpledialog as tksimpledialog
 
-NO_Q = 8
-NO_LP = 8
+import config as C
 
 class ClipControl:
 	def __init__(self,root,backend,layer):
@@ -238,7 +237,7 @@ class ClipControl:
 
 	def setup_cue_buttons(self,cue_funs):
 		act_fun, deact_fun = cue_funs[0],cue_funs[1]
-		n_buts = NO_Q 
+		n_buts = C.NO_Q 
 		n_rows = 1
 		padding = self.width // 8 - 7
 		if n_buts > 4:
@@ -283,7 +282,7 @@ class ClipControl:
 
 		loop_type_poss = ['dflt','bnce']
 		self.loop_type_tk.set(loop_type_poss[0])
-		loop_poss = ["-1"] + [str(i) for i in range(NO_Q)]
+		loop_poss = ["-1"] + [str(i) for i in range(C.NO_Q)]
 
 		# button / selection funs
 		def loop_on_off_toggle(*args):
@@ -355,14 +354,14 @@ class ClipControl:
 
 	def update_cues(self,clip):
 		if clip is None:
-			for i in range(NO_Q):
+			for i in range(C.NO_Q):
 				but = self.cue_buttons[i]
 				but.config(state='disabled')
 				but.config(relief='flat')
 				self.timeline.remove_line(i)
 			return
 		cp = clip.params['cue_points']
-		for i in range(NO_Q):
+		for i in range(C.NO_Q):
 			but = self.cue_buttons[i]
 			but.config(command=self.cue_active_funs[i][0],state='active')
 			but.bind("<ButtonPress-3>",self.cue_active_funs[i][1])
@@ -414,8 +413,8 @@ class ProgressBar:
 		self.cue_fun = None # function for activating/setting cue points
 
 		# for cue points
-		self.lines = [None]*NO_Q
-		self.labels = [None]*NO_Q
+		self.lines = [None]*C.NO_Q
+		self.labels = [None]*C.NO_Q
 
 		# tk stuff
 		self.root = root
@@ -657,8 +656,8 @@ class LoopScreen:
 
 		# everything associated with loop lines
 		self.loop_lines = []
-		d_y = self.height / NO_LP
-		for i in range(NO_LP):
+		d_y = self.height / C.NO_LP
+		for i in range(C.NO_LP):
 			start_y = i * d_y
 			end_y = start_y + d_y
 			new_line = self.canvas.create_rectangle(0,start_y,self.width,end_y,fill=self.bg_color,
@@ -671,7 +670,7 @@ class LoopScreen:
 
 		#thumbs n buts ha
 		self.default_img = self.current_img = ImageTk.PhotoImage(Image.open('./gui/tk_gui/sample_thumb.png'))
-		self.loop_thumbs = [self.default_img]*NO_LP
+		self.loop_thumbs = [self.default_img]*C.NO_LP
 		self.thumb_label = tk.Label(self.thumb_frame,image=self.current_img,width=self.thumb_w)
 
 		self.set_a_but = tk.Button(self.but_frame,text='loop in',command=self.set_loop_a,width=8)
@@ -725,10 +724,10 @@ class LoopScreen:
 		self.current_img = self.default_img
 		
 		if cur_lp is None:
-			self.loop_thumbs = [self.default_img]*NO_LP
+			self.loop_thumbs = [self.default_img]*C.NO_LP
 			self.thumb_label.unbind("<ButtonPress-1>")
 		else:
-			for i in range(NO_LP):
+			for i in range(C.NO_LP):
 				try:
 					self.loop_thumbs[i] = ImageTk.PhotoImage(Image.open(cur_lp['loop_points'][i][3]))
 				# if cur_lp['loop_points'][i] is None or cur_lp['loop_points'][i][3] is None:
@@ -755,7 +754,7 @@ class LoopScreen:
 		# get the lp
 		cur_lp = self.cur_clip_lp
 		if cur_lp is None:
-			for i in range(NO_LP):
+			for i in range(C.NO_LP):
 				self.canvas.itemconfig(self.loop_lines[i],stipple='',fill=self.bg_color,activefill=self.bg_color)
 			self.set_a_but.config(state='disabled')
 			self.set_b_but.config(state='disabled') 
@@ -764,7 +763,7 @@ class LoopScreen:
 		self.set_a_but.config(state='active')
 		self.set_b_but.config(state='active')
 
-		d_y = self.height / NO_LP
+		d_y = self.height / C.NO_LP
 		for i in range(len(cur_lp['loop_points'])):
 			self.canvas.itemconfig(self.loop_lines[i],stipple='')
 			start_y = i * d_y

@@ -2,7 +2,7 @@
 test gui made with tkinter and re-using many parts 
 from past sol versions
 """
-NO_LAYERS = 2
+import config as C
 
 import tkinter as tk
 import tkinter.filedialog as tkfd
@@ -27,7 +27,7 @@ class MainGui:
 		self.magi.gui = self
 		# self.magi.clip_storage.gui = self
 		self.clip_controls = []
-		for i in range(NO_LAYERS):
+		for i in range(C.NO_LAYERS):
 			new_frame = tk.Frame(self.cc_frame,pady=0,padx=0)
 			self.clip_controls.append(clip_control.ClipControl(new_frame,self.magi,i))
 			self.cc_frames.append(new_frame)
@@ -91,7 +91,7 @@ class MainGui:
 				what_to_do[what](ij)
 
 	def update_clip_names(self):
-		for i in range(NO_LAYERS):
+		for i in range(C.NO_LAYERS):
 			if self.magi.clip_storage.current_clips[i] is not None:
 				self.clip_controls[i].change_name(self.magi.clip_storage.current_clips[i].name)
 		for c_i in range(len(self.magi.clip_storage.clip_cols)):
@@ -105,7 +105,6 @@ class MainGui:
 
 
 if __name__ == '__main__':
-
 	root = tk.Tk()
 	root.title('sol')
 	root.call('wm', 'attributes', '.', '-topmost', '1')
