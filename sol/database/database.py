@@ -204,7 +204,7 @@ class FileOPs:
 	save/load to disk
 	"""
 	def __init__(self):
-		pass
+		if not os.path.exists('./savedata/'): os.makedirs('./savedata/')
 
 	def save_settings(self,settings,name="settings"):
 		# save a bunch of things passed in as a dict
