@@ -94,11 +94,14 @@ class MainGui:
 		for i in range(NO_LAYERS):
 			if self.magi.clip_storage.current_clips[i] is not None:
 				self.clip_controls[i].change_name(self.magi.clip_storage.current_clips[i].name)
-		active_col = self.magi.clip_storage.clip_col
-		for i in range(len(active_col)):
-			if active_col[i] is None: pass
-			self.clip_conts.containers[self.magi.clip_storage.cur_clip_col]\
-			.clip_conts[i].change_text(active_col[i].name)
+		for c_i in range(len(self.magi.clip_storage.clip_cols)):
+			active_col = self.magi.clip_storage.clip_cols[c_i]
+			for i in range(len(active_col)):
+				if active_col[i] is None: 
+					pass
+				else:
+					self.clip_conts.containers[c_i]\
+					.clip_conts[i].change_text(active_col[i].name)
 
 
 if __name__ == '__main__':

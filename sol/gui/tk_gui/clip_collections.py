@@ -18,6 +18,7 @@ class ClipContainer:
 		self.last_clip = None
 
 		self.parent = parent
+		self.backend = parent.backend
 		self.root = parent.root
 		self.frame = tk.Frame(self.parent.frame,padx=5,pady=0)
 		self.grid = self.frame.grid
@@ -100,6 +101,10 @@ class ClipContainer:
 			return
 		self.last_clip = self.clip
 		self.clip = clip
+		# update the clip in parent
+		if self.parent.index >= 0:
+			self.backend.clip_storage.clip_cols[self.parent.index][self.index] = clip
+
 		if self.clip.t_names is None:
 			self.change_img_from_img(self.default_img)
 			# self.clip.t_name = './scrot/{}.png'.format(ntpath.basename(self.clip.fname))
@@ -114,6 +119,8 @@ class ClipContainer:
 		self.imgs = []
 		self.hovered = False
 		self.toggle_dnd()
+		if self.parent.index >= 0:
+			self.backend.clip_storage.clip_cols[self.parent.index][self.index] = None
 
 	# tkdnd stuff here
 	def press(self, event):
@@ -178,13 +185,14 @@ class DragClip:
 class ContainerCollection:
 	# gui element that holds multiple clips
 	# mayb i need to be able to save/load as clipcollections (would add to sol_backend)
-	def __init__(self,root,parent_frame,clipcol,select_cmd):
+	def __init__(self,root,parent_frame,clipcol,select_cmd,backend):
 		# for i in range(len(clipcol)):
 		# 	print(clipcol[i])
 		self.clip_conts = []
 		self.clip_collection = clipcol
 		self.frame = tk.Frame(parent_frame)
 		self.root = root
+		self.backend = backend
 
 		for i in range(NO_Q):
 			self.clip_conts.append(ClipContainer(self,i,select_cmd,self.clip_collection[i]))
@@ -212,6 +220,14 @@ class ContainerCollection:
 		for clip_cont in self.clip_conts:
 			clip_cont.remove_clip()
 		# may want to edit the actual clip collection too..
+
+	@property
+	def index(self):
+		# return self._index
+		if self.clip_collection in self.backend.clip_storage.clip_cols:
+			return self.backend.clip_storage.clip_cols.index(self.clip_collection)
+		return -1
+	
 
 class CollectionsHolder:
 	# gui element that holds multiple containercollections
@@ -307,11 +323,16 @@ class CollectionsHolder:
 		self.clip_storage.add_collection()
 		# self.add_collection_frame(self.clip_storage.clip_cols[-1])
 		self.highlight_col(len(self.clip_storage.clip_cols)-1)
+		# # for debugging purposes
+		# for col in self.backend.clip_storage.clip_cols:
+		# 	print("="*10,col.name,"="*10)
+		# 	for i in range(len(col)):
+		# 		print(col[i])
 
 	def add_collection_frame(self,collection=None):
 		if collection is None:
 			collection = self.clip_storage.clip_cols[-1]
-		new_cont = ContainerCollection(self.root,self.collections_frame,collection,self.select_cmd)
+		new_cont = ContainerCollection(self.root,self.collections_frame,collection,self.select_cmd,self.backend)
 		self.containers.append(new_cont)
 		self.add_collection_label(collection)
 
