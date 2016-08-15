@@ -93,6 +93,11 @@ class MainGui:
 			self.clip_controls[i].update_clip(self.magi.clip_storage.current_clips[i])
 		# print([0],self.magi.clip_storage.current_clips[1])
 
+	def toggle_on_top(self,*args):
+		new_val = self.on_top_toggle.get()
+		new_val = str(int(new_val))
+		root.call('wm', 'attributes', '.', '-topmost', new_val)
+
 	def setup_menubar(self):
 		self.menubar = tk.Menu(self.root)
 		self.filemenu = tk.Menu(self.menubar,tearoff=0) # file menu
@@ -106,12 +111,23 @@ class MainGui:
 		self.filemenu.add_command(label="load",command=self.load)
 		# load from resomeme
 		self.filemenu.add_command(label="load resolume comp",command=self.load_resolume)
-
+		# create thumbnails
 		self.filemenu.add_command(label="generate thumbs",command=self.gen_thumbs)
+		# quit
+		self.filemenu.add_command(label="quit",command=self.quit)
 
 		self.viewmenu = tk.Menu(self.menubar,tearoff=0) # view menu
+		self.on_top_toggle = tk.BooleanVar()
+		self.on_top_toggle.trace('w',self.toggle_on_top)
+		self.on_top_toggle.set(C.ALWAYS_ON_TOP)
+
+		# toggle always on top behavior
+		self.viewmenu.add_checkbutton(label="always on top", onvalue=True, offvalue=False, variable=self.on_top_toggle)
+
 		# switch between the different views
 		# full, clip_org, performance
+
+		# pack it
 		self.menubar.add_cascade(label='file',menu=self.filemenu)
 		self.menubar.add_cascade(label='view',menu=self.viewmenu)
 		self.root.config(menu=self.menubar)
@@ -172,7 +188,6 @@ class MainGui:
 if __name__ == '__main__':
 	root = tk.Tk()
 	root.title('sol')
-	root.call('wm', 'attributes', '.', '-topmost', '1')
 	# open on privacy screen =)
 	x, y = -1250, 900
 	root.geometry('+{}+{}'.format(x, y))
