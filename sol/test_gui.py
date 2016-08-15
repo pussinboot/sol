@@ -46,21 +46,44 @@ class MainGui:
 	def start(self):
 		self.magi.start()
 
+	def save(self,filename = None):
+		if filename is None:
+			filename = self.magi.db.file_ops.last_save
+		if filename is None: 
+			self.save_as()
+		else:
+			self.magi.save_to_file(filename)
+
+	def save_as(self):
+		ask_fun = tkfd.asksaveasfilename
+		filename = ask_fun(parent=self.root,title='Save as..',initialdir='./savedata')
+		if filename:
+			self.save(filename)
+
+	def load(self):
+		ask_fun = tkfd.askopenfilename
+		filename = ask_fun(parent=self.root,title='Load',initialdir='./savedata')
+		if filename:
+			self.magi.load(filename)
+			self.refresh_after_load()
+
 	def refresh_after_load(self):
 		self.clip_conts.clip_storage = self.magi.clip_storage
 		self.clip_conts.refresh_after_load()
-		# for cc in self.clip_conts.containers:
-		# 	cc.update_clip_col
-		pass
-		# self.clip_conts.update_clip_col(self.magi.clip_storage.clip_col)
+		for i in range(C.NO_LAYERS):
+			self.clip_controls[i].update_clip(self.magi.clip_storage.current_clips[i])
+		# print([0],self.magi.clip_storage.current_clips[1])
 
 	def setup_menubar(self):
 		self.menubar = tk.Menu(self.root)
 		self.filemenu = tk.Menu(self.menubar,tearoff=0) # file
 		# new
 		# save
+		self.filemenu.add_command(label="save",command=self.save)
 		# save as
+		self.filemenu.add_command(label="save as",command=self.save_as)
 		# load
+		self.filemenu.add_command(label="load",command=self.load)
 		# load from resomeme
 		self.viewmenu = tk.Menu(self.menubar,tearoff=0)
 		# switch between the different views
@@ -71,6 +94,7 @@ class MainGui:
 
 	def quit(self):
 		self.magi.stop()
+		self.save()
 
 	# funs required by magi
 
@@ -131,7 +155,7 @@ if __name__ == '__main__':
 	testgui = MainGui(root)
 	# for k,v in testgui.magi.fun_store.items():
 	# 	print(k)#,v)
-	testgui.magi.load('./test_save.xml')
+	# testgui.magi.load('./test_save.xml')
 	# for i in range(len(testgui.magi.clip_storage.clip_col)):
 	# 	print(testgui.magi.clip_storage.clip_col[i])
 	testgui.refresh_after_load()
@@ -142,8 +166,8 @@ if __name__ == '__main__':
 	# print(testgui.magi.clip_storage.clip_col[0])
 	testgui.start()
 	root.mainloop()
-	testgui.magi.gui = None
-	testgui.magi.fun_store['/magi/layer0/playback/clear']('',True)
-	testgui.magi.fun_store['/magi/layer1/playback/clear']('',True)
+	# testgui.magi.gui = None
+	# testgui.magi.fun_store['/magi/layer0/playback/clear']('',True)
+	# testgui.magi.fun_store['/magi/layer1/playback/clear']('',True)
 	testgui.quit()
 	# testgui.magi.save_to_file('./test_save.xml')
