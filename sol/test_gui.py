@@ -38,13 +38,19 @@ class MainGui:
 		self.mainframe.pack()
 		self.cc_frame.pack(side=tk.TOP,fill=tk.X,expand=True)
 		self.clip_col_frame.pack(side=tk.TOP,fill=tk.BOTH)
-		# menu
-		self.setup_menubar()
 		for frame in self.cc_frames:
 			frame.pack(side=tk.LEFT)
-		
+		# menu
+		self.setup_menubar()
+		# quit behavior
+		self.root.protocol("WM_DELETE_WINDOW",self.quit)		
+
 	def start(self):
 		self.magi.start()
+
+	def new_save(self):
+		self.magi.reset()
+		self.refresh_after_load()
 
 	def save(self,filename = None):
 		if filename is None:
@@ -64,8 +70,21 @@ class MainGui:
 		ask_fun = tkfd.askopenfilename
 		filename = ask_fun(parent=self.root,title='Load',initialdir='./savedata')
 		if filename:
-			self.magi.load(filename)
+			if self.magi.load(filename):
+				self.refresh_after_load()
+			else:
+				self.new_save()
+
+	def load_resolume(self):
+		ask_fun = tkfd.askopenfilename
+		filename = ask_fun(parent=self.root,title='Open Resolume Composition',initialdir=C.RESOLUME_SAVE_DIR)
+		if filename:
+			self.magi.load_resolume_comp(filename)
 			self.refresh_after_load()
+
+	def gen_thumbs(self):
+		self.magi.gen_thumbs(n_frames = C.NO_FRAMES)
+		self.refresh_after_load()
 
 	def refresh_after_load(self):
 		self.clip_conts.clip_storage = self.magi.clip_storage
@@ -76,8 +95,9 @@ class MainGui:
 
 	def setup_menubar(self):
 		self.menubar = tk.Menu(self.root)
-		self.filemenu = tk.Menu(self.menubar,tearoff=0) # file
+		self.filemenu = tk.Menu(self.menubar,tearoff=0) # file menu
 		# new
+		self.filemenu.add_command(label="new",command=self.new_save)
 		# save
 		self.filemenu.add_command(label="save",command=self.save)
 		# save as
@@ -85,7 +105,11 @@ class MainGui:
 		# load
 		self.filemenu.add_command(label="load",command=self.load)
 		# load from resomeme
-		self.viewmenu = tk.Menu(self.menubar,tearoff=0)
+		self.filemenu.add_command(label="load resolume comp",command=self.load_resolume)
+
+		self.filemenu.add_command(label="generate thumbs",command=self.gen_thumbs)
+
+		self.viewmenu = tk.Menu(self.menubar,tearoff=0) # view menu
 		# switch between the different views
 		# full, clip_org, performance
 		self.menubar.add_cascade(label='file',menu=self.filemenu)
@@ -93,8 +117,9 @@ class MainGui:
 		self.root.config(menu=self.menubar)
 
 	def quit(self):
-		self.magi.stop()
 		self.save()
+		self.magi.stop()
+		self.root.destroy()
 
 	# funs required by magi
 
@@ -169,5 +194,4 @@ if __name__ == '__main__':
 	# testgui.magi.gui = None
 	# testgui.magi.fun_store['/magi/layer0/playback/clear']('',True)
 	# testgui.magi.fun_store['/magi/layer1/playback/clear']('',True)
-	testgui.quit()
 	# testgui.magi.save_to_file('./test_save.xml')

@@ -1,7 +1,8 @@
 #########################################
 ###         actual to-do list         ###
 #########################################
-menus - save,load, midi.., switch interfaces, models(?)
+menus -  midi.., switch interfaces, models(?)
+always on top toggle
 org gui
 midi control
 - scratch control

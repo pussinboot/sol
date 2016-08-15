@@ -50,12 +50,11 @@ class Magi:
 
 		# clip storage 
 		self.clip_storage = ClipStorage(self)
-		if self.db.file_ops.last_save is None:
+		if self.db.file_ops.last_save is None or not self.load(self.db.file_ops.last_save):
 			# if nothing loaded
+			if C.DEBUG: print('starting new save')
 			self.clip_storage.add_collection()
 			self.clip_storage.select_collection(0)
-		else:
-			self.load(self.db.file_ops.last_save)
 
 		self.track_vars()
 		self.map_pb_funs()
@@ -596,23 +595,28 @@ class Magi:
 	def load(self,filename):
 		# TO-DO 
 		# catch errors, probably just complain at the user
-		fio = self.db.file_ops
-		# parse the xml into an element tree
-		parsed_xml = fio.create_load(filename)
-		# load the database NOTE: this doesnt clear out current db
-		fio.load_database(parsed_xml.find('database'),self.db)
-		# reset clip storage
-		storage_dict = fio.load_clip_storage(parsed_xml.find('clip_storage'),
-											 self.db.clips)
-		self.clip_storage = ClipStorage(self)
-		# self.clip_storage.current_clips = storage_dict['current_clips']
-		self.clip_storage.clip_cols = storage_dict['clip_cols']
-		self.clip_storage.cur_clip_col = storage_dict['cur_clip_col']
+		try:
+			fio = self.db.file_ops
+			# parse the xml into an element tree
+			parsed_xml = fio.create_load(filename)
+			# load the database 
+			self.db.clear()
+			fio.load_database(parsed_xml.find('database'),self.db)
+			# reset clip storage
+			storage_dict = fio.load_clip_storage(parsed_xml.find('clip_storage'),
+												 self.db.clips)
+			self.clip_storage = ClipStorage(self)
+			# self.clip_storage.current_clips = storage_dict['current_clips']
+			self.clip_storage.clip_cols = storage_dict['clip_cols']
+			self.clip_storage.cur_clip_col = storage_dict['cur_clip_col']
 
-		for layer in range(len(self.clip_storage.current_clips)):
-			self.select_clip(storage_dict['current_clips'][layer],layer)
-		if C.DEBUG: print('successfully loaded',filename)
-		self.db.file_ops.update_last_save(filename)
+			for layer in range(len(self.clip_storage.current_clips)):
+				self.select_clip(storage_dict['current_clips'][layer],layer)
+			if C.DEBUG: print('successfully loaded',filename)
+			self.db.file_ops.update_last_save(filename)
+			return True
+		except:
+			return False
 
 	def load_resolume_comp(self,filename):
 		from models.resolume import load_avc
@@ -622,10 +626,19 @@ class Magi:
 			self.db.add_clip(new_clip)
 		self.db.searcher.refresh()
 
-	def gen_thumbs(self,desired_width,n_frames=1):
+	def reset(self):
+		self.db.file_ops.last_save = None
+		self.db.clear()
+		self.clip_storage = ClipStorage(self)
+		self.clip_storage.add_collection()
+		self.clip_storage.select_collection(0)
+
+
+	def gen_thumbs(self,desired_width=None,n_frames=1):
+		if desired_width is not None:
+			self.thumb_maker.update_desired_width(desired_width)
 		for clip in self.db.clips.values():
-			clip.t_names = self.thumb_maker.gen_thumbnail(clip.f_name,
-											desired_width, n_frames)
+			clip.t_names = self.thumb_maker.gen_thumbnail(clip.f_name, n_frames)
 
 	def rename_clip(self,clip,new_name):
 		self.db.rename_clip(clip,new_name)
