@@ -115,7 +115,7 @@ def make_thumbnail(f_in, f_out, size=(100,100), pad=True):
 		thumb = ImageOps.fit(image, size, Image.ANTIALIAS, (0.5, 0.5))
 	thumb.save(f_out)
 
-def gen_thumbnail(clip,scalew,frameno=None,compw=1280,comph=720,special_hack=True):
+def gen_thumbnail(clip,scalew,frameno=None,compw=1280,comph=720,special_hack=False):
 	input_name = ntpath.abspath(clip.fname)
 	if special_hack:
 		input_name = input_name.replace('\\dxv\\','\\webm\\').replace('.mov','.webm')
@@ -140,8 +140,9 @@ def gen_thumbnail(clip,scalew,frameno=None,compw=1280,comph=720,special_hack=Tru
 		return './scrot/sample_clip.png'
 
 if __name__ == '__main__':
+	# C:\Users\leo\Documents\Resolume Arena 5\compositions\vjcomp.avc
 	# testparser = SavedXMLParse("./test_ex.avc",False)
-	testparser = SavedXMLParse("../old/test.avc",True)
+	testparser = SavedXMLParse("C:\\Users\\leo\\Documents\\Resolume Arena 5\\compositions\\vjcomp.avc",True)
 	print(len(testparser.clips)) # 30
 	#testparser.print_clip(testparser.clips[0])
 
