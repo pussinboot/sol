@@ -11,6 +11,7 @@ from magi import Magi
 
 from gui.tk_gui import clip_control
 from gui.tk_gui import clip_collections
+from gui.tk_gui import midi_config
 
 
 class MainGui:
@@ -93,6 +94,9 @@ class MainGui:
 			self.clip_controls[i].update_clip(self.magi.clip_storage.current_clips[i])
 		# print([0],self.magi.clip_storage.current_clips[1])
 
+	def configure_midi(self):
+		popup = midi_config.ConfigGui(tk.Toplevel(),self.magi)
+
 	def toggle_on_top(self,*args):
 		new_val = self.on_top_toggle.get()
 		new_val = str(int(new_val))
@@ -113,6 +117,8 @@ class MainGui:
 		self.filemenu.add_command(label="load resolume comp",command=self.load_resolume)
 		# create thumbnails
 		self.filemenu.add_command(label="generate thumbs",command=self.gen_thumbs)
+		# launch midi configurator
+		self.filemenu.add_command(label="config midi",command=self.configure_midi)
 		# quit
 		self.filemenu.add_command(label="quit",command=self.quit)
 
@@ -205,6 +211,7 @@ if __name__ == '__main__':
 	# 	testgui.magi.clip_storage.clip_col[i] = testgui.magi.db.last_search[i]
 	# print(testgui.magi.clip_storage.clip_col[0])
 	testgui.start()
+	testgui.configure_midi()
 	root.mainloop()
 	# testgui.magi.gui = None
 	# testgui.magi.fun_store['/magi/layer0/playback/clear']('',True)

@@ -1,5 +1,5 @@
 from database import database, clip, thumbs
-from inputs import osc
+from inputs import osc, midi
 from models.resolume import model
 import config as C
 
@@ -27,6 +27,7 @@ class Magi:
 		self.thumb_maker = thumbs.ThumbMaker(C.THUMBNAIL_WIDTH)
 		# inputs
 		self.osc_server = osc.OscServer()
+		self.midi_controller = midi.MidiController()
 		self.fun_store = {} # dictionary containing address to function
 							# duplicating osc_server (allows for guis to do things)
 		def backup_map(addr,fun):
