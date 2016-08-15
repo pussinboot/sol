@@ -38,7 +38,8 @@ class MainGui:
 		self.mainframe.pack()
 		self.cc_frame.pack(side=tk.TOP,fill=tk.X,expand=True)
 		self.clip_col_frame.pack(side=tk.TOP,fill=tk.BOTH)
-
+		# menu
+		self.setup_menubar()
 		for frame in self.cc_frames:
 			frame.pack(side=tk.LEFT)
 		
@@ -52,6 +53,21 @@ class MainGui:
 		# 	cc.update_clip_col
 		pass
 		# self.clip_conts.update_clip_col(self.magi.clip_storage.clip_col)
+
+	def setup_menubar(self):
+		self.menubar = tk.Menu(self.root)
+		self.filemenu = tk.Menu(self.menubar,tearoff=0) # file
+		# new
+		# save
+		# save as
+		# load
+		# load from resomeme
+		self.viewmenu = tk.Menu(self.menubar,tearoff=0)
+		# switch between the different views
+		# full, clip_org, performance
+		self.menubar.add_cascade(label='file',menu=self.filemenu)
+		self.menubar.add_cascade(label='view',menu=self.viewmenu)
+		self.root.config(menu=self.menubar)
 
 	def quit(self):
 		self.magi.stop()
