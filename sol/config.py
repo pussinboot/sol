@@ -10,6 +10,7 @@ NO_Q = 8 # cue points
 NO_LP = 8
 
 ### gui
+ALWAYS_ON_TOP = True
 
 # thumbnail stuff..
 THUMBNAIL_WIDTH = 192 # what size thumbnails to generate
