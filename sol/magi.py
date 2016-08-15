@@ -37,9 +37,8 @@ class Magi:
 		self.osc_client = osc.OscClient()
 		# model (resomeme for now)
 		self.model = model.Resolume(C.NO_LAYERS)
-		# gui (to-do)
+		# gui 
 		self.gui = None
-		# self.gui = TerminalGui(self)
 		# gui needs to implement
 		# update_clip - select or clear clip
 		# update_clip_params - takes param and updates that part of gui..
@@ -51,9 +50,12 @@ class Magi:
 
 		# clip storage 
 		self.clip_storage = ClipStorage(self)
-		# if nothing loaded
-		self.clip_storage.add_collection()
-		self.clip_storage.select_collection(0)
+		if self.db.file_ops.last_save is None:
+			# if nothing loaded
+			self.clip_storage.add_collection()
+			self.clip_storage.select_collection(0)
+		else:
+			self.load(self.db.file_ops.last_save)
 
 		self.track_vars()
 		self.map_pb_funs()
@@ -578,7 +580,7 @@ class Magi:
 		self.osc_server.stop()
 		self.thumb_maker.quit()
 
-	def save(self):
+	def generate_save_data(self):
 		fio = self.db.file_ops
 		root = fio.create_save('magi')
 		root.append(fio.save_clip_storage(self.clip_storage))
@@ -587,7 +589,8 @@ class Magi:
 
 	def save_to_file(self,filename):
 		with open(filename,'wt') as f:
-			f.write(self.save())
+			f.write(self.generate_save_data())
+		self.db.file_ops.update_last_save(filename)
 
 	def load(self,filename):
 		# TO-DO 
@@ -607,6 +610,8 @@ class Magi:
 
 		for layer in range(len(self.clip_storage.current_clips)):
 			self.select_clip(storage_dict['current_clips'][layer],layer)
+
+		self.db.file_ops.update_last_save(filename)
 
 	def load_resolume_comp(self,filename):
 		from models.resolume import load_avc
