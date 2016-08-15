@@ -591,6 +591,7 @@ class Magi:
 		with open(filename,'wt') as f:
 			f.write(self.generate_save_data())
 		self.db.file_ops.update_last_save(filename)
+		if C.DEBUG: print('successfully saved',filename)
 
 	def load(self,filename):
 		# TO-DO 
@@ -610,7 +611,7 @@ class Magi:
 
 		for layer in range(len(self.clip_storage.current_clips)):
 			self.select_clip(storage_dict['current_clips'][layer],layer)
-
+		if C.DEBUG: print('successfully loaded',filename)
 		self.db.file_ops.update_last_save(filename)
 
 	def load_resolume_comp(self,filename):
