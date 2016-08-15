@@ -11,8 +11,7 @@ except: # stupid for testing
 	from clip import Clip
 	from clip import ClipCollection
 
-NO_QP = 8
-NO_LP = 8
+import config as C
 
 class Database:
 	"""
@@ -80,8 +79,8 @@ class Database:
 		def_params = {
 		'play_direction' : 'p',
 		'playback_speed' : 1.0,
-		'cue_points'     : [None] * NO_QP,
-		'loop_points'    : [None] * NO_LP,
+		'cue_points'     : [None] * C.NO_Q,
+		'loop_points'    : [None] * C.NO_LP,
 		'loop_selection' : -1 ,
 		'loop_on'        : False
 		}
@@ -204,7 +203,18 @@ class FileOPs:
 	save/load to disk
 	"""
 	def __init__(self):
-		if not os.path.exists('./savedata/'): os.makedirs('./savedata/')
+		self.last_save = None
+		if not os.path.exists('./savedata/'): 
+			os.makedirs('./savedata/')
+		elif os.path.exists('./savedata/last_save'):
+			with open('./savedata/last_save') as last_save:
+				self.last_save = last_save.read()
+
+
+	def update_last_save(self,filename):
+		self.last_save = filename
+		with open('./savedata/last_save','w') as last_save:
+			last_save.write(self.last_save)
 
 	def save_settings(self,settings,name="settings"):
 		# save a bunch of things passed in as a dict

@@ -4,6 +4,10 @@
 menus - save,load, midi.., switch interfaces, models(?)
 org gui
 midi control
+- scratch control
+- loop off 
+- param save
+- tags
 
 
 #########################################
