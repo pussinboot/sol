@@ -12,6 +12,10 @@ class ThumbMaker:
 		self.desired_width = desired_width
 		self.desired_height = int(desired_width * aspect_height / aspect_width)
 
+	def update_desired_width(self,new_width):
+		self.desired_height = int(self.desired_height / self.desired_width * new_width)
+		self.desired_width = new_width
+
 	def quit(self):
 		# clean up after yourself
 		if os.path.exists('./scrot/temp.png'):

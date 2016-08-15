@@ -309,13 +309,15 @@ class CollectionsHolder:
 	def highlight_col(self,index=-1):
 		if index < 0:
 			index = self.clip_storage.cur_clip_col
-
-		self.containers[index].frame.tkraise()
-		for cl in self.container_labels:
-			cl.configure(relief=tk.FLAT)
-		self.container_labels[index].configure(relief=tk.SUNKEN)
-		if index != self.clip_storage.cur_clip_col:
-			self.clip_storage.select_collection(index)
+		try:
+			self.containers[index].frame.tkraise()
+			for cl in self.container_labels:
+				cl.configure(relief=tk.FLAT)
+			self.container_labels[index].configure(relief=tk.SUNKEN)
+			if index != self.clip_storage.cur_clip_col:
+				self.clip_storage.select_collection(index)
+		except:
+			pass
 
 	def add_collection(self):
 		self.clip_storage.add_collection()
