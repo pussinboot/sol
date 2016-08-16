@@ -372,17 +372,16 @@ class FileOPs:
 		tor = []
 		try:
 			root = ET.parse('./savedata/midi.xml').getroot()
-			for midi_key_el in root.find('midi').findall('midi_key'):
+			for midi_key_el in root.findall('midi_key'):
 				key = midi_key_el.get('key')
 				key_type = midi_key_el.get('type')
 				osc_msg = midi_key_el.get('osc_msg')
 				tor += [(key,key_type,osc_msg)]
 			return tor
-		except:
+		except Exception as e:
+			print(e)
 			return
-
-
-
+		
 	def create_save(self,name):
 		return ET.Element(name)
 

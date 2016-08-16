@@ -101,12 +101,16 @@ class ConfigGui:
 							input_name(col_funs[0],l,i),input_osc(col_funs[0],l,i)) 
 				new_inp_b.topframe.grid(row=(l*2 + i // 4),column=(i % 4))
 				self.inputs.append(new_inp_b)
+				self.fun_to_inp[new_inp_b.osc_command] = new_inp_b
+
 
 		for i in range(1,len(col_funs)):
 			new_inp_b = InputBox(self,self.col_tab.interior,
 						input_name(col_funs[i]),input_osc(col_funs[i])) 
 			new_inp_b.topframe.grid(row=(4 + (i-1) // 4),column=((i-1) % 4))
 			self.inputs.append(new_inp_b)
+			self.fun_to_inp[new_inp_b.osc_command] = new_inp_b
+
 
 		# per layer control
 		for l in range(C.NO_LAYERS):
@@ -121,6 +125,7 @@ class ConfigGui:
 						input_name(layer_funs[i],l,c_i),input_osc(layer_funs[i],l,c_i)) 
 						new_inp_b.topframe.grid(row=cur_r,column=cur_c)
 						self.inputs.append(new_inp_b)
+						self.fun_to_inp[new_inp_b.osc_command] = new_inp_b
 						cur_c = (cur_c + 1) % 4
 				else:
 					new_inp_b = InputBox(self,self.layer_tabs[l].interior,
@@ -161,9 +166,9 @@ class ConfigGui:
 		try_to_load = self.backend.db.file_ops.load_midi()
 		if try_to_load is not None:
 			for key_line in try_to_load:
-				if key_line[2] in self.fun_to_imp:
-					self.fun_to_imp[key_line[2]].value.set(key_line[0])
-					self.fun_to_imp[key_line[2]].keytype.set(key_line[1])
+				if key_line[2] in self.fun_to_inp:
+					self.fun_to_inp[key_line[2]].value.set(key_line[0])
+					self.fun_to_inp[key_line[2]].keytype.set(key_line[1])
 
 
 	def stop(self):

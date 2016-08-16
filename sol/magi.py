@@ -631,12 +631,14 @@ class Magi:
 
 	def load_midi(self):
 		midi_load = self.db.file_ops.load_midi()
-		if midi_load is None: return
+		if midi_load is None: 
+			if C.DEBUG: print('no midi config found')
+			return
 		self.map_midi(midi_load)
 
 	def map_midi(self,midi_load):
 		for line in midi_load:
-			key, key_type, osc_cmd = *line
+			key, key_type, osc_cmd = line[0],line[1],line[2]
 
 			def gen_fun(osc_cmd):
 				# generate proper fun from the osc_cmd
