@@ -1,10 +1,11 @@
 #########################################
 ###         actual to-do list         ###
 #########################################
-menus -  midi.., switch interfaces, models(?)
+menus -  switch interfaces, models(?)
 org gui
-midi control
-- scratch control
+check that midi control works
+add scratch control
+	wrap around cur_range
 - loop off 
 - param save
 - tags
