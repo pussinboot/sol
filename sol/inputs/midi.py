@@ -52,7 +52,7 @@ class MidiController:
 
 		return funtor
 
-	def osc2midi(_,osc_msg):
+	def osc2midi(self,_,osc_msg):
 		# map this function to the osc server @ address "/midi"
 		msg = eval(osc_msg)
 		key, n = str(msg[:2]),msg[2]
@@ -69,6 +69,7 @@ class MidiController:
 
 		def osc_to_id(_,osc_msg):
 			msg = eval(osc_msg)
+			print(msg)
 			self.queue.put([str(msg[:2]),msg[2]])
 
 		return osc_to_id

@@ -196,7 +196,7 @@ if __name__ == '__main__':
 	root.title('sol')
 	# open on privacy screen =)
 	x, y = -1250, 900
-	root.geometry('+{}+{}'.format(x, y))
+	# root.geometry('+{}+{}'.format(x, y))
 
 	testgui = MainGui(root)
 	# for k,v in testgui.magi.fun_store.items():
@@ -211,7 +211,7 @@ if __name__ == '__main__':
 	# 	testgui.magi.clip_storage.clip_col[i] = testgui.magi.db.last_search[i]
 	# print(testgui.magi.clip_storage.clip_col[0])
 	testgui.start()
-	testgui.configure_midi()
+	# testgui.configure_midi()
 	root.mainloop()
 	# testgui.magi.gui = None
 	# testgui.magi.fun_store['/magi/layer0/playback/clear']('',True)
