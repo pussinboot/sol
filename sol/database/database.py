@@ -355,6 +355,34 @@ class FileOPs:
 			database.add_clip(new_clip)
 		database.searcher.refresh()
 
+	def save_midi(self,big_midi_list):
+
+		midi_root = self.create_save('midi')
+		parts = ['key','type','osc_msg']
+		for i in range(len(big_midi_list)):
+			new_key = ET.SubElement(midi_root,'midi_key')
+			for j in range(len(parts)):
+				new_key.set(parts[j],big_midi_list[i][j])
+
+		with open('./savedata/midi.xml','wt') as f:
+			f.write(self.pretty_print(midi_root))
+
+	def load_midi(self):
+		if not os.path.exists('./savedata/midi.xml'): return
+		tor = []
+		try:
+			root = ET.parse('./savedata/midi.xml').getroot()
+			for midi_key_el in root.find('midi').findall('midi_key'):
+				key = midi_key_el.get('key')
+				key_type = midi_key_el.get('type')
+				osc_msg = midi_key_el.get('osc_msg')
+				tor += [(key,key_type,osc_msg)]
+			return tor
+		except:
+			return
+
+
+
 	def create_save(self,name):
 		return ET.Element(name)
 
