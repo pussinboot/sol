@@ -63,6 +63,8 @@ class Magi:
 		self.map_col_funs()
 		self.map_loop_funs()
 
+		self.load_midi()
+
 	###
 	# internal state funs
 
@@ -626,6 +628,36 @@ class Magi:
 			new_clip = clip.Clip(*parsed_clip_vals)
 			self.db.add_clip(new_clip)
 		self.db.searcher.refresh()
+
+	def load_midi(self):
+		midi_load = self.db.file_ops.load_midi()
+		if midi_load is None: return
+		self.map_midi(midi_load)
+
+	def map_midi(self,midi_load):
+		for line in midi_load:
+			key, key_type, osc_cmd = *line
+
+			def gen_fun(osc_cmd):
+				# generate proper fun from the osc_cmd
+				funtor = None
+				if ' ' in osc_cmd:
+					osc_cmd = osc_cmd.split(' ')
+					if osc_cmd[0] in self.fun_store:
+						def funtor(*args):
+							self.fun_store[osc_cmd[0]]('',osc_cmd[1])
+				else:
+					if osc_cmd in self.fun_store:
+						def funtor(n):
+							self.fun_store[osc_cmd]('',n)
+				return funtor
+
+			# pass it into our midi_controller
+			new_fun = gen_fun(osc_cmd)
+			if new_fun is not None:
+				self.midi_controller.map_fun_key(new_fun,key,key_type)
+		# finally map osc2midi
+		self.osc_server.map('/midi',self.midi_controller.osc2midi)
 
 	def reset(self):
 		self.db.file_ops.last_save = None

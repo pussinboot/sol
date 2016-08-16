@@ -175,6 +175,7 @@ class ConfigGui:
 			if tor is not None:
 				savedata += [tor]
 		self.backend.db.file_ops.save_midi(savedata)
+		self.backend.map_midi(savedata)
 		self.root.destroy()
 
 
