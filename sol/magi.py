@@ -182,28 +182,47 @@ class Magi:
 				self.clip_storage.cur_clip_dirs[i] = None
 
 
-			def do_control_fun(_,n):
-				# actually do the control
-				n = self.osc_server.osc_value(n)
-				if not n: return
-				cur_clip = self.clip_storage.current_clips[i]
-				duration = cur_clip.params['duration']
-				if duration == 0.0: return
-				if cur_clip is None:
-					self.clip_storage.cur_clip_dirs[i] = None
-					return	
-				ctrl_range = self.cur_range(i)
-				cur_pos = self.model.current_clip_pos[i]
-				if cur_pos is None: return
-				ctrl_sens = C.DEFAULT_SENSITIVITY * cur_clip.params['control_sens']
-				delta_seek = n * ctrl_sens / duration
-				new_pos = cur_pos + delta_seek
-				# TO-DO wrap or clamp?? 
-				# default let's clamp
+			def wrap(new_pos,ctrl_range):
+				while new_pos > ctrl_range[1]:
+					new_pos = new_pos - ctrl_range[1] + ctrl_range[0]
+				while new_pos < ctrl_range[0]:
+					new_pos = ctrl_range[1] - new_pos + ctrl_range[0]
+				return new_pos
+
+			def clamp(new_pos,ctrl_range):
 				if new_pos < ctrl_range[0]:
 					new_pos = ctrl_range[0]
 				elif new_pos > ctrl_range[1]:
 					new_pos = ctrl_range[1]
+				return new_pos
+
+			lp_to_fun = {'d':wrap,'b':clamp}
+
+			def do_control_fun(_,n):
+				# actually do the control
+				n = self.osc_server.osc_value(n)
+				if not n: return
+				# current clip
+				cur_clip = self.clip_storage.current_clips[i]
+				duration = cur_clip.params['duration']
+				if duration == 0.0: return # needed for proper sens
+				if cur_clip is None:
+					self.clip_storage.cur_clip_dirs[i] = None # stop controlling
+					return	
+				ctrl_range = self.cur_range(i)
+				cur_pos = self.model.current_clip_pos[i]
+				if cur_pos is None: return
+				# calculate new position
+				ctrl_sens = C.DEFAULT_SENSITIVITY * cur_clip.params['control_sens']
+				delta_seek = n * ctrl_sens / duration
+				new_pos = cur_pos + delta_seek
+				# wrap or clamp?? based on current looping type
+				ls = cur_clip.params['loop_selection']
+				if ls < 0: 
+					lt = 'b' # clamp by default
+				else:
+					lt = cur_clip.params['loop_points'][ls][2]
+				new_pos = lp_to_fun[lt](new_pos,ctrl_range)
 				(addr, msg) = self.model.set_clip_pos(i,new_pos)
 				self.osc_client.build_n_send(addr,msg)
 
