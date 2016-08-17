@@ -16,12 +16,13 @@ class ConfigGui:
 	then rebind midi_controller's osc2midi to /midi after config
 	"""
 
-	def __init__(self,root,backend):
+	def __init__(self,root,parent):
 
 		self.root = root
-		self.backend = backend
+		self.parent = parent
+		self.backend = self.parent.magi
 		self.root.title('midi configuration')
-		# self.root.call('wm', 'attributes', '.', '-topmost', '1')
+		self.parent.root.call('wm', 'attributes', '.', '-topmost', '0')
 
 		self.inputs = []
 		self.fun_to_inp = {}
@@ -182,6 +183,8 @@ class ConfigGui:
 		self.backend.db.file_ops.save_midi(savedata)
 		self.backend.map_midi(savedata)
 		self.root.destroy()
+		self.parent.root.call('wm', 'attributes', '.', '-topmost', str(int(self.parent.on_top_toggle.get())))
+
 
 
 class ScrollTab():
