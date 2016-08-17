@@ -160,7 +160,7 @@ class ConfigGui:
 
 
 	def start(self):
-		self.backend.osc_server.map('/midi',self.backend.midi_controller.start_mapping())
+		self.backend.osc_server.map_unique('/midi',self.backend.midi_controller.start_mapping())
 
 		# load
 		try_to_load = self.backend.db.file_ops.load_midi()

@@ -659,7 +659,7 @@ class Magi:
 			if new_fun is not None:
 				self.midi_controller.map_fun_key(new_fun,key,key_type)
 		# finally map osc2midi
-		self.osc_server.map('/midi',self.midi_controller.osc2midi)
+		self.osc_server.map_unique('/midi',self.midi_controller.osc2midi)
 
 	def reset(self):
 		self.db.file_ops.last_save = None
