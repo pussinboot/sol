@@ -38,6 +38,11 @@ class Magi:
 		self.osc_client = osc.OscClient()
 		# model (resomeme for now)
 		self.model = model.Resolume(C.NO_LAYERS)
+		self.play_dir_to_fun = { 'f' : self.model.play,
+								 'p' : self.model.pause,
+								 'b' : self.model.reverse,
+								 'r' : self.model.random
+							   }
 		# gui 
 		self.gui = None
 		# gui needs to implement
@@ -127,18 +132,93 @@ class Magi:
 					if self.gui is not None: self.gui.update_cur_pos(i,new_val)
 					#### #### #### #### #### #### #### ####
 					# this is where looping logic comes in
+					# after checking that we're not UNDER CONTROL
+					perform_loop_check = self.control_check(i)
+					if perform_loop_check: return
 					lp = self.loop_check(i)
 					if lp is None: return
 					if lp[1][2] in lp_to_fun:
 						lp_to_fun[lp[1][2]](lp[1],new_val,lp[0])
-
 				except:
 					pass
+
 			return update_fun
 
 		for i in range(C.NO_LAYERS):
 			update_fun = gen_update_fun(i)
 			self.osc_server.mapp(self.model.clip_pos_addr[i],update_fun)
+
+		# control haxx
+
+		def gen_control_fun(layer):
+			# let's scratch >=D
+			i = layer
+
+			def start_control_fun(_,n):
+				# remember last play direction on begin
+				n = self.osc_server.osc_value(n)
+				if not n: return
+				cur_clip = self.clip_storage.current_clips[i]
+				if cur_clip is None:
+					self.clip_storage.cur_clip_dirs[i] = None
+					return	
+				self.clip_storage.cur_clip_dirs[i] = cur_clip.params['play_direction'] 
+				# pause it!!!
+				(pb_addr, pb_msg) = self.play_dir_to_fun['p'](i)
+				self.osc_client.build_n_send(pb_addr,pb_msg)
+
+
+			def stop_control_fun(_,n):
+				# so that on end can "resume" :-)
+				n = self.osc_server.osc_value(n)
+				if not n: return
+				cur_clip = self.clip_storage.current_clips[i]
+				if cur_clip is None:
+					self.clip_storage.cur_clip_dirs[i] = None
+					return
+				pd = cur_clip.params['play_direction']
+				(pb_addr, pb_msg) = self.play_dir_to_fun[pd](i)
+				self.osc_client.build_n_send(pb_addr,pb_msg)
+				self.clip_storage.cur_clip_dirs[i] = None
+
+
+			def do_control_fun(_,n):
+				# actually do the control
+				n = self.osc_server.osc_value(n)
+				if not n: return
+				cur_clip = self.clip_storage.current_clips[i]
+				duration = cur_clip.params['duration']
+				if duration == 0.0: return
+				if cur_clip is None:
+					self.clip_storage.cur_clip_dirs[i] = None
+					return	
+				ctrl_range = self.cur_range(i)
+				cur_pos = self.model.current_clip_pos[i]
+				if cur_pos is None: return
+				ctrl_sens = C.DEFAULT_SENSITIVITY # * clip sens? TO-DO (individual clip sensitivities)
+				delta_seek = n * ctrl_sens / duration
+				new_pos = cur_pos + delta_seek
+				# TO-DO wrap or clamp?? 
+				# default let's clamp
+				if new_pos < ctrl_range[0]:
+					new_pos = ctrl_range[0]
+				elif new_pos > ctrl_range[1]:
+					new_pos = ctrl_range[1]
+				(addr, msg) = self.model.set_clip_pos(i,new_pos)
+				self.osc_client.build_n_send(addr,msg)
+
+			return [start_control_fun, stop_control_fun, do_control_fun]
+
+
+		base_ctrl_addr = '/magi/control{}/'
+		start_ctrl_addr = base_ctrl_addr + 'start'
+		stop_ctrl_addr = base_ctrl_addr + 'stop'
+		do_ctrl_addr = base_ctrl_addr + 'do'
+		ctrl_addrs = [start_ctrl_addr, stop_ctrl_addr, do_ctrl_addr]
+		for i in range(C.NO_LAYERS):
+			gend_funs = gen_control_fun(i)
+			for j in range(3):
+				self.osc_server.mapp(ctrl_addrs[j].format(i),gend_funs[j])
 
 	###
 	# helper funs
@@ -155,13 +235,9 @@ class Magi:
 		self.osc_client.build_n_send(clip.command,1)
 		self.clip_storage.current_clips[layer] = clip
 		# perform the play command
-		play_dir_to_fun = { 'f' : self.model.play,
-							'p' : self.model.pause,
-							'b' : self.model.reverse,
-							'r' : self.model.random
-							}
+
 		pd = clip.params['play_direction']
-		(pb_addr, pb_msg) = play_dir_to_fun[pd](layer)
+		(pb_addr, pb_msg) = self.play_dir_to_fun[pd](layer)
 		self.osc_client.build_n_send(pb_addr,pb_msg)
 		# correct speed???
 		spd = clip.params['playback_speed']
@@ -212,6 +288,10 @@ class Magi:
 		if cl[0] > cl[1]:
 			cl[1], cl[0] = cl[0], cl[1]
 		return [cur_clip, cl]
+
+	def control_check(self,layer):
+		# if a layer is under control then its current clip dir wont have been reset
+		return self.clip_storage.cur_clip_dirs[layer] is not None
 
 	def loop_get(self,layer):
 		# returns currently selected lp, even if incomplete
@@ -699,6 +779,7 @@ class ClipStorage:
 	"""
 	def __init__(self,magi):
 		self.current_clips = clip.ClipCollection(C.NO_LAYERS,"current_clips")
+		self.cur_clip_dirs = [None] * C.NO_LAYERS
 		self.cur_clip_col = -1
 		self.clip_cols = []
 		self.magi = magi

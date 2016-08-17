@@ -3,9 +3,11 @@
 #########################################
 menus -  switch interfaces, models(?)
 org gui
-add scratch control
-	wrap around cur_range
-- loop off 
+scratch - wrap vs clamp
+		- slip mode
+		- ctrl sens
+
+- loop off ?
 - param save
 - tags
 

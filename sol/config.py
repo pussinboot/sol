@@ -20,3 +20,6 @@ NO_FRAMES = 5
 
 # resomeme
 RESOLUME_SAVE_DIR = "{0}{1}".format(os.environ['USERPROFILE'],"\\Documents\\Resolume Arena 5\\compositions")
+
+# control hacks
+DEFAULT_SENSITIVITY = 0.005 # how many seconds the default control adjustment is
