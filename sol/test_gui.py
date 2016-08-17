@@ -95,7 +95,7 @@ class MainGui:
 		# print([0],self.magi.clip_storage.current_clips[1])
 
 	def configure_midi(self):
-		popup = midi_config.ConfigGui(tk.Toplevel(),self.magi)
+		popup = midi_config.ConfigGui(tk.Toplevel(),self)
 
 	def toggle_on_top(self,*args):
 		new_val = self.on_top_toggle.get()

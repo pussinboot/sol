@@ -824,6 +824,7 @@ class LoopScreen:
 		cur_lp = self.cur_clip_lp
 		if cur_lp is None: return
 		i = cur_lp['loop_selection']
+		if cur_lp['loop_points'][i] is None: return
 		cur_loc = self.backend.model.current_clip_pos[self.layer]
 		if cur_loc is None: return
 		split_f_name = os.path.split(os.path.splitext(cur_clip.f_name)[0])
