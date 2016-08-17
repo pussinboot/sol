@@ -84,7 +84,8 @@ class Database:
 		'loop_points'    : [None] * C.NO_LP,
 		'loop_selection' : -1,
 		'loop_on'        : False,
-		'duration'		 : 0.0
+		'duration'		 : 0.0,
+		'control_sens'	 : 1.0
 		}
 		for p, p_val in def_params.items():
 			if p not in clip.params:

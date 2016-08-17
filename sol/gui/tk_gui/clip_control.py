@@ -26,7 +26,8 @@ class ClipControl:
 			'loop_on' : self.update_loop,
 			'loop_type' : self.update_loop,
 			'loop_selection' : self.update_loop,
-			'playback_speed' : self.update_speed
+			'playback_speed' : self.update_speed,
+			'control_sens' : self.update_sens
 		}
 
 		self.refresh_looping()
@@ -54,6 +55,13 @@ class ClipControl:
 		else:
 			spd = clip.params['playback_speed']
 		self.speed_tk.set(str(spd))
+
+	def update_sens(self,clip):
+		if clip is None:
+			sens = 0.0
+		else:
+			sens = clip.params['control_sens']
+		self.sens_tk.set(str(sens))
 
 	def update_cur_pos(self,pos):
 		self.cur_pos = pos
@@ -128,6 +136,7 @@ class ClipControl:
 		self.loop_screen = LoopScreen(self.bottom_frame,self.backend,self.layer,self.width,loop_set_funs)
 
 		speedfun = self.backend.fun_store[gen_addr + '/playback/speed']
+		sensfun = self.backend.fun_store['/magi/control{}/sens'.format(self.layer)]
 		# info
 		self.name_var = tk.StringVar()
 		self.name_label = tk.Label(self.info_frame,textvariable=self.name_var)
@@ -162,7 +171,7 @@ class ClipControl:
 		self.control_buttons = []
 		self.setup_control_buttons(pb_funs)
 		self.setup_speed_control(speedfun)
-		self.setup_sens_control()
+		self.setup_sens_control(sensfun)
 
 		# pack
 		self.name_label.pack(side=tk.TOP)
@@ -215,7 +224,7 @@ class ClipControl:
 		self.speed_scale.pack(side=tk.LEFT)
 		self.speed_box.pack(side=tk.LEFT)
 
-	def setup_sens_control(self):
+	def setup_sens_control(self,sensfun):
 		self.sens_tk = tk.StringVar()
 		self.sens_scale = tk.Scale(self.control_frame_sens,from_=0.0,to=10.0,resolution=0.05,variable=self.sens_tk,
 							   orient=tk.HORIZONTAL, showvalue = 0,length = 55)
@@ -224,8 +233,7 @@ class ClipControl:
 		self.sens_label = tk.Label(self.control_frame_sens,text='sens',width=3)
 		def send_sens(*args): #### TO-DO add global speedvar
 			sens = float(self.sens_tk.get())
-			pass
-			#sensfun('',sens)
+			sensfun('',sens)
 
 		self.sens_scale.config(command=send_sens)
 		self.sens_box.config(command=send_sens)
