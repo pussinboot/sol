@@ -26,21 +26,21 @@ class MainGui:
 		# sol
 		self.magi = Magi()
 		self.magi.gui = self
-		# self.magi.clip_storage.gui = self
 		self.clip_controls = []
+		self.clip_org = None
 		for i in range(C.NO_LAYERS):
 			new_frame = tk.Frame(self.cc_frame,pady=0,padx=0)
 			self.clip_controls.append(clip_control.ClipControl(new_frame,self.magi,i))
 			self.cc_frames.append(new_frame)
 		self.clip_conts = clip_collections.CollectionsHolder(self.root,self.clip_col_frame,self.magi)
-		#clip_collections.ContainerCollection(self.clip_col_frame,
-		#						self.magi.clip_storage.clip_col,self.magi.select_clip)
+
 		# pack it
 		self.mainframe.pack()
 		self.cc_frame.pack(side=tk.TOP,fill=tk.X,expand=True)
 		self.clip_col_frame.pack(side=tk.TOP,fill=tk.BOTH)
 		for frame in self.cc_frames:
 			frame.pack(side=tk.LEFT)
+
 		# menu
 		self.setup_menubar()
 		# quit behavior
@@ -102,6 +102,46 @@ class MainGui:
 		new_val = str(int(new_val))
 		root.call('wm', 'attributes', '.', '-topmost', new_val)
 
+	def enter_clip_org_gui(self):
+		# only want 1 clip control =)
+		for i in range(1,len(self.cc_frames)):
+			self.cc_frames[i].pack_forget()
+		# resize the 1 clip control?
+		# we want different library browser sry
+		self.clip_conts.search_frame.pack_forget()
+		self.clip_org = clip_collections.ClipOrg(tk.Toplevel(),self)
+
+	def exit_clip_org_gui(self):
+		# close clip_org if it isn't closed yet
+		if self.clip_org is not None:
+			self.clip_org.close()
+		# resize the 1st clip control back to normal?
+		for i in range(1,len(self.cc_frames)):
+			self.cc_frames[i].pack(side=tk.LEFT)
+		# library browser
+		self.clip_conts.search_frame.pack(side=tk.LEFT,fill=tk.Y)
+
+
+	def change_views(self,*args):
+		new_view = self.cur_view.get()
+		enter_actions = {
+			'clip_org' : self.enter_clip_org_gui
+		}
+
+		exit_actions = {
+			'clip_org' : self.exit_clip_org_gui
+		}
+
+		# exit last
+		if self.last_view in exit_actions:
+			exit_actions[self.last_view]()
+
+		# enter new
+		if new_view in enter_actions:
+			enter_actions[new_view]()
+
+		self.last_view = new_view
+
 	def setup_menubar(self):
 		self.menubar = tk.Menu(self.root)
 		self.filemenu = tk.Menu(self.menubar,tearoff=0) # file menu
@@ -126,13 +166,21 @@ class MainGui:
 		self.on_top_toggle = tk.BooleanVar()
 		self.on_top_toggle.trace('w',self.toggle_on_top)
 		self.on_top_toggle.set(C.ALWAYS_ON_TOP)
+		self.cur_view = tk.StringVar()
+		self.last_view = ''
+		self.cur_view.trace('w',self.change_views)
+
 
 		# toggle always on top behavior
 		self.viewmenu.add_checkbutton(label="always on top", onvalue=True, offvalue=False, variable=self.on_top_toggle)
 
 		# switch between the different views
 		# full, clip_org, performance
-
+		self.viewmenu.add_separator()
+		self.viewmenu.add_radiobutton(label='full view',value='full',variable=self.cur_view)
+		self.viewmenu.add_radiobutton(label='clip org view',value='clip_org',variable=self.cur_view)
+		self.viewmenu.add_radiobutton(label='performace view',value='perf',variable=self.cur_view)
+		self.cur_view.set('full')
 		# pack it
 		self.menubar.add_cascade(label='file',menu=self.filemenu)
 		self.menubar.add_cascade(label='view',menu=self.viewmenu)
