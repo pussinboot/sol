@@ -426,9 +426,13 @@ class Magi:
 							return
 					(addr, msg) = self.model.set_clip_pos(i,cp)
 					self.osc_client.build_n_send(addr,msg)
+					if self.gui is not None: self.gui.update_clip_params(i,
+													cur_clip,'cue_points')
 				else:
 					cur_clip.params['cue_points'][n] =  \
 					                self.model.current_clip_pos[i]
+					if self.gui is not None: self.gui.update_clip_params(i,
+					           						cur_clip,'cue_points')
 
 			def clear_cue(_,n):
 				n = self.osc_server.osc_value(n)
@@ -436,6 +440,8 @@ class Magi:
 				if cur_clip is None: return
 				if n > len(cur_clip.params['cue_points']): return
 				cur_clip.params['cue_points'][n] = None
+				if self.gui is not None: self.gui.update_clip_params(i,
+				           						cur_clip,'cue_points')
 
 
 			def toggle_loop(_,n):
@@ -515,6 +521,8 @@ class Magi:
 				cl = self.lp_create(cl)
 				cl[0] = pos
 				cur_clip.params['loop_points'][ls] = cl
+				if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
+															   'loop_selection')
 
 			def set_loop_b(_,n):
 				pos = self.osc_server.osc_value(n)
@@ -527,6 +535,8 @@ class Magi:
 				cl = self.lp_create(cl)
 				cl[1] = pos
 				cur_clip.params['loop_points'][ls] = cl
+				if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
+															   'loop_selection')
 
 			def set_loop_a_b(_,ns):
 				pos = self.osc_server.osc_value(ns)
