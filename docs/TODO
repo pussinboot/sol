@@ -4,7 +4,6 @@
 menus -  switch interfaces, models(?)
 org gui
 fix stupid config not on top when sol is on top..
-map_replace for osc server..
 add scratch control
 	wrap around cur_range
 - loop off 

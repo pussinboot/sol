@@ -45,6 +45,11 @@ class OscServer:
 		except:
 			return -1
 
+	def map_unique(self,addr,fun):
+		if addr in self.dispatcher._map:
+			del self.dispatcher._map[addr]
+		self.map(addr,fun)
+
 
 class OscClient:
 	def __init__(self,ip="127.0.0.1",port=7000):
