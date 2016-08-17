@@ -3,6 +3,7 @@ from xml.dom import minidom
 from bisect import bisect_left
 
 import os.path
+import subprocess
 
 try:
 	from .clip import Clip
@@ -81,13 +82,25 @@ class Database:
 		'playback_speed' : 1.0,
 		'cue_points'     : [None] * C.NO_Q,
 		'loop_points'    : [None] * C.NO_LP,
-		'loop_selection' : -1 ,
-		'loop_on'        : False
+		'loop_selection' : -1,
+		'loop_on'        : False,
+		'duration'		 : 0.0
 		}
 		for p, p_val in def_params.items():
 			if p not in clip.params:
 				clip.params[p] = p_val
-
+		# create durations, this is pretty quick even with hundreds of clips
+		if clip.params['duration'] == 0.0:
+			try:
+				try:
+					file_info = subprocess.check_output('ffprobe -i "{}" -show_entries format=duration -v quiet -of csv="p=0"'.format(clip.f_name), 
+								stderr=subprocess.STDOUT, shell=True)
+				except subprocess.CalledProcessError as e:
+					file_info = e.output
+				clip.params['duration'] = float(file_info.decode('utf-8'))
+			except:
+				pass
+				
 		self.clips[clip.f_name] = clip
 		self.searcher.add_clip(clip)
 
