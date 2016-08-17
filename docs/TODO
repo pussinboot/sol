@@ -3,9 +3,8 @@
 #########################################
 menus -  switch interfaces, models(?)
 org gui
-scratch - wrap vs clamp
-		- slip mode
-
+	scratch
+		- slip mode (?)
 - loop off ?
 - param save
 - tags
