@@ -195,7 +195,7 @@ class Magi:
 				ctrl_range = self.cur_range(i)
 				cur_pos = self.model.current_clip_pos[i]
 				if cur_pos is None: return
-				ctrl_sens = C.DEFAULT_SENSITIVITY # * clip sens? TO-DO (individual clip sensitivities)
+				ctrl_sens = C.DEFAULT_SENSITIVITY * cur_clip.params['control_sens']
 				delta_seek = n * ctrl_sens / duration
 				new_pos = cur_pos + delta_seek
 				# TO-DO wrap or clamp?? 
@@ -207,17 +207,27 @@ class Magi:
 				(addr, msg) = self.model.set_clip_pos(i,new_pos)
 				self.osc_client.build_n_send(addr,msg)
 
-			return [start_control_fun, stop_control_fun, do_control_fun]
+			def update_sens_fun(_,n):
+				n = self.osc_server.osc_value(n)
+				if not n: return
+				cur_clip = self.clip_storage.current_clips[i]
+				if cur_clip is None: return
+				cur_clip.params['control_sens'] = n
+				if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
+															   'control_sens')
+
+			return [start_control_fun, stop_control_fun, do_control_fun,update_sens_fun]
 
 
 		base_ctrl_addr = '/magi/control{}/'
 		start_ctrl_addr = base_ctrl_addr + 'start'
 		stop_ctrl_addr = base_ctrl_addr + 'stop'
 		do_ctrl_addr = base_ctrl_addr + 'do'
-		ctrl_addrs = [start_ctrl_addr, stop_ctrl_addr, do_ctrl_addr]
+		sens_ctrl_addr = base_ctrl_addr + 'sens'
+		ctrl_addrs = [start_ctrl_addr, stop_ctrl_addr, do_ctrl_addr,sens_ctrl_addr]
 		for i in range(C.NO_LAYERS):
 			gend_funs = gen_control_fun(i)
-			for j in range(3):
+			for j in range(4):
 				self.osc_server.mapp(ctrl_addrs[j].format(i),gend_funs[j])
 
 	###
