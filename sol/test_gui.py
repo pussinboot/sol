@@ -111,10 +111,11 @@ class MainGui:
 		self.clip_conts.search_frame.pack_forget()
 		self.clip_org = clip_collections.ClipOrg(tk.Toplevel(),self)
 
-	def exit_clip_org_gui(self):
+	def exit_clip_org_gui(self,*args):
 		# close clip_org if it isn't closed yet
 		if self.clip_org is not None:
 			self.clip_org.close()
+			self.clip_org = None
 		# resize the 1st clip control back to normal?
 		for i in range(1,len(self.cc_frames)):
 			self.cc_frames[i].pack(side=tk.LEFT)
