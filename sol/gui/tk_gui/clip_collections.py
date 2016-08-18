@@ -84,6 +84,7 @@ class ClipContainer:
 	def setup_imgs(self):
 		f_names = [t_name for t_name in self.clip.t_names if os.path.exists(t_name)]
 		self.imgs = [ImageTk.PhotoImage(Image.open(f_name)) for f_name in f_names]
+		if len(self.imgs) == 0: return
 		self.current_img_i = 0
 		self.change_img_from_img(self.imgs[self.current_img_i])
 
@@ -535,14 +536,15 @@ class ClipOrg:
 		self.backend = self.parent.magi
 		self.root.title('clip org')
 		self.parent.root.call('wm', 'attributes', '.', '-topmost', '0')
-		self.root.protocol("WM_DELETE_WINDOW",self.close)		
+		self.root.geometry('{}x{}'.format(C.THUMB_W * 4 + 100,400))
+		self.root.protocol("WM_DELETE_WINDOW",self.parent.exit_clip_org_gui)		
 		self.index = -1
 
 		self.mainframe = tk.Frame(root)
 		self.clip_frame = ttk.Notebook(self.mainframe)
 		self.all_clip_frame = ttk.Frame(self.clip_frame)
 		self.all_clip_canvas = tk.Canvas(self.all_clip_frame)
-		self.frame = self.all_clip_inner_frame = tk.Frame(self.all_clip_canvas)
+		self.all_clip_inner_frame = tk.Frame(self.all_clip_canvas)
 		self.vsb_all_clips = tk.Scrollbar(self.all_clip_frame, orient="vertical", command=self.all_clip_canvas.yview)
 		self.all_clip_canvas.configure(yscrollcommand=self.vsb_all_clips.set)
 		self.clip_frame.add(self.all_clip_frame,text='all clips')
@@ -564,34 +566,33 @@ class ClipOrg:
 
 		self.search_query = tk.StringVar()
 		self.search_field = tk.Entry(self.search_result_frame,textvariable=self.search_query)
-		self.search_query.trace('w',self.search)
+		self.search_field.bind('<Return>',self.search)
 
 		self.clip_conts = []
 		self.clip_folds = []
 		self.search_res_clip_conts = []
 
-		self.mainframe.pack(expand=True,fill=tk.Y)
+		self.mainframe.pack(expand=True,fill="both")
 		self.clip_frame.pack(expand=True,fill="both")
 		self.vsb_all_clips.pack(side="right", fill="y")
 		self.all_clip_canvas.pack(side="left", fill="both", expand=True)
 		self.all_clip_canvas.create_window((4,4), window=self.all_clip_inner_frame, anchor="nw", 
 								  tags="self.all_clip_inner_frame")
-		self.all_clip_canvas.bind("<MouseWheel>", self.mouse_wheel)
-		self.all_clip_canvas.bind("<Button-4>", self.mouse_wheel)
-		self.all_clip_canvas.bind("<Button-5>", self.mouse_wheel)
+
+		self.all_clip_inner_frame.bind("<MouseWheel>", self.mouse_wheel)
+		self.all_clip_inner_frame.bind("<Button-4>", self.mouse_wheel)
+		self.all_clip_inner_frame.bind("<Button-5>", self.mouse_wheel)
 
 		self.all_clip_inner_frame.bind("<Configure>", self.reset_scroll_region)
 
 		self.initialize_all_clips()
 
 		self.search_field.pack(side="top",fill="x")
-		self.vsb_search_clips.pack(side="right", fill="y")
+		self.vsb_search_clips.pack(side="right", fill="y",expand=True)
 		self.search_clip_canvas.pack(side="left", fill="both", expand=True)
 		self.search_clip_canvas.create_window((4,4), window=self.search_clip_inner_frame, anchor="nw", 
 								  tags="self.search_clip_inner_frame")
-		self.search_clip_canvas.bind("<MouseWheel>", self.mouse_wheel_search)
-		self.search_clip_canvas.bind("<Button-4>", self.mouse_wheel_search)
-		self.search_clip_canvas.bind("<Button-5>", self.mouse_wheel_search)
+
 
 	def reset_scroll_region(self, event=None):
 		self.all_clip_canvas.configure(scrollregion=self.all_clip_canvas.bbox("all"))
@@ -605,11 +606,10 @@ class ClipOrg:
 
 	def initialize_all_clips(self):
 		# first sort by filename : )
-		all_clips = self.backend.db.alphabetical_listing
+		all_clips = self.backend.db.alphabetical_listing[:50]
 		
 		for i, cc in enumerate(all_clips):
-			new_clip_cont = ClipContainer(self,-1,self.backend.select_clip,cc[1])
-			new_clip_cont.label.unbind('<Double-3>')
+			new_clip_cont = ClipOrgClip(self,self.all_clip_inner_frame,self.backend.select_clip,cc[1])
 			new_clip_cont.grid(row=i//4,column=i%4)
 
 		# for i in range(len(fnames)):
@@ -642,12 +642,13 @@ class ClipOrg:
 			cont.frame.destroy()
 		self.search_res_clip_conts = []
 		if search_term != "":
-			res = self.backend.search.by_prefix(search_term)
-			fnames = [r for r in res if r in self.backend.library.clips]
-			for i in range(len(fnames)):
-				newcont = ClipCont(self.backend.library.clips[fnames[i]],self.lib_gui,self.search_clip_inner_frame)
+			res = self.backend.db.search(search_term)
+			print(res)
+
+			for i, cc in enumerate(res):
+				newcont = ClipOrgClip(self,self.search_clip_inner_frame,self.backend.select_clip,cc)
+				newcont.grid(row=i//4,column=i%4)
 				self.search_res_clip_conts.append(newcont)
-				self.search_res_clip_conts[-1].grid(row=((i)//self.across),column=((i)%self.across))
 		self.reset_scroll_region()
 	def quit(self):
 		self.backend.save_data()
@@ -657,3 +658,44 @@ class ClipOrg:
 		self.parent.root.call('wm', 'attributes', '.', '-topmost', str(int(self.parent.on_top_toggle.get())))
 		self.root.destroy()
 
+class ClipOrgClip(ClipContainer):
+	def __init__(self,parent,parent_frame,selectfun,clip):
+		self.selectfun = selectfun
+		self.last_clip = None
+
+		self.parent = parent
+		self.backend = parent.backend
+		self.root = parent.root
+		self.frame = tk.Frame(parent_frame,padx=5,pady=0)
+		self.grid = self.frame.grid
+
+		self.imgs = []
+		self.default_img = self.current_img = ImageTk.PhotoImage(Image.open('./gui/tk_gui/sample_clip.png'))
+		self.current_img_i = 0
+		self.hovered = False
+
+		self.label = tk.Label(self.frame,image=self.current_img,text='test',compound='top',width=C.THUMB_W,bd=2) # width of clip preview
+		self.label.image = self.current_img
+		self.label.pack()
+		self.label.bind('<Double-1>',self.activate_l)
+		self.label.bind("<Enter>", self.start_hover)
+		self.label.bind("<Leave>", self.end_hover)
+
+		self.frame.dnd_accept = self.dnd_accept
+
+		self.clip = None
+		self.change_clip(clip)
+
+		self.label.unbind('<Button-2>')
+		self.label.bind("<MouseWheel>", parent.mouse_wheel)
+		self.label.bind("<Button-4>", parent.mouse_wheel)
+		self.label.bind("<Button-5>", parent.mouse_wheel)
+		self.frame.bind("<MouseWheel>", parent.mouse_wheel)
+		self.frame.bind("<Button-4>", parent.mouse_wheel)
+		self.frame.bind("<Button-5>", parent.mouse_wheel)
+
+	def dnd_accept(self,source,event):
+		pass
+
+	def dnd_commit(self, source, event):
+		pass
