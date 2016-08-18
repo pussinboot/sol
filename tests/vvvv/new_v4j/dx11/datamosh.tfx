@@ -1,0 +1,51 @@
+//@author: cnissidis
+//@help: template for texture fx
+//@tags: texture
+//@credits: Oliver Baudu
+
+Texture2D Tex0 : PREVIOUS ;
+Texture2D Tex1;
+float2 center;
+float coef <string uiname="Thresshold";>;
+float4 colorToDiscard;
+
+
+SamplerState linearSampler : IMMUTABLE
+{
+    Filter = MIN_MAG_MIP_LINEAR;
+    AddressU = Border; // Clamp or Wrap or Mirror
+    AddressV = Border;
+};
+
+struct psInput
+{
+	float4 p : SV_Position;
+	float2 uv : TEXCOORD0;
+};
+
+
+float4 PS(psInput input) : SV_Target
+{
+	
+	float4 color = Tex1.Sample(linearSampler, input.uv);
+	float4 colorDessus = Tex0.Sample(linearSampler,input.uv - center);
+	//uvs to pixels
+	if (length (colorDessus - colorToDiscard) < coef) {
+		color = colorDessus;
+	} 
+	
+	
+	//c = next / c;
+	return color;
+}
+
+technique10 DataMosh
+{
+	pass P0
+	{
+		SetPixelShader(CompileShader(ps_4_0,PS()));
+	}
+}
+
+
+
