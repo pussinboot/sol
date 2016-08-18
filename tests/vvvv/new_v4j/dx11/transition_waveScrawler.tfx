@@ -1,0 +1,62 @@
+//@author: idwyr
+//@help: transition
+//@tags: texture
+//@credits: glsl.io
+
+Texture2D from, to;
+float progress;
+float amplitude = 1;
+float waves = 30;
+float colorSeparation = 0.3;
+float PI = 3.14159265358979323846264;
+SamplerState linearSampler : IMMUTABLE
+{
+    Filter = MIN_MAG_MIP_LINEAR;
+    AddressU = Clamp;
+    AddressV = Clamp;
+};
+
+struct psInput
+{
+	float4 p : SV_Position;
+	float2 uv : TEXCOORD0;
+};
+
+float compute(float2 p, float progress, float2 center) {
+float2 o = p*sin(progress * amplitude)-center;
+// horizontal vector
+float2 h = float2(1., 0.);
+// butterfly polar function (don't ask me why this one :))
+float theta = acos(dot(o, h)) * waves;
+return (exp(cos(theta)) - 2.*cos(4.*theta) + pow(sin((2.*theta - PI) / 24.), 5.)) / 10.;
+}
+
+
+float4 PS(psInput input) : SV_Target
+{	float2 p = input.uv;
+	float4 c = float4(0,0,0,1);
+	
+	float inv = 1. - progress;
+  	float2 dir = p - float2(.5, 0.5);
+  	float dist = length(dir);
+  	float disp = compute(p, progress, float2(0.5, 0.5)) ;
+  	float4 texTo = to.Sample(linearSampler, p + inv*disp);
+	float4 texFrom = float4(
+  from.Sample(linearSampler,p + progress*disp*(1.0 - colorSeparation)).r,
+  from.Sample(linearSampler,p + progress*disp).g,
+  from.Sample(linearSampler,p + progress*disp*(1.0 + colorSeparation)).b,
+  1.0);
+  c = texTo*progress + texFrom*inv;
+	return c;
+}
+
+technique10 Process
+{
+	pass P0
+	{
+		SetPixelShader(CompileShader(ps_4_0,PS()));
+	}
+}
+
+
+
