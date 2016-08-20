@@ -244,7 +244,7 @@ if __name__ == '__main__':
 	root = tk.Tk()
 	root.title('sol')
 	# open on privacy screen =)
-	x, y = -1250, 900
+	# x, y = -1250, 900
 	# root.geometry('+{}+{}'.format(x, y))
 
 	testgui = MainGui(root)
@@ -261,6 +261,7 @@ if __name__ == '__main__':
 	# print(testgui.magi.clip_storage.clip_col[0])
 	testgui.start()
 	# testgui.configure_midi()
+	# testgui.enter_clip_org_gui()
 	root.mainloop()
 	# testgui.magi.gui = None
 	# testgui.magi.fun_store['/magi/layer0/playback/clear']('',True)
