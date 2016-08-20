@@ -541,39 +541,24 @@ class ClipOrg:
 		self.index = -1
 
 		self.mainframe = tk.Frame(root)
-		self.clip_frame = ttk.Notebook(self.mainframe)
-		self.all_clip_frame = ttk.Frame(self.clip_frame)
+		self.clip_frame = tk.Frame(self.mainframe)
+		self.all_clip_frame = tk.Frame(self.clip_frame)
 		self.all_clip_canvas = tk.Canvas(self.all_clip_frame)
 		self.all_clip_inner_frame = tk.Frame(self.all_clip_canvas)
 		self.vsb_all_clips = tk.Scrollbar(self.all_clip_frame, orient="vertical", command=self.all_clip_canvas.yview)
 		self.all_clip_canvas.configure(yscrollcommand=self.vsb_all_clips.set)
-		self.clip_frame.add(self.all_clip_frame,text='all clips')
-
-		self.search_result_frame = ttk.Frame(self.clip_frame)
-		self.search_clip_canvas = tk.Canvas(self.search_result_frame)
-		self.search_clip_inner_frame = tk.Frame(self.search_clip_canvas)
-
-		self.search_clip_inner_frame.frame = self.search_clip_inner_frame
-		self.search_clip_inner_frame.mouse_wheel = self.mouse_wheel_search
-		self.search_clip_inner_frame.bind("<MouseWheel>", self.mouse_wheel_search)
-		self.search_clip_inner_frame.bind("<Button-4>", self.mouse_wheel_search)
-		self.search_clip_inner_frame.bind("<Button-5>", self.mouse_wheel_search)
-		self.search_clip_inner_frame.backend = self.backend
-
-		self.vsb_search_clips = tk.Scrollbar(self.search_result_frame, orient="vertical", command=self.search_clip_canvas.yview)
-		self.search_clip_canvas.configure(yscrollcommand=self.vsb_search_clips.set)
-		self.clip_frame.add(self.search_result_frame,text='search')
 
 		self.search_query = tk.StringVar()
-		self.search_field = tk.Entry(self.search_result_frame,textvariable=self.search_query)
+		self.search_field = tk.Entry(self.clip_frame,textvariable=self.search_query)
 		self.search_field.bind('<Return>',self.search)
 
-		self.clip_conts = []
+		self.clip_conts = {}
 		self.clip_folds = []
-		self.search_res_clip_conts = []
 
 		self.mainframe.pack(expand=True,fill="both")
-		self.clip_frame.pack(expand=True,fill="both")
+		self.search_field.pack(side="top",fill="x")
+		self.clip_frame.pack(side='top',expand=True,fill="both")
+		self.all_clip_frame.pack(side='top',expand=True,fill="both")
 		self.vsb_all_clips.pack(side="right", fill="y")
 		self.all_clip_canvas.pack(side="left", fill="both", expand=True)
 		self.all_clip_canvas.create_window((4,4), window=self.all_clip_inner_frame, anchor="nw", 
@@ -582,21 +567,13 @@ class ClipOrg:
 		self.all_clip_inner_frame.bind("<MouseWheel>", self.mouse_wheel)
 		self.all_clip_inner_frame.bind("<Button-4>", self.mouse_wheel)
 		self.all_clip_inner_frame.bind("<Button-5>", self.mouse_wheel)
-
 		self.all_clip_inner_frame.bind("<Configure>", self.reset_scroll_region)
 
 		self.initialize_all_clips()
 
-		self.search_field.pack(side="top",fill="x")
-		self.vsb_search_clips.pack(side="right", fill="y",expand=True)
-		self.search_clip_canvas.pack(side="left", fill="both", expand=True)
-		self.search_clip_canvas.create_window((4,4), window=self.search_clip_inner_frame, anchor="nw", 
-								  tags="self.search_clip_inner_frame")
-
 
 	def reset_scroll_region(self, event=None):
 		self.all_clip_canvas.configure(scrollregion=self.all_clip_canvas.bbox("all"))
-		self.search_clip_canvas.configure(scrollregion=self.search_clip_canvas.bbox("all"))
 
 	def mouse_wheel(self,event):
 		 self.all_clip_canvas.yview('scroll',-1*int(event.delta//120),'units')
@@ -606,11 +583,13 @@ class ClipOrg:
 
 	def initialize_all_clips(self):
 		# first sort by filename : )
-		all_clips = self.backend.db.alphabetical_listing[:50]
+		all_clips = self.backend.db.alphabetical_listing#[:50]
 		
 		for i, cc in enumerate(all_clips):
 			new_clip_cont = ClipOrgClip(self,self.all_clip_inner_frame,self.backend.select_clip,cc[1])
-			new_clip_cont.grid(row=i//4,column=i%4)
+			r,c = i//4, i%4
+			new_clip_cont.grid(row=r,column=c)
+			self.clip_conts[cc[1].f_name] = [new_clip_cont,r,c]
 
 		# for i in range(len(fnames)):
 		# 	foldername = fnames[i].split("\\")[-2]
@@ -635,21 +614,23 @@ class ClipOrg:
 		# 	frame.pack()
 
 	def search(self,event,*args):
-		# print('searching',self.search_query.get())
+		print('searching',self.search_query.get())
 		search_term = self.search_query.get()
-		for cont in self.search_res_clip_conts:
-			cont.frame.grid_forget()
-			cont.frame.destroy()
 		self.search_res_clip_conts = []
-		if search_term != "":
+		if search_term == "":
+			for clip_cont in self.clip_conts.values():
+				clip_cont[0].grid(row=clip_cont[1],column=clip_cont[2])
+		else:
 			res = self.backend.db.search(search_term)
-			print(res)
-
-			for i, cc in enumerate(res):
-				newcont = ClipOrgClip(self,self.search_clip_inner_frame,self.backend.select_clip,cc)
-				newcont.grid(row=i//4,column=i%4)
-				self.search_res_clip_conts.append(newcont)
-		self.reset_scroll_region()
+			for clip_cont in self.clip_conts.values():
+				clip_cont[0].grid_forget()
+			# print(res)
+			i = 0
+			for clip in res:
+				if clip.f_name in self.clip_conts:
+					self.clip_conts[clip.f_name][0].grid(row=i//4,column=i%4)
+					i += 1
+			self.reset_scroll_region()
 	def quit(self):
 		self.backend.save_data()
 
@@ -668,6 +649,7 @@ class ClipOrgClip(ClipContainer):
 		self.root = parent.root
 		self.frame = tk.Frame(parent_frame,padx=5,pady=0)
 		self.grid = self.frame.grid
+		self.grid_forget = self.frame.grid_forget
 
 		self.imgs = []
 		self.default_img = self.current_img = ImageTk.PhotoImage(Image.open('./gui/tk_gui/sample_clip.png'))
@@ -678,8 +660,6 @@ class ClipOrgClip(ClipContainer):
 		self.label.image = self.current_img
 		self.label.pack()
 		self.label.bind('<Double-1>',self.activate_l)
-		self.label.bind("<Enter>", self.start_hover)
-		self.label.bind("<Leave>", self.end_hover)
 
 		self.frame.dnd_accept = self.dnd_accept
 
@@ -693,6 +673,30 @@ class ClipOrgClip(ClipContainer):
 		self.frame.bind("<MouseWheel>", parent.mouse_wheel)
 		self.frame.bind("<Button-4>", parent.mouse_wheel)
 		self.frame.bind("<Button-5>", parent.mouse_wheel)
+
+	def change_clip(self,clip):
+		if clip is None: 
+			self.remove_clip()
+			return
+		self.last_clip = self.clip
+		self.clip = clip
+
+		if self.clip.t_names is None:
+			self.change_img_from_img(self.default_img)
+		else:
+			self.setup_imgs()
+		self.toggle_dnd()
+
+	def setup_imgs(self):
+		f_names = [t_name for t_name in self.clip.t_names if os.path.exists(t_name)]
+		if len(f_names) > 0:
+			f_name = f_names[0]
+		else:
+			f_name = './gui/tk_gui/sample_clip.png'
+		self.imgs = [ImageTk.PhotoImage(Image.open(f_name))]
+		if len(self.imgs) == 0: return
+		self.current_img_i = 0
+		self.change_img_from_img(self.imgs[self.current_img_i])
 
 	def dnd_accept(self,source,event):
 		pass

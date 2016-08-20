@@ -2,16 +2,12 @@
 ###         actual to-do list         ###
 #########################################
 menus -  switch interfaces, models(?)
-org gui
-	scratch
-		- slip mode (?)
+scratch
+	- slip mode (?)
 - loop off ?
 - param save
 - tags
-org_gui
-	- fix search window size =)
-	- maybe organize all clips by window
-	- maybe don't animate the frames bcuz that's slow af...
+org_gui - organize by parent folder? 
 
 #########################################
 ###         overview/features         ###
