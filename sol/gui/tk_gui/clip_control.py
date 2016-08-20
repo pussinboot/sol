@@ -135,7 +135,9 @@ class ClipControl:
 						 self.backend.fun_store[gen_addr + '/loop/on_off'],
 						 self.backend.fun_store[gen_addr + '/loop/type'],
 						 self.backend.fun_store[gen_addr + '/loop/select'],
-						 self.backend.fun_store[gen_addr + '/loop/select/move']]
+						 self.backend.fun_store[gen_addr + '/loop/select/move'],
+						 self.backend.fun_store[gen_addr + '/loop/clear'],
+						 ]
 
 		self.loop_screen = LoopScreen(self.bottom_frame,self.backend,self.layer,self.width,loop_set_funs)
 
@@ -658,6 +660,8 @@ class LoopScreen:
 		# '/loop/on_off'
 		# '/loop/type'
 		# '/loop/select'
+		# '/loop/select/move'
+		# '/loop/clear'
 
 		self.bg_color = "black"
 		self.lp_color = "#666"
@@ -683,6 +687,7 @@ class LoopScreen:
 			self.loop_lines.append(new_line)
 
 		self.canvas.tag_bind("l_l","<ButtonPress-1>",self.pick_loop_line)
+		self.canvas.tag_bind("l_l","<ButtonPress-3>",self.clear_loop_line)
 		self.canvas.tag_bind("l_l","<Enter>",self.hover_loop_line)
 		self.canvas.bind("<Leave>",self.unhover)
 
@@ -815,6 +820,11 @@ class LoopScreen:
 		i = self.find_loop_line(event)
 		if i is None: return
 		self.loop_set_funs[4]('',i)
+
+	def clear_loop_line(self,event):
+		i = self.find_loop_line(event)
+		if i is None: return
+		self.loop_set_funs[6]('',i)		
 
 	def hover_loop_line(self,event):
 		i = self.find_loop_line(event)
