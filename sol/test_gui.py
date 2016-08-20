@@ -106,7 +106,9 @@ class MainGui:
 		# only want 1 clip control =)
 		for i in range(1,len(self.cc_frames)):
 			self.cc_frames[i].pack_forget()
-		# resize the 1 clip control?
+		
+		# resize the 1 clip control
+		self.clip_controls[0].resize(575)
 		# we want different library browser sry
 		self.clip_conts.search_frame.pack_forget()
 		self.clip_org = clip_collections.ClipOrg(tk.Toplevel(),self)
@@ -116,7 +118,8 @@ class MainGui:
 		if self.clip_org is not None:
 			self.clip_org.close()
 			self.clip_org = None
-		# resize the 1st clip control back to normal?
+		# resize the 1st clip control back to normal
+		self.clip_controls[0].resize(300)
 		for i in range(1,len(self.cc_frames)):
 			self.cc_frames[i].pack(side=tk.LEFT)
 		# library browser

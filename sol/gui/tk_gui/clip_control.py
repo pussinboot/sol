@@ -81,8 +81,12 @@ class ClipControl:
 			if cur_clip is None: return
 			self.backend.rename_clip(cur_clip,new_name) # have to do this to update search properly etc
 
-	def change_name(self,new_name):
-		self.name_var.set(new_name)
+	def resize(self,new_width):
+		self.width = new_width
+		for but in self.cue_buttons:
+			but.config(padx=(new_width // 8 - 7))
+		self.timeline.resize(new_width)
+		self.loop_screen.resize(new_width)
 
 	def setup_gui(self):
 		# top lvl
@@ -456,6 +460,12 @@ class ProgressBar:
 		self.refresh()
 		self.root.after(self.refresh_interval,self.update_pbar)
 
+	def resize(self,new_width):
+		self.width = new_width
+		self.canvas.config(width=self.width,scrollregion=(0,0,self.width,self.height))
+		self.canvas.itemconfig(self.canvasbg,width=self.width)
+		self.refresh()
+
 	def actions_binding(self):
 
 		self.canvas.tag_bind("bg","<B1-Motion>",self.find_mouse)
@@ -699,6 +709,10 @@ class LoopScreen:
 
 		self.frame.pack()
 
+	def resize(self,new_width):
+		self.width = new_width
+		self.canvas.config(width=self.width,scrollregion=(0,0,self.width,self.height))
+		self.refresh()
 	def set_loop_a(self,*args):
 		cur_loc = self.backend.model.current_clip_pos[self.layer]
 		if cur_loc is None: return

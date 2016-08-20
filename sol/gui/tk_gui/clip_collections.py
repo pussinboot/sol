@@ -583,7 +583,7 @@ class ClipOrg:
 
 	def initialize_all_clips(self):
 		# first sort by filename : )
-		all_clips = self.backend.db.alphabetical_listing#[:50]
+		all_clips = self.backend.db.alphabetical_listing#[:50] # speedup for testing..
 		
 		for i, cc in enumerate(all_clips):
 			new_clip_cont = ClipOrgClip(self,self.all_clip_inner_frame,self.backend.select_clip,cc[1])
