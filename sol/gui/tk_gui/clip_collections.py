@@ -65,6 +65,15 @@ class ClipContainer:
 		self.current_img_i = (self.current_img_i + 1) % len(self.imgs)
 		self.change_img_from_img(self.imgs[self.current_img_i])
 
+	def regen_imgs(self,*args):
+		if self.clip is None: return
+		new_pix = self.parent.backend.thumb_maker.\
+				  gen_thumbnail(self.clip.f_name, n_frames=C.NO_FRAMES)
+		if len(new_pix) == 0: return
+		self.clip.t_names = new_pix
+		self.setup_imgs()
+
+
 	def hover_animate(self,*args):
 		if len(self.imgs) == 0: return
 		if not self.hovered: 
@@ -660,6 +669,7 @@ class ClipOrgClip(ClipContainer):
 		self.label.image = self.current_img
 		self.label.pack()
 		self.label.bind('<Double-1>',self.activate_l)
+		self.label.bind('<Double-2>',self.regen_imgs)
 
 		self.frame.dnd_accept = self.dnd_accept
 
