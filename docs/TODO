@@ -1,8 +1,9 @@
 #########################################
 ###         actual to-do list         ###
 #########################################
+retake screenshots button
+test scrach control mayb no need for wrap
 loop_lines 
-	- right click to remove
 	- maybe change clip collection interface?
 		so that when switch between clip and loop select
 		it switches from the clip collections gui to showing 
