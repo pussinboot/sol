@@ -263,6 +263,8 @@ if __name__ == '__main__':
 	# 	testgui.magi.clip_storage.clip_col[i] = testgui.magi.db.last_search[i]
 	# print(testgui.magi.clip_storage.clip_col[0])
 	testgui.start()
+
+	# testgui.clip_controls[0].resize(575)
 	# testgui.configure_midi()
 	# testgui.enter_clip_org_gui()
 	root.mainloop()
