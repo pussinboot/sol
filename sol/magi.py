@@ -204,11 +204,11 @@ class Magi:
 				if not n: return
 				# current clip
 				cur_clip = self.clip_storage.current_clips[i]
-				duration = cur_clip.params['duration']
-				if duration == 0.0: return # needed for proper sens
 				if cur_clip is None:
 					self.clip_storage.cur_clip_dirs[i] = None # stop controlling
 					return	
+				duration = cur_clip.params['duration']
+				if duration == 0.0: return # needed for proper sens
 				ctrl_range = self.cur_range(i)
 				cur_pos = self.model.current_clip_pos[i]
 				if cur_pos is None: return
