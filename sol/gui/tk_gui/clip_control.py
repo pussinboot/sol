@@ -87,6 +87,7 @@ class ClipControl:
 			but.config(padx=(new_width // 8 - 7))
 		self.timeline.resize(new_width)
 		self.loop_screen.resize(new_width)
+		self.update_cues(self.backend.clip_storage.current_clips[self.layer])
 
 	def setup_gui(self):
 		# top lvl
@@ -434,11 +435,10 @@ class ProgressBar:
 		self.root = root
 		self.frame = tk.Frame(self.root)
 		self.canvas_frame = tk.Frame(self.frame)
-		self.canvas = tk.Canvas(self.canvas_frame,width=width,height=height+15,bg="#aaa",scrollregion=(0,0,width,height))
+		self.canvas = tk.Canvas(self.canvas_frame,width=width,height=height+15,bg="black",scrollregion=(0,0,width,height))
 		
 		self.canvasbg = self.canvas.create_rectangle(0,0,width,height,fill='black',tag='bg')
 		self.bottombg = self.canvas.create_rectangle(0,height,width,height+15,fill='#aaa')
-		# self.loopbg = self.canvas.create_rectangle(0,height+30,width,height+15,fill='#333',tag='bg')
 
 		# for scrolling ?
 		# self.hbar = tk.Scrollbar(self.canvas_frame,orient=tk.HORIZONTAL)
@@ -448,12 +448,8 @@ class ProgressBar:
 		self.pbar = self.canvas.create_line(0,0,0,height,fill='gray',width=3)
 	
 		# loop point stuff
-		# self.left_lp = self.canvas.create_rectangle(0,height+30,10,height+15,fill='#555',tag='lp')
-		# self.right_lp = self.canvas.create_rectangle(width,height+30,width-10,height+15,fill='#555',tag='lp')
-		# # self.looprect = self.canvas.create_rectangle(0,0,0,0,fill='gray',stipple='gray12',tag='bg')
 		self.outside_loop_rect_l = self.canvas.create_rectangle(0,0,0,0,fill='#333',stipple='gray50',tag='bg')
 		self.outside_loop_rect_r = self.canvas.create_rectangle(0,0,0,0,fill='#333',stipple='gray50',tag='bg')
-		# self.lp_line = self.canvas.create_line(10,height+23,width-10,height+23,fill='#ccc',width=2,dash=(2,))
 		
 		self.canvas.pack(anchor=tk.W)
 		self.canvas_frame.pack(anchor=tk.W,side=tk.LEFT,expand=tk.YES,fill=tk.BOTH)
@@ -466,11 +462,22 @@ class ProgressBar:
 	def resize(self,new_width):
 		self.width = new_width
 		self.canvas.config(width=self.width,scrollregion=(0,0,self.width,self.height))
-		self.canvas.itemconfig(self.canvasbg,width=self.width)
-		self.canvas.itemconfig(self.bottombg,width=self.width)
-		self.canvas.tag_raise(self.bottombg)
-		# self.bottombg = self.canvas.create_rectangle(0,height,width,height+15,fill='#aaa')
-
+		# have to remake everything otherwise the bg covers it and binds dont work.. ok
+		self.canvas.delete(self.canvasbg)
+		self.canvasbg = self.canvas.create_rectangle(0,0,self.width,self.height,fill='black',tag='bg')
+		self.canvas.delete(self.bottombg)
+		self.bottombg = self.canvas.create_rectangle(0,self.height,self.width,self.height+15,fill='#aaa')
+		self.canvas.delete(self.outside_loop_rect_l)
+		self.canvas.delete(self.outside_loop_rect_r)
+		self.outside_loop_rect_l = self.canvas.create_rectangle(0,0,0,0,fill='#333',stipple='gray50',tag='bg')
+		self.outside_loop_rect_r = self.canvas.create_rectangle(0,0,0,0,fill='#333',stipple='gray50',tag='bg')
+		# have to delete all cue points and recreate them... jfc
+		for i in range(len(self.lines)):
+			self.canvas.delete(self.lines[i])
+			self.canvas.delete(self.labels[i])
+		self.lines = [None]*C.NO_Q
+		self.labels = [None]*C.NO_Q
+		# recreated in clip_control's resize (after it calls this)
 		self.refresh()
 
 	def actions_binding(self):
@@ -481,9 +488,6 @@ class ProgressBar:
 		self.canvas.tag_bind("line","<ButtonPress-3>",self.drag_begin)
 		self.canvas.tag_bind("line","<ButtonRelease-3>",self.drag_end)
 		self.canvas.tag_bind("line","<B3-Motion>",self.drag)
-		# self.canvas.tag_bind("lp","<ButtonPress-3>",self.drag_begin_lp)
-		# self.canvas.tag_bind("lp","<ButtonRelease-3>",self.drag_end_lp)
-		# self.canvas.tag_bind("lp","<B3-Motion>",self.drag_lp)
 		self.canvas.tag_bind("line","<ButtonPress-1>",self.find_nearest)
 		self.canvas.tag_bind("label","<ButtonPress-1>",self.find_nearest)
 
@@ -515,13 +519,6 @@ class ProgressBar:
 		self._drag_data["label"] = self.labels[self.lines.index(item)]
 		self._drag_data["x"] = event.x
 
-	def drag_begin_lp(self, event):
-		# record the item and its location
-		item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y),halo=5)[0]
-		if 'lp' not in self.canvas.gettags(item): return
-		self._drag_data["item"] = item
-		self._drag_data["x"] = event.x
-
 	def drag_end(self, event):
 		if self._drag_data["item"] is None: return
 		if self.drag_release_action:
@@ -537,24 +534,6 @@ class ProgressBar:
 		self._drag_data["label"] = None
 		self._drag_data["x"] = 0
 
-	def drag_end_lp(self, event):
-		if self._drag_data["item"] is None: return
-		newx = self.canvas.canvasx(event.x)
-		if newx < 0:
-			newx = 0
-		elif newx > self.width:
-			newx = self.width - 2
-		if self.set_loop_funs is not None:
-			if self._drag_data["item"] == self.left_lp: 
-				self.set_loop_funs[0]('',newx/self.width)
-			else:
-				self.set_loop_funs[1]('',newx/self.width)
-
-		# reset the drag information
-		self._drag_data["item"] = None
-		self._drag_data["x"] = 0
-		self.loop_update()
-
 	def drag(self, event):
 		# compute how much this object has moved
 		delta_x = event.x - self._drag_data["x"]
@@ -569,20 +548,6 @@ class ProgressBar:
 			self.canvas.move(self._drag_data["item"], delta_x, 0)# delta_y)
 			for label_item in self._drag_data["label"]: 
 				self.canvas.move(label_item, delta_x, 0)
-		# record the new position
-		self._drag_data["x"] = event.x
-
-	def drag_lp(self, event):
-		# compute how much this object has moved
-		delta_x = event.x - self._drag_data["x"]
-		# move the object the appropriate amount
-		if self._drag_data["item"]:
-			coord = self.canvas.coords(self._drag_data["item"])
-			if coord[0] + delta_x < 0:
-				delta_x = -coord[0]
-			elif coord[2] + delta_x > self.width:
-				delta_x = self.width - coord[2]
-			self.canvas.move(self._drag_data["item"], delta_x, 0)# delta_y)
 		# record the new position
 		self._drag_data["x"] = event.x
 
@@ -619,7 +584,7 @@ class ProgressBar:
 
 	def loop_update(self,clip=None):
 		if self.check_cur_range is None: return
-		things_to_clear = [ #self.lp_line,
+		things_to_clear = [ 
 			self.outside_loop_rect_l,self.outside_loop_rect_r]
 		check = self.check_cur_range()
 		if check is None: 
@@ -639,15 +604,12 @@ class ProgressBar:
 			# black out outside of range?
 			self.canvas.coords(self.outside_loop_rect_l,0,0,x1,self.height)
 			self.canvas.coords(self.outside_loop_rect_r,x2,0,self.width,self.height)
-			# self.canvas.coords(self.lp_line,x1+10,self.height+23,x2-10,self.height+23)
-			
-		# bottom loop points
-		# self.canvas.coords(self.left_lp,x1,self.height+30,x1+10,self.height+15)
-		# self.canvas.coords(self.right_lp,x2-10,self.height+30,x2,self.height+15)
 
 	def refresh(self):
 		# refresh where things are on screen if vars have changed
 		self.loop_update()
+		self.canvas.tag_raise(self.pbar)
+
 
 class LoopScreen:
 	def __init__(self,parent_frame,backend,layer,width,loop_set_funs):
