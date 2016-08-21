@@ -250,6 +250,25 @@ class Magi:
 			for j in range(4):
 				self.osc_server.mapp(ctrl_addrs[j].format(i),gend_funs[j])
 
+		# fft control
+		def gen_fft_fun(layer):
+			i = layer
+			def do_fft_control(_,n):
+				n = self.osc_server.osc_value(n)
+				cur_rng = self.cur_range(i)
+				new_pos = (cur_rng[1] - cur_rng[0])*n + cur_rng[0]
+				(addr, msg) = self.model.set_clip_pos(i,new_pos)
+				self.osc_client.build_n_send(addr,msg)
+
+			return do_fft_control
+
+		fft_addr = '/magi/fft/control{}/'
+		for i in range(C.NO_LAYERS):
+			fft_fun = gen_fft_fun(i)
+			self.osc_server.mapp(fft_addr.format(i),fft_fun)
+
+
+
 	###
 	# helper funs
 
