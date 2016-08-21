@@ -1,8 +1,8 @@
 #########################################
 ###         actual to-do list         ###
 #########################################
-resize messes up control and bottom of progressbar..
-test scrach control mayb no need for wrap
+current position isn't set on start.. any way to query it?
+fft clip control
 loop_lines 
 	- maybe change clip collection interface?
 		so that when switch between clip and loop select
