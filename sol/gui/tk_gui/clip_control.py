@@ -437,6 +437,7 @@ class ProgressBar:
 		self.canvas = tk.Canvas(self.canvas_frame,width=width,height=height+15,bg="#aaa",scrollregion=(0,0,width,height))
 		
 		self.canvasbg = self.canvas.create_rectangle(0,0,width,height,fill='black',tag='bg')
+		self.bottombg = self.canvas.create_rectangle(0,height,width,height+15,fill='#aaa')
 		# self.loopbg = self.canvas.create_rectangle(0,height+30,width,height+15,fill='#333',tag='bg')
 
 		# for scrolling ?
@@ -466,6 +467,10 @@ class ProgressBar:
 		self.width = new_width
 		self.canvas.config(width=self.width,scrollregion=(0,0,self.width,self.height))
 		self.canvas.itemconfig(self.canvasbg,width=self.width)
+		self.canvas.itemconfig(self.bottombg,width=self.width)
+		self.canvas.tag_raise(self.bottombg)
+		# self.bottombg = self.canvas.create_rectangle(0,height,width,height+15,fill='#aaa')
+
 		self.refresh()
 
 	def actions_binding(self):
