@@ -223,6 +223,7 @@ class Magi:
 				else:
 					lt = cur_clip.params['loop_points'][ls][2]
 				new_pos = lp_to_fun[lt](new_pos,ctrl_range)
+				# new_pos = clamp(new_pos,ctrl_range)
 				(addr, msg) = self.model.set_clip_pos(i,new_pos)
 				self.osc_client.build_n_send(addr,msg)
 
