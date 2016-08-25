@@ -1,6 +1,7 @@
 #########################################
 ###         actual to-do list         ###
 #########################################
+- tags
 current position isn't set on start.. any way to query it?
 fft clip control
 	works as it used to, want to do 'bucketing' in future version
@@ -25,7 +26,6 @@ scratch
 	- slip mode (?)
 - loop off ?
 - param save
-- tags
 org_gui - organize by parent folder? 
 
 #########################################

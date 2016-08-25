@@ -1,0 +1,157 @@
+//@author: 
+//@help: 
+//@tags: mixer
+//@credits:
+
+Texture2D tex0: PREVIOUS;
+Texture2D tex1 <string uiname="fbo";>;
+
+SamplerState s0 <bool visible=false;string uiname="Sampler";> {Filter=MIN_MAG_MIP_LINEAR;AddressU=CLAMP;AddressV=CLAMP;};
+
+float2 R:TARGETSIZE;
+static const float PI = 3.14159265f;
+
+
+cbuffer controls:register(b0){
+	float sliderThreshold <float uimin=0.0; float uimax=1.0;> = 0.5;
+	float sliderRGBOffset <float uimin=0.0; float uimax=1.0;> = 0.5;
+	float time = 0.0;
+	float2 bufferSize;
+};
+
+float2 forceFromAngle (float angle)
+{
+  	return float2(cos(angle), sin(angle));
+}
+
+float rand(float2 co){
+    return frac(sin(dot(co.xy ,float2(12.9898,78.233))) * 43758.5453);
+}
+
+float2 wrapUV (float2 uv)
+{
+	return abs(uv) % 1.0;
+}
+
+float4 rgbOffset (float2 uv, float angle, float radius)
+{
+	float4 color = 0.0;
+	color.r = tex0.SampleLevel(s0, uv + float2(cos(angle), sin(angle)) * radius,0).r;
+	color.g = tex0.SampleLevel(s0, uv + float2(cos(angle + 2.094395102), 	sin(angle + 2.094395102)) 	* radius,0).g;
+	color.b = tex0.SampleLevel(s0, uv + float2(cos(angle + 4.188790205), 	sin(angle + 4.188790205)) 	* radius,0).b;
+	return color;
+}
+
+float4 filter5x5 (float2 uv, float2 dimension)
+{
+  int filter[25] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 24, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+  float4 color = float4 (0.0,0.0,0.0,0.0);
+  for (int i = 0; i < 5; ++i)
+    for (int j = 0; j < 5; ++j) 
+      color += tex0.SampleLevel(s0,uv + (float2(i - 2, j - 2) / dimension),0) * filter[i * 5 + j];
+  return color;
+}
+
+float4 updateBufferWithColorFilter (float4 colorBuffer, float4 colorUpdate, float4 colorFromFilter, float treshold)
+{
+  	return lerp(colorBuffer, colorUpdate, step(treshold, (colorFromFilter.r + colorFromFilter.g + colorFromFilter.b) / 3.0));
+}
+
+float4 fadeOut (float4 color, float percent)
+{
+	return color * float4(percent,percent,percent, 1.0);
+}
+
+float4 pFire(float4 PosWVP:SV_POSITION,float2 uv:TEXCOORD0):SV_Target{
+	
+	float2 force = forceFromAngle(rand(uv) * 2 * PI + time)+ float2(0.0,2.0);
+    force *= 2.0 / bufferSize;
+	
+	
+	
+	float2 uvDisplaced = wrapUV(uv + force);
+	float4 colorFbo = tex0.SampleLevel(s0, uvDisplaced, 0);
+	
+	float angle = time * 10.0;
+	float radius =  sliderRGBOffset * 0.025;
+	
+	float4 colorVideo = rgbOffset( uv, angle, radius);
+	
+	float threshold = sliderThreshold;//lerp(sliderThreshold, 0.3 + 0.2 * t, 1.0);
+	float4 filtered = filter5x5(uv,bufferSize);
+
+	//float4 color = updateBufferWithColorFilter(fadeOut(colorFbo, 0.95), colorVideo, filtered, 1.0);
+	float4 color = lerp(colorFbo,colorVideo,step(sliderThreshold, (filtered.r + filtered.g + filtered.b) / 3.0));
+	
+	return color;
+
+}
+
+float4 pFilter(float4 PosWVP:SV_POSITION,float2 uv:TEXCOORD0):SV_Target{
+	
+	float4 filtered = filter5x5(uv,bufferSize);
+	return filtered;
+
+}
+
+float4 pFiree(float4  PosWVP:SV_POSITION,float2 uv:TEXCOORD0):SV_Target{
+	
+	float2 force = forceFromAngle(rand(uv) * 2 * PI + time)+ float2(0.0,2.0);
+    force *= 2.0 / bufferSize;
+	
+	float t = sin(time) * 0.5 + 0.5;
+	float t2 = sin(time * 2.0) * 0.5 + 0.5;
+	
+	float2 uvDisplaced = wrapUV(uv + force);
+	float4 colorFbo = tex0.SampleLevel(s0, uvDisplaced, 0);
+	
+	return colorFbo;
+
+}
+
+float4 rgbbb(float4 PosWVP:SV_POSITION,float2 uv:TEXCOORD0):SV_Target{
+	float t = sin(time) * 0.5 + 0.5;
+	float t2 = sin(time * 2.0) * 0.5 + 0.5;
+	
+	float angle = t * 10.0;
+	float radius =  sliderRGBOffset * 0.025 * t2;
+	float4 colorVideo = rgbOffset( uv, angle, radius);
+	
+	return colorVideo;
+
+}
+float4 mixtogether(float4 PosWVP:SV_POSITION,float2 uv:TEXCOORD0):SV_Target{
+	float4 colorVid = tex0.SampleLevel(s0, uv, 0);
+	float4 colorFbo = tex1.SampleLevel(s0, uv, 0); 
+	// float4 color = colorVid + fadeOut(colorFbo, 0.95);
+	float t = sin(time) * 0.5 + 0.5;
+	float thresh = lerp(sliderThreshold, 0.3 + 0.2 * t, 1.0);
+	float4 color = updateBufferWithColorFilter(fadeOut(colorVid,0.975),colorFbo,colorFbo,thresh);
+	return color;
+
+}
+
+technique10 Fire{
+	pass P0
+	{SetPixelShader(CompileShader(ps_4_0,pFire()));}
+}
+
+technique10 Filter{
+	pass P0
+	{SetPixelShader(CompileShader(ps_4_0,pFilter()));}
+}
+
+technique10 faaa{
+	pass P0
+	{SetPixelShader(CompileShader(ps_4_0,pFiree()));}
+}
+
+technique10 rgb{
+	pass P0
+	{SetPixelShader(CompileShader(ps_4_0,rgbbb()));}
+}
+
+technique10 mix{
+	pass P0
+	{SetPixelShader(CompileShader(ps_4_0,mixtogether()));}
+}
