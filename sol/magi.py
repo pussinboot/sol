@@ -673,6 +673,12 @@ class Magi:
 				cur_clip.params['loop_points'][ls] = cl
 				if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
 															   'loop_selection')
+			def set_loop_a_cur(_,n):
+				if self.osc_server.osc_value(n):
+					cur_clip = self.clip_storage.current_clips[i]
+					if cur_clip is None: return
+					pos = self.model.current_clip_pos[i]
+					set_loop_a('',pos)
 
 			def set_loop_b(_,n):
 				pos = self.osc_server.osc_value(n)
@@ -687,6 +693,13 @@ class Magi:
 				cur_clip.params['loop_points'][ls] = cl
 				if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
 															   'loop_selection')
+
+			def set_loop_b_cur(_,n):
+				if self.osc_server.osc_value(n):
+					cur_clip = self.clip_storage.current_clips[i]
+					if cur_clip is None: return
+					pos = self.model.current_clip_pos[i]
+					set_loop_b('',pos)
 
 			def set_loop_a_b(_,ns):
 				pos = self.osc_server.osc_value(ns)
@@ -717,7 +730,7 @@ class Magi:
 
 			return [cue_point,clear_cue,toggle_loop,set_loop_type,loop_select,
 					loop_select_move, set_loop_a, set_loop_b, set_loop_a_b,
-					clear_loop]
+					set_loop_a_cur, set_loop_b_cur, clear_loop]
 
 		base_addr = "/magi/layer{}"
 		cue_addr = base_addr + "/cue"
@@ -731,7 +744,7 @@ class Magi:
 
 		addresses = [cue_addr,cue_clear_addr,tog_addr,lp_type_addr,sel_addr,
 					 sel_move_addr, set_addr+"a", set_addr+"b", set_addr+"ab",
-					 clear_addr]
+					 set_addr+"cur/a", set_addr+"cur/b", clear_addr]
 
 		for i in range(C.NO_LAYERS):
 			loop_funs = gen_loop_funs(i)
