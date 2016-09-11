@@ -1,6 +1,7 @@
 #########################################
 ###         actual to-do list         ###
 #########################################
+fix osc server so it can listen to resolume as well as outside commands?
 - tags
 current position isn't set on start.. any way to query it?
 fft clip control

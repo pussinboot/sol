@@ -5,13 +5,17 @@ from pythonosc import udp_client
 
 import threading
 import re
+import os
+import socket
 
 """
 provide interfaces for osc server/clients
 """
 
 class OscServer:
-	def __init__(self,ip="127.0.0.1",port=7001):
+	def __init__(self,ip=None,port=7001):
+		if ip is None:
+			ip = self.get_ip_addr()
 		self.ip, self.port = ip, port
 		self.running = 0
 		self.dispatcher = dispatcher.Dispatcher()
@@ -20,6 +24,7 @@ class OscServer:
 
 	def start(self):
 		self.running = 1
+		print("starting osc server",self.ip,':',self.port)
 		self.server = osc_server.ThreadingOSCUDPServer((self.ip, self.port), self.dispatcher)
 		self.server_thread = threading.Thread(target=self.server.serve_forever)
 		self.server_thread.start()
@@ -49,6 +54,36 @@ class OscServer:
 		if addr in self.dispatcher._map:
 			del self.dispatcher._map[addr]
 		self.map(addr,fun)
+
+	def get_ip_addr(self):
+		# modified from http://stackoverflow.com/questions/11735821/python-get-localhost-ip
+		if os.name != "nt":
+			import fcntl
+			import struct
+			def get_interface_ip(ifname):
+				s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+				return socket.inet_ntoa(fcntl.ioctl(s.fileno(), 0x8915, struct.pack('256s',ifname[:15]))[20:24])
+
+		ip = socket.gethostbyname(socket.gethostname())
+		if ip.startswith("127.") and os.name != "nt":
+			interfaces = [
+				"eth0",
+				"eth1",
+				"eth2",
+				"wlan0",
+				"wlan1",
+				"wifi0",
+				"ath0",
+				"ath1",
+				"ppp0",
+				]
+			for ifname in interfaces:
+				try:
+					ip = get_interface_ip(ifname)
+					break
+				except IOError:
+					pass
+		return ip
 
 
 class OscClient:
