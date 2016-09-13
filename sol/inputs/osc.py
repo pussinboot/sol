@@ -13,6 +13,11 @@ provide interfaces for osc server/clients
 """
 
 class OscServer:
+	"""
+	runs an osc server with an event dispatcher on the network
+	and on the local machine : )
+	"""
+
 	def __init__(self,ip=None,port=7001):
 		if ip is None:
 			ip = self.get_ip_addr()
@@ -24,15 +29,21 @@ class OscServer:
 
 	def start(self):
 		self.running = 1
-		print("starting osc server",self.ip,':',self.port)
+		print("starting osc server",self.ip,':',self.port,'\n\tand on localhost :',self.port)
+		local_ip = '127.0.0.1'
 		self.server = osc_server.ThreadingOSCUDPServer((self.ip, self.port), self.dispatcher)
+		self.local_server = osc_server.ThreadingOSCUDPServer((local_ip, self.port), self.dispatcher)
 		self.server_thread = threading.Thread(target=self.server.serve_forever)
 		self.server_thread.start()
+		self.local_server_thread = threading.Thread(target=self.local_server.serve_forever)
+		self.local_server_thread.start()
 
 	def stop(self):
 		self.running = 0
 		self.server.shutdown()
 		self.server_thread.join()
+		self.local_server.shutdown()
+		self.local_server_thread.join()
 
 	def osc_value(self,msg):
 		# returns the value of the osc msg
