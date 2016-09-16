@@ -262,7 +262,7 @@ class Magi:
 
 			return do_fft_control
 
-		fft_addr = '/magi/fft/control{}/'
+		fft_addr = '/magi/fft/control{}'
 		for i in range(C.NO_LAYERS):
 			fft_fun = gen_fft_fun(i)
 			self.osc_server.mapp(fft_addr.format(i),fft_fun)
