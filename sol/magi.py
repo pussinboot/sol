@@ -447,7 +447,27 @@ class Magi:
 				# update gui
 				if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
 															   'playback_speed')
-			return [spd_fun, spd_adjust_fun]
+
+			def spd_adjust_factor_fun(_,n):
+				n = self.osc_server.osc_value(n)
+				cur_clip = self.clip_storage.current_clips[i]
+				if cur_clip is None: return
+				# update speed
+				cur_spd = cur_clip.params['playback_speed']
+				new_spd = cur_spd * n
+				if new_spd > 10.0:
+					new_spd = 10.0
+				elif new_spd < 0.0:
+					new_spd = 0.0
+				# update our clip representation
+				cur_clip.params['playback_speed'] = new_spd
+				# send
+				spd_addr, spd_msg = self.model.set_playback_speed(i,new_spd)
+				self.osc_client.build_n_send(spd_addr,spd_msg)
+				# update gui
+				if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
+															   'playback_speed')
+			return [spd_fun, spd_adjust_fun, spd_adjust_factor_fun]
 
 
 		for i in range(C.NO_LAYERS):
@@ -468,9 +488,12 @@ class Magi:
 
 			spd_addr = base_addr.format(i) + 'speed'
 			spd_adj_addr = base_addr.format(i) + 'speed/adjust'
+			spd_adj_fac_addr = base_addr.format(i) + 'speed/adjust/factor'
+
 			spd_funs = gen_spd_funs(i)
 			self.osc_server.mapp(spd_addr,spd_funs[0])		
 			self.osc_server.mapp(spd_adj_addr,spd_funs[1])		
+			self.osc_server.mapp(spd_adj_fac_addr,spd_funs[2])	
 
 	def map_search_funs(self):
 		# perform search
