@@ -182,6 +182,14 @@ if __name__ == '__main__':
 			print(clip.t_names)
 		if thumb_no in thumbz:
 			print('not unique',thumb_no)
+			fix_hash = int(thumb_no)
+			counter = 0
+			while str(fix_hash) in thumbz:
+				fix_hash += 1
+				counter += 1
+			thumb_no = str(fix_hash)
+			print('now unique {} (+{})'.format(thumb_no,counter))
+			thumbz[thumb_no] = test_str
 		else:
 			thumbz[thumb_no] = test_str
 	# print(thumbz)
