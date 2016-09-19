@@ -193,4 +193,7 @@ if __name__ == '__main__':
 		else:
 			thumbz[thumb_no] = test_str
 	# print(thumbz)
+	# next i need to rename (aka move) to fixed hash
+	# save the db w/ updated thumbnails
+	# then copy to new dir : ) (with just the hash as filename)
 	testit.stop()
