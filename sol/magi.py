@@ -50,7 +50,7 @@ class Magi:
 		# update_clip_params - takes param and updates that part of gui..
 		# update_current_pos
 		# update_search -- if you searched for something elsewhere update the gui
-		# collection funs -- 
+		# update_cols -- 
 		# 	select, add, remove, go left, go right, swap
 		# update_clip_names - =)
 
@@ -1062,6 +1062,11 @@ class TerminalGui:
 	def update_search(self):
 		pass
 
+	def update_cols(self,what,ij=None):
+		pass
+
+	def update_clip_names(self):
+		pass
 
 if __name__ == '__main__':
 	testit = Magi()
