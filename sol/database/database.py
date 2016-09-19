@@ -289,7 +289,9 @@ class FileOPs:
 		if parsed_thumbs is None:
 			thumbs = None
 		else:
-			thumbs = parsed_thumbs.split(',')
+			# to avoid issues with commas in filenames..
+			split_thumbs = parsed_thumbs.split('.png,')
+			thumbs = [thumb + '.png' for thumb in split_thumbs[:-1]] + [split_thumbs[-1]]
 		parsed_tags = parsed_rep['tags'].text
 		if parsed_tags is None:
 			tags = []
