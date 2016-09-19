@@ -4,6 +4,8 @@ hosts magi and sends data to an osc_client
 """
 import config as C
 
+import os
+
 from magi import Magi
 
 class MTGui:
@@ -14,6 +16,60 @@ class MTGui:
 	"""
 	def __init__(self,magi):
 		self.magi = magi
+
+	### magi required funs ###
+	def update_clip(self,layer,clip):
+		pass
+
+	def update_clip_params(self,layer,clip,param):
+		pass
+
+	def update_cur_pos(self,layer,pos):
+		pass
+
+	def update_search(self):
+		pass
+
+	def update_cols(self,what,ij=None):
+		pass
+
+	def update_clip_names(self):
+		pass
+
+	### file operations
+	def gen_thumbs_for_me(self):
+		# makes sure all thumbnail hashes are unique and renames equivalent thumbs
+		if not os.path.exists('./scrot_to_move'):
+			os.makedirs('./scrot_to_move')
+		thumbz = {}
+		for clip in self.magi.db.clips.values():
+			test_str = clip.t_names[0]
+			fname = os.path.split(test_str)[1][::-1]
+			first_part = fname[fname.find("_")+1:]
+			thumb_no = first_part[:first_part.find("_")][::-1]
+			try:
+				int(thumb_no)
+			except:
+				print(thumb_no, 'not a number','\n\t',test_str)
+				print(clip.t_names)
+			if thumb_no in thumbz:
+				print('not unique',thumb_no)
+				print(os.path.split(test_str)[0] + '_to_move/' + thumb_no + '.png')
+				fix_hash = int(thumb_no)
+				counter = 0
+				while str(fix_hash) in thumbz:
+					fix_hash += 1
+					counter += 1
+				thumb_no = str(fix_hash)
+				print('now unique {} (+{})'.format(thumb_no,counter))
+				thumbz[thumb_no] = test_str
+			else:
+				thumbz[thumb_no] = test_str
+		# next i need to rename (aka move) to fixed hash
+		# make sure to get cur_clip.params['loop_points'][i][3]
+		# save the db w/ updated thumbnails
+		# then copy to new dir : ) (with just the hash as filename)
+	### printing current state ### 
 
 	def print_current_state(self):
 		to_print = "*-"*36+"*\n" + \
@@ -125,40 +181,14 @@ class MTGui:
 	def print_a_line(self):
 		return "=" * 73
 
-	# magi required funs
-	def update_clip(self,layer,clip):
-		pass
 
-	def update_clip_params(self,layer,clip,param):
-		pass
-
-	def update_cur_pos(self,layer,pos):
-		pass
-
-	def update_search(self):
-		pass
-
-	def update_cols(self,what,ij=None):
-		pass
-
-	def update_clip_names(self):
-		pass
 
 if __name__ == '__main__':
-	import os
-	test_str = './scrot/big robot, cute girls, big booms and punch_9304900_2'
-	#'./scrot/battleship beams n missiles_6800366_0.png'
-	# fname = os.path.split(test_str)[1][::-1]
-	# print(fname)
-	# first_part = fname[fname.find("_")+1:]
-	# thumb_no = first_part[:first_part.find("_")][::-1]
-
-	# print(thumb_no)
-
 	testit = Magi()
 	testit.gui = MTGui(testit)
 	# testit.load('./test_save.xml')
 	testit.start()
+	testit.gui.gen_thumbs_for_me()
 	# import time
 	# while True:
 	# 	try:
@@ -169,31 +199,7 @@ if __name__ == '__main__':
 	# 		testit.stop()
 	# 		# testit.save_to_file('./test_save.xml')
 	# 		break
-	thumbz = {}
-	for clip in testit.db.clips.values():
-		test_str = clip.t_names[0]
-		fname = os.path.split(test_str)[1][::-1]
-		first_part = fname[fname.find("_")+1:]
-		thumb_no = first_part[:first_part.find("_")][::-1]
-		try:
-			int(thumb_no)
-		except:
-			print(thumb_no, 'not a number','\n\t',test_str)
-			print(clip.t_names)
-		if thumb_no in thumbz:
-			print('not unique',thumb_no)
-			fix_hash = int(thumb_no)
-			counter = 0
-			while str(fix_hash) in thumbz:
-				fix_hash += 1
-				counter += 1
-			thumb_no = str(fix_hash)
-			print('now unique {} (+{})'.format(thumb_no,counter))
-			thumbz[thumb_no] = test_str
-		else:
-			thumbz[thumb_no] = test_str
-	# print(thumbz)
-	# next i need to rename (aka move) to fixed hash
-	# save the db w/ updated thumbnails
-	# then copy to new dir : ) (with just the hash as filename)
+	
+	testit.save_to_file(testit.db.file_ops.last_save)
+	
 	testit.stop()
