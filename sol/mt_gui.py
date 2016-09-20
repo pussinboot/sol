@@ -24,14 +24,48 @@ class MTGui:
 		self.update_all()
 
 	def update_all(self):
-		self.update_cols('what')
+		self.update_cols('start')
+		for i in range(len(self.magi.clip_storage.current_clips)):
+			self.update_loop(i,self.magi.clip_storage.current_clips[i])
+
+	def update_loop(self,layer,clip):
+		# have to send everything as numbers
+		# loop on   - off = 0, on = 1
+		# loop_type - 'd' = 0, 'b' = 1
+		loop_on = 0
+		loop_type = 0
+		loop_type_lookup = {'d':0,'b':1}
+		if clip is not None:
+			# loop on
+			loop_on = int(clip.params['loop_on'])
+			# get the loop
+			loop_select = clip.params['loop_selection']
+			if loop_select >= 0: 
+				cur_loop = clip.params['loop_points'][loop_select]
+				# loop type
+				loop_type = loop_type_lookup[cur_loop[2]]
+		loop_addr = BASE_ADDR + 'layer{}/loop/'.format(layer)
+		self.osc_client.build_n_send(loop_addr+'on_off',loop_on)
+		self.osc_client.build_n_send(loop_addr+'type',loop_type)
+			
+
 
 	### magi required funs ###
 	def update_clip(self,layer,clip):
-		pass
+		self.update_loop(layer,clip)
 
 	def update_clip_params(self,layer,clip,param):
-		pass
+		param_dispatch = {
+					# 'cue_points' : self.update_cues,
+					'loop_points' : self.update_loop,
+					'loop_on' : self.update_loop,
+					'loop_type' : self.update_loop,
+					'loop_selection' : self.update_loop,
+					# 'playback_speed' : self.update_speed,
+					# 'control_sens' : self.update_sens
+				}
+		if param not in param_dispatch: return
+		param_dispatch[param](layer,clip)
 
 	def update_cur_pos(self,layer,pos):
 		pass
@@ -40,7 +74,7 @@ class MTGui:
 		pass
 
 	def update_cols(self,what,ij=None):
-		print('updating cols')
+		print('updating cols',what)
 		# clip_thumbs
 		thumbs_to_send = []
 		for i in range(len(self.magi.clip_storage.clip_col.clips)):
@@ -53,7 +87,8 @@ class MTGui:
 				first_part = fname[fname.find("_")+1:]
 				thumb_no = first_part[:first_part.find("_")][::-1]
 				thumbs_to_send += [thumb_no]
-		self.osc_client.build_n_send_bundle(BASE_ADDR + 'update_thumbs',thumbs_to_send)
+		to_send = ','.join(thumbs_to_send)
+		self.osc_client.build_n_send(BASE_ADDR + 'update_thumbs',to_send)
 
 	def update_clip_names(self):
 		pass
