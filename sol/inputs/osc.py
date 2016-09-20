@@ -113,3 +113,11 @@ class OscClient:
 		msg = self.build_msg(addr,arg)
 		self.osc_client.send(msg)
 		return msg
+
+	def build_n_send_bundle(self,addr,argz):
+		msg = osc_message_builder.OscMessageBuilder(address = addr)
+		for arg in argz:
+			msg.add_arg(arg)
+		msg = msg.build()
+		self.osc_client.send(msg)
+		return msg

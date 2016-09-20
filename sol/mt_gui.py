@@ -8,6 +8,9 @@ import os
 from shutil import copyfile
 
 from magi import Magi
+from inputs import osc
+
+BASE_ADDR = '/modvj/sol_mt/'
 
 class MTGui:
 	"""
@@ -15,8 +18,13 @@ class MTGui:
 	can be used simulatenously with another gui :^), just make sure to
 	wrap all gui update functions to perform both things in that case
 	"""
-	def __init__(self,magi):
+	def __init__(self,magi,ip="127.0.0.1",port=6666):
 		self.magi = magi
+		self.osc_client = osc.OscClient(ip,port)
+		self.update_all()
+
+	def update_all(self):
+		self.update_cols('what')
 
 	### magi required funs ###
 	def update_clip(self,layer,clip):
@@ -32,7 +40,20 @@ class MTGui:
 		pass
 
 	def update_cols(self,what,ij=None):
-		pass
+		print('updating cols')
+		# clip_thumbs
+		thumbs_to_send = []
+		for i in range(len(self.magi.clip_storage.clip_col.clips)):
+			cur_col_clip = self.magi.clip_storage.clip_col.clips[i]
+			if cur_col_clip is None:
+				thumbs_to_send += ["None"]
+			else:
+				t_name = cur_col_clip.t_names[0]
+				fname = os.path.split(t_name)[1][::-1]
+				first_part = fname[fname.find("_")+1:]
+				thumb_no = first_part[:first_part.find("_")][::-1]
+				thumbs_to_send += [thumb_no]
+		self.osc_client.build_n_send_bundle(BASE_ADDR + 'update_thumbs',thumbs_to_send)
 
 	def update_clip_names(self):
 		pass
@@ -126,13 +147,17 @@ class MTGui:
 		for i in range(C.NO_LAYERS):
 			cur_clip = self.magi.clip_storage.current_clips[i]
 			if cur_clip is None:
-				name_line += [" -"*7 + " "]
+				name_line += [" -"*8]
 				cur_pb = '-'
 				cur_spd = 0
 				cur_sens = 0
-				loop_on_off = '-'
+				loop_on_off = 2
 				loop_no = -1
 				loop_type = '-'
+				qp_line_0 += [ "[_]" for j in range(half_qp)]
+				qp_line_1 += [ "[_]" for j in range(half_qp)]
+				lp_line_0 += [ "[_]" for j in range(half_qp)]
+				lp_line_1 += [ "[_]" for j in range(half_qp)]
 			else:
 				name_line += ["{:<16}".format(cur_clip.name[:16])]
 				cur_pb = cur_clip.params['play_direction']
@@ -161,7 +186,7 @@ class MTGui:
 			pb_line += ["   dir :  {}     ".format(cur_pb)]
 			spd_line += ["   spd : {0: 2.2f}  ".format(cur_spd)]
 			sens_line += ["  sens : {0: 2.2f}  ".format(cur_sens)]
-			loop_line_0 += ["  loop :  {}   ".format(['off','on '][loop_on_off])]
+			loop_line_0 += ["  loop :  {}   ".format(['off','on ',' - '][loop_on_off])]
 			loop_line_1 += ["    {0:2d} :  {1}  ".format(loop_no,loop_type_lookup[loop_type])]
 			cur_pos = self.magi.model.current_clip_pos[i]
 			if cur_pos is None:
@@ -217,7 +242,7 @@ if __name__ == '__main__':
 	# testit.load('./test_save.xml')
 	testit.start()
 	# testit.gui.gen_thumbs_for_me()
-	
+
 	import time
 	while True:
 		try:
