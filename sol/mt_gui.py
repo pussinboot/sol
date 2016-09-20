@@ -5,6 +5,7 @@ hosts magi and sends data to an osc_client
 import config as C
 
 import os
+from shutil import copyfile
 
 from magi import Magi
 
@@ -39,6 +40,32 @@ class MTGui:
 	### file operations
 	def gen_thumbs_for_me(self):
 		# makes sure all thumbnail hashes are unique and renames equivalent thumbs
+
+		def change_hash(clip,old_hash,new_hash):
+			# clip.t_names
+			to_move = clip.t_names
+			clip.t_names  = [t_name.replace(old_hash,new_hash,1) for t_name in clip.t_names]
+			new_names = [t_name for t_name in clip.t_names]
+			for i, lp in enumerate(clip.params['loop_points']):
+				if lp is not None:
+					if lp[3] is not None:
+						to_move += [lp[3]]
+						new_names += [lp[3].replace(old_hash,new_hash,1)]
+						clip.params['loop_points'][i][3] = new_names[-1]
+			for i in range(len(to_move)):
+				try:
+					os.rename(to_move[i],new_names[i])
+				except:
+					pass
+
+		def copy_file(src_file,new_hash):
+			# src_file = clip.t_names[0]
+			new_file = './scrot_to_move/{}.png'.format(new_hash)
+			try:
+				copyfile(src_file,new_file)
+			except:
+				pass
+
 		if not os.path.exists('./scrot_to_move'):
 			os.makedirs('./scrot_to_move')
 		thumbz = {}
@@ -51,20 +78,21 @@ class MTGui:
 				int(thumb_no)
 			except:
 				print(thumb_no, 'not a number','\n\t',test_str)
-				print(clip.t_names)
 			if thumb_no in thumbz:
 				print('not unique',thumb_no)
-				print(os.path.split(test_str)[0] + '_to_move/' + thumb_no + '.png')
+				# print(os.path.split(test_str)[0] + '_to_move/' + thumb_no + '.png')
 				fix_hash = int(thumb_no)
 				counter = 0
 				while str(fix_hash) in thumbz:
 					fix_hash += 1
 					counter += 1
-				thumb_no = str(fix_hash)
-				print('now unique {} (+{})'.format(thumb_no,counter))
+				fix_hash = str(fix_hash)
+				print('now unique {} (+{})'.format(fix_hash,counter))
+				change_hash(clip,thumb_no,fix_hash)
 				thumbz[thumb_no] = test_str
 			else:
 				thumbz[thumb_no] = test_str
+			copy_file(test_str,thumb_no)
 		# next i need to rename (aka move) to fixed hash
 		# make sure to get cur_clip.params['loop_points'][i][3]
 		# save the db w/ updated thumbnails
@@ -188,17 +216,18 @@ if __name__ == '__main__':
 	testit.gui = MTGui(testit)
 	# testit.load('./test_save.xml')
 	testit.start()
-	testit.gui.gen_thumbs_for_me()
-	# import time
-	# while True:
-	# 	try:
-	# 		time.sleep(1)
-	# 		testit.gui.print_current_state()
-	# 	except (KeyboardInterrupt, SystemExit):
-	# 		print("exiting...")
-	# 		testit.stop()
-	# 		# testit.save_to_file('./test_save.xml')
-	# 		break
+	# testit.gui.gen_thumbs_for_me()
+	
+	import time
+	while True:
+		try:
+			time.sleep(1)
+			testit.gui.print_current_state()
+		except (KeyboardInterrupt, SystemExit):
+			print("exiting...")
+			testit.stop()
+			# testit.save_to_file('./test_save.xml')
+			break
 	
 	testit.save_to_file(testit.db.file_ops.last_save)
 	
