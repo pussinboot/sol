@@ -43,7 +43,8 @@ class MTGui:
 			if loop_select >= 0: 
 				cur_loop = clip.params['loop_points'][loop_select]
 				# loop type
-				loop_type = loop_type_lookup[cur_loop[2]]
+				if cur_loop is not None:
+					loop_type = loop_type_lookup[cur_loop[2]]
 		loop_addr = BASE_ADDR + 'layer{}/loop/'.format(layer)
 		self.osc_client.build_n_send(loop_addr+'on_off',loop_on)
 		self.osc_client.build_n_send(loop_addr+'type',loop_type)
