@@ -625,6 +625,15 @@ class Magi:
 					if self.gui is not None: self.gui.update_clip_params(i,
 													cur_clip,'loop_on')
 
+			def set_loop_on_off(_,n):
+				on_off = self.osc_server.osc_value(n)
+				if on_off is not None:
+					cur_clip = self.clip_storage.current_clips[i]
+					if cur_clip is None: return
+					cur_clip.params['loop_on'] = bool(on_off)
+					if self.gui is not None: self.gui.update_clip_params(i,
+													cur_clip,'loop_on')
+
 			def set_loop_type(_,t):
 				# can either set to new type by supplying correct string
 				# or will toggle between the two types 'd'/'b' - default/bounce
@@ -751,9 +760,10 @@ class Magi:
 															      'loop_points')
 
 
-			return [cue_point,clear_cue,toggle_loop,set_loop_type,loop_select,
-					loop_select_move, set_loop_a, set_loop_b, set_loop_a_b,
-					set_loop_a_cur, set_loop_b_cur, clear_loop]
+			return [cue_point,clear_cue,toggle_loop,set_loop_on_off,
+					set_loop_type,loop_select, loop_select_move, set_loop_a, 
+					set_loop_b, set_loop_a_b, set_loop_a_cur, set_loop_b_cur, 
+					clear_loop]
 
 		base_addr = "/magi/layer{}"
 		cue_addr = base_addr + "/cue"
@@ -765,9 +775,10 @@ class Magi:
 		set_addr = base_addr + "/loop/set/"
 		clear_addr = base_addr + '/loop/clear'
 
-		addresses = [cue_addr,cue_clear_addr,tog_addr,lp_type_addr,sel_addr,
-					 sel_move_addr, set_addr+"a", set_addr+"b", set_addr+"ab",
-					 set_addr+"cur/a", set_addr+"cur/b", clear_addr]
+		addresses = [cue_addr,cue_clear_addr,tog_addr,set_addr+"on_off",
+					 lp_type_addr,sel_addr,sel_move_addr, set_addr+"a",
+					 set_addr+"b", set_addr+"ab", set_addr+"cur/a", 
+					 set_addr+"cur/b", clear_addr]
 
 		for i in range(C.NO_LAYERS):
 			loop_funs = gen_loop_funs(i)
