@@ -48,7 +48,17 @@ class MTGui:
 		loop_addr = BASE_ADDR + 'layer{}/loop/'.format(layer)
 		self.osc_client.build_n_send(loop_addr+'on_off',loop_on)
 		self.osc_client.build_n_send(loop_addr+'type',loop_type)
-			
+		self.update_cur_loop_range(layer,clip)
+
+	def update_cur_loop_range(self,layer,clip):
+		cl = self.magi.loop_get(layer)
+		loop_addr = BASE_ADDR + 'layer{}/loop/'.format(layer)
+		if cl is not None:
+			try:
+				cur_range = "{:1.4},{:1.4}".format(cl[1][0], cl[1][1])
+			except:
+				cur_range = "0,1"
+			self.osc_client.build_n_send(loop_addr+'cur_range',cur_range)
 
 
 	### magi required funs ###
@@ -69,7 +79,8 @@ class MTGui:
 		param_dispatch[param](layer,clip)
 
 	def update_cur_pos(self,layer,pos):
-		pass
+		pos_addr = BASE_ADDR + 'layer{}/cur_pos'.format(layer)
+		self.osc_client.build_n_send(pos_addr,pos)
 
 	def update_search(self):
 		pass
@@ -210,7 +221,7 @@ class MTGui:
 				lp = cur_clip.params['loop_points']
 				loop_on_off = cur_clip.params['loop_on']
 				loop_no = cur_clip.params['loop_selection']
-				if loop_no >= 0:
+				if loop_no >= 0 and lp[loop_no] is not None:
 					loop_type = lp[loop_no][2]
 				else:
 					loop_type = '-'
