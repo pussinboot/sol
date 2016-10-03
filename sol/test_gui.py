@@ -13,7 +13,9 @@ from gui.tk_gui import clip_control
 from gui.tk_gui import clip_collections
 from gui.tk_gui import midi_config
 
-
+from mt_gui import MTGui
+BASE_ADDR = '/modvj/sol_mt/'
+IP_ADDR_RECV = "192.168.2.182" # 127.0.0.1
 class MainGui:
 	def __init__(self,root):
 		# tk
@@ -26,6 +28,7 @@ class MainGui:
 		# sol
 		self.magi = Magi()
 		self.magi.gui = self
+		self.mt_gui = MTGui(self.magi,ip=IP_ADDR_RECV)
 		self.clip_controls = []
 		self.clip_org = None
 		for i in range(C.NO_LAYERS):
@@ -200,18 +203,22 @@ class MainGui:
 	def update_clip(self,layer,clip):
 		# if clip is none.. clear
 		self.clip_controls[layer].update_clip(clip)
+		self.mt_gui.update_clip(layer,clip)
 
 	def update_clip_params(self,layer,clip,param):
 		# dispatch things according to param
 		self.clip_controls[layer].update_clip_params(clip,param)
+		self.mt_gui.update_clip_params(layer,clip,param)
 
 	def update_cur_pos(self,layer,pos):
 		# pass along the current position
 		self.clip_controls[layer].update_cur_pos(pos)
+		self.mt_gui.update_cur_pos(layer,pos)
 
 	def update_search(self):
 		# display search results
 		self.clip_conts.library_browse.last_search()
+		self.mt_gui.update_search() # doesn't do anything yet
 
 	def update_cols(self,what,ij=None):
 		# what - select, add, remove, swap
@@ -229,6 +236,8 @@ class MainGui:
 			else:
 				what_to_do[what](ij)
 
+		self.mt_gui.update_cols(what,ij)
+
 	def update_clip_names(self):
 		for i in range(C.NO_LAYERS):
 			if self.magi.clip_storage.current_clips[i] is not None:
@@ -241,6 +250,8 @@ class MainGui:
 				else:
 					self.clip_conts.containers[c_i]\
 					.clip_conts[i].change_text(active_col[i].name)
+
+		self.mt_gui.update_clip_names() # also doesn't do anything
 
 
 if __name__ == '__main__':

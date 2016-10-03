@@ -86,7 +86,7 @@ class MTGui:
 		pass
 
 	def update_cols(self,what,ij=None):
-		print('updating cols',what)
+		# print('updating cols',what)
 		# clip_thumbs
 		thumbs_to_send = []
 		for i in range(len(self.magi.clip_storage.clip_col.clips)):
