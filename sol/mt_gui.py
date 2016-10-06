@@ -26,7 +26,10 @@ class MTGui:
 	def update_all(self):
 		self.update_cols('start')
 		for i in range(len(self.magi.clip_storage.current_clips)):
-			self.update_loop(i,self.magi.clip_storage.current_clips[i])
+			clip = self.magi.clip_storage.current_clips[i]
+			self.update_loop(i,clip)
+			self.update_speed(i,clip)
+			self.update_sens(i,clip)
 
 	def update_loop(self,layer,clip):
 		# have to send everything as numbers
@@ -60,6 +63,15 @@ class MTGui:
 				cur_range = "0,1"
 			self.osc_client.build_n_send(loop_addr+'cur_range',cur_range)
 
+	def update_speed(self,layer,clip):
+		spd = clip.params['playback_speed']
+		spd_addr = BASE_ADDR + 'layer{}/spd'.format(layer)
+		self.osc_client.build_n_send(spd_addr,spd)	
+		
+	def update_sens(self,layer,clip):
+		sens = clip.params['control_sens']
+		sens_addr = BASE_ADDR + 'layer{}/sens'.format(layer)
+		self.osc_client.build_n_send(sens_addr,sens)
 
 	### magi required funs ###
 	def update_clip(self,layer,clip):
@@ -72,8 +84,8 @@ class MTGui:
 					'loop_on' : self.update_loop,
 					'loop_type' : self.update_loop,
 					'loop_selection' : self.update_loop,
-					# 'playback_speed' : self.update_speed,
-					# 'control_sens' : self.update_sens
+					'playback_speed' : self.update_speed,
+					'control_sens' : self.update_sens
 				}
 		if param not in param_dispatch: return
 		param_dispatch[param](layer,clip)
