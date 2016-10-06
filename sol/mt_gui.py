@@ -62,6 +62,9 @@ class MTGui:
 			except:
 				cur_range = "0,1"
 			self.osc_client.build_n_send(loop_addr+'cur_range',cur_range)
+		else:
+			self.osc_client.build_n_send(loop_addr+'cur_range',"0,1")
+
 
 	def update_speed(self,layer,clip):
 		spd = clip.params['playback_speed']
@@ -76,6 +79,8 @@ class MTGui:
 	### magi required funs ###
 	def update_clip(self,layer,clip):
 		self.update_loop(layer,clip)
+		self.update_speed(layer,clip)
+		self.update_sens(layer,clip)
 
 	def update_clip_params(self,layer,clip,param):
 		param_dispatch = {
