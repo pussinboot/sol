@@ -15,7 +15,7 @@ from gui.tk_gui import midi_config
 
 from mt_gui import MTGui
 BASE_ADDR = '/modvj/sol_mt/'
-# IP_ADDR_RECV = "192.168.2.182" 
+# IP_ADDR_RECV = "192.168.0.156" 
 IP_ADDR_RECV = "127.0.0.1" 
 
 class MainGui:
