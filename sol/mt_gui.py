@@ -27,9 +27,7 @@ class MTGui:
 		self.update_cols('start')
 		for i in range(len(self.magi.clip_storage.current_clips)):
 			clip = self.magi.clip_storage.current_clips[i]
-			self.update_loop(i,clip)
-			self.update_speed(i,clip)
-			self.update_sens(i,clip)
+			self.update_clip(i,clip)
 
 	def update_loop(self,layer,clip):
 		# have to send everything as numbers
@@ -51,6 +49,7 @@ class MTGui:
 		loop_addr = BASE_ADDR + 'layer{}/loop/'.format(layer)
 		self.osc_client.build_n_send(loop_addr+'on_off',loop_on)
 		self.osc_client.build_n_send(loop_addr+'type',loop_type)
+		self.update_lp(layer,clip)
 		self.update_cur_loop_range(layer,clip)
 
 	def update_cur_loop_range(self,layer,clip):
@@ -65,6 +64,19 @@ class MTGui:
 		else:
 			self.osc_client.build_n_send(loop_addr+'cur_range',"0,1")
 
+	def update_qp(self,layer,clip):
+		qps = clip.params['cue_points']
+		qps_str = ",".join(["1" if qp is not None else "0" for qp in qps])
+		qp_addr = BASE_ADDR + 'layer{}/qp'.format(layer)
+		self.osc_client.build_n_send(qp_addr,qps_str)
+
+	def update_lp(self,layer,clip):
+		lps = clip.params['loop_points']
+		lps_str = ",".join(["1" if lp is not None else "0" for lp in lps])
+		loop_no = clip.params['loop_selection']
+		loop_addr = BASE_ADDR + 'layer{}/loop/'.format(layer)
+		self.osc_client.build_n_send(loop_addr+'lp',lps_str)
+		self.osc_client.build_n_send(loop_addr+'lp_i',loop_no)
 
 	def update_speed(self,layer,clip):
 		spd = clip.params['playback_speed']
@@ -76,15 +88,26 @@ class MTGui:
 		sens_addr = BASE_ADDR + 'layer{}/sens'.format(layer)
 		self.osc_client.build_n_send(sens_addr,sens)
 
+	def update_cur_clip_sel(self,layer,clip):
+		clip_i_addr = BASE_ADDR + 'layer{}/cur_col_clip_i'.format(layer)
+		if clip in self.magi.clip_storage.clip_col:
+			clip_i = self.magi.clip_storage.clip_col.index(clip)
+			# print(self.magi.clip_storage.current_clips.index(clip)) # sanity check
+		else:
+			clip_i = -1
+		self.osc_client.build_n_send(clip_i_addr,clip_i)
+
 	### magi required funs ###
 	def update_clip(self,layer,clip):
 		self.update_loop(layer,clip)
 		self.update_speed(layer,clip)
 		self.update_sens(layer,clip)
+		self.update_qp(layer,clip)
+		self.update_cur_clip_sel(layer,clip)
 
 	def update_clip_params(self,layer,clip,param):
 		param_dispatch = {
-					# 'cue_points' : self.update_cues,
+					'cue_points' : self.update_qp,
 					'loop_points' : self.update_loop,
 					'loop_on' : self.update_loop,
 					'loop_type' : self.update_loop,
@@ -118,6 +141,9 @@ class MTGui:
 				thumbs_to_send += [thumb_no]
 		to_send = ','.join(thumbs_to_send)
 		self.osc_client.build_n_send(BASE_ADDR + 'update_thumbs',to_send)
+		for i in range(len(self.magi.clip_storage.current_clips)):
+			self.update_cur_clip_sel(i,self.magi.clip_storage.current_clips[i]) 
+
 
 	def update_clip_names(self):
 		pass

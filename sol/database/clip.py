@@ -75,3 +75,6 @@ class ClipCollection:
 
 	def __len__(self):
 		return len(self.clips)
+
+	def index(self,what):
+		return self.clips.index(what)
