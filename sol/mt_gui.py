@@ -27,7 +27,8 @@ class MTGui:
 		self.update_cols('start')
 		for i in range(len(self.magi.clip_storage.current_clips)):
 			clip = self.magi.clip_storage.current_clips[i]
-			self.update_clip(i,clip)
+			if clip is not None:
+				self.update_clip(i,clip)
 
 	def update_loop(self,layer,clip):
 		# have to send everything as numbers
