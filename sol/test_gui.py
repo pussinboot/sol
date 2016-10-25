@@ -15,8 +15,9 @@ from gui.tk_gui import midi_config
 
 from mt_gui import MTGui
 BASE_ADDR = '/modvj/sol_mt/'
-# IP_ADDR_RECV = "192.168.0.156" 
-IP_ADDR_RECV = "127.0.0.1" 
+IP_ADDR_SERV = "192.168.0.114"
+IP_ADDR_RECV = "192.168.0.156" 
+# IP_ADDR_RECV = "127.0.0.1" 
 
 class MainGui:
 	def __init__(self,root):
@@ -28,7 +29,7 @@ class MainGui:
 		self.clip_col_frame = tk.Frame(self.mainframe,pady=0,padx=0)
 
 		# sol
-		self.magi = Magi()
+		self.magi = Magi(IP_ADDR_SERV)
 		self.magi.gui = self
 		self.mt_gui = MTGui(self.magi,ip=IP_ADDR_RECV)
 		self.clip_controls = []
