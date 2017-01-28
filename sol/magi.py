@@ -1,6 +1,7 @@
 from database import database, clip, thumbs
 from inputs import osc, midi
-from models.resolume import model
+from models.resolume import model as ResolumeModel
+from models.memepv import model as MPVModel
 import config as C
 
 class Magi:
@@ -37,7 +38,9 @@ class Magi:
 		self.osc_server.mapp = backup_map
 		self.osc_client = osc.OscClient()
 		# model (resomeme for now)
-		self.model = model.Resolume(C.NO_LAYERS)
+		model_selection_map = {'MPV': MPVModel.MemePV,
+							   'RESOLUME': ResolumeModel.Resolume}
+		self.model = model_selection_map[C.MODEL_SELECT](C.NO_LAYERS)
 		self.play_dir_to_fun = { 'f' : self.model.play,
 								 'p' : self.model.pause,
 								 'b' : self.model.reverse,
@@ -278,10 +281,12 @@ class Magi:
 		if clip in self.clip_storage.current_clips: return
 		# if C.DEBUG: print(clip.name)
 		# do model prep work
-		model_addr, model_msg = self.model.select_clip(layer)
+		model_addr, model_msg = self.model.select_clip(layer,clip)
 		self.osc_client.build_n_send(model_addr,model_msg)
 		# activate clip command
-		self.osc_client.build_n_send(clip.command,1)
+		## eeehhh this is resolume stuff.. think how to work around..
+		if C.MODEL_SELECT == 'RESOLUME':
+			self.osc_client.build_n_send(clip.command,1)
 		self.clip_storage.current_clips[layer] = clip
 		# perform the play command
 
@@ -1083,29 +1088,29 @@ if __name__ == '__main__':
 	testit = Magi()
 	testit.gui = TerminalGui(testit)
 
-	### load and save test resolume library
-	testfile = "C:/Users/shapil/Documents/Resolume Arena 5/compositions/vjcomp.avc"
-	testit.load_resolume_comp(testfile)
-	testit.gen_thumbs(192,5)
-	clipz = testit.db.search('gundam')
-	# testit.debug_search_res()
-	testit.select_clip(clipz[0],0)
-	testit.select_clip(clipz[1],1)
-	for i in range(8):
-		testit.clip_storage.set_clip_in_col(clipz[i+2],i)
-	testit.gui.print_current_state()
+	# ### load and save test resolume library
+	# testfile = "C:/Users/shapil/Documents/Resolume Arena 5/compositions/vjcomp.avc"
+	# testit.load_resolume_comp(testfile)
+	# testit.gen_thumbs(192,5)
+	# clipz = testit.db.search('gundam')
+	# # testit.debug_search_res()
+	# testit.select_clip(clipz[0],0)
+	# testit.select_clip(clipz[1],1)
+	# for i in range(8):
+	# 	testit.clip_storage.set_clip_in_col(clipz[i+2],i)
+	# testit.gui.print_current_state()
 
-	testit.save_to_file('./test_save.xml')
+	# testit.save_to_file('./test_save.xml')
 
 	# testit.load('./test_save.xml')
-	# testit.start()
-	# import time
-	# while True:
-	# 	try:
-	# 		time.sleep(1)
-	# 		testit.gui.print_current_state()
-	# 	except (KeyboardInterrupt, SystemExit):
-	# 		print("exiting...")
-	# 		testit.stop()
-	# 		testit.save_to_file('./test_save.xml')
-	# 		break
+	testit.start()
+	import time
+	while True:
+		try:
+			time.sleep(1)
+			testit.gui.print_current_state()
+		except (KeyboardInterrupt, SystemExit):
+			print("exiting...")
+			testit.stop()
+			testit.save_to_file('./test_save.xml')
+			break

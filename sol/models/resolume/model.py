@@ -54,7 +54,7 @@ class Resolume:
 		addr = '/layer{}/video/position/values'.format(layer+1) 
 		return (addr, pos)
 
-	def select_clip(self,layer):
+	def select_clip(self,layer,clip=None):
 		# requires activating clips to be set as
 		# "send to active layer"
 		# REMEMBER TO CALL clip.command with an arg of 1 afterwards too
