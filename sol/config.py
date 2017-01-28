@@ -18,6 +18,9 @@ THUMB_W = 160 # what size to display thumbnails at
 REFRESH_INTERVAL = 166 # time in ms between frames
 NO_FRAMES = 5
 
+# model selection
+MODEL_SELECT = 'MPV'
+
 # resomeme
 RESOLUME_SAVE_DIR = "{0}{1}".format(os.environ['USERPROFILE'],"\\Documents\\Resolume Arena 5\\compositions")
 
