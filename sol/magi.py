@@ -276,6 +276,7 @@ class Magi:
 	# helper funs
 
 	def select_clip(self,clip,layer):
+		if clip is None: return
 		# can't select a clip that's already been activated
 		# (at least in resolume..)
 		if clip in self.clip_storage.current_clips: return
