@@ -2,6 +2,12 @@
 
 - create model
 - clip initialization needs to be in folder order..
+- other changes to overall structure
+	- looping yes
+	- add a model attribute to dynamically change `map_loop_funs`
+	- update functions
+		- `gen_update_fun`
+	- random playback callback
 - looping changes (that work for memePV as well) set loop a and loop b instead of doing it in the client
 	- (wow resolume doesn't have this but isadora does??)
 - make sure speed and whatever else you send gets updated in internal representation as well
