@@ -358,12 +358,19 @@ class ClipControl:
 		self.loop_on_off = clip.params['loop_on']
 		self.toggle_behavior_loop_on_off()
 		cl = clip.params['loop_selection']
-		self.loop_select_tk.set(str(cl))
+		try:
+			self.loop_select_tk.set(str(cl))
+		except:
+			pass
 		clp = clip.params['loop_points'][cl]
 		if clp is None:
 			self.loop_type_tk.set(self.loop_type_convert['d'])
 		else:
-			self.loop_type_tk.set(self.loop_type_convert[clp[2]])
+			try:
+				self.loop_type_tk.set(self.loop_type_convert[clp[2]])
+			except:
+				pass
+				
 		
 
 

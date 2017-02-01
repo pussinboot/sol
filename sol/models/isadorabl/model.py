@@ -15,6 +15,10 @@ class IsadoraBL:
 		for n in range(no_layers):
 			self.clip_pos_addr[n] = "/layer{}/position".format(n+1)
 
+		self.external_looping = True
+		self.lt_lu = {'d':1,'b':2} # loop type lookup
+
+
 	def play(self,layer):
 		last_spd = self.current_clip_spd[layer]
 		if last_spd < 0:
@@ -55,3 +59,20 @@ class IsadoraBL:
 		self.current_clip_spd[layer] = speed
 		addr = "/layer{}/speed".format(layer+1)
 		return (addr, speed) 
+
+	### looping
+	def set_loop_type(self,layer,lt):
+		addr = "/layer{}/loop".format(layer+1)
+		loop_type = self.lt_lu[lt]
+		return (addr, loop_type)
+
+
+	def set_loop_a(self,layer,clip,a=0):
+		addr = "/layer{}/loop/a".format(layer+1)
+		a = 100 * a
+		return (addr, a)
+
+	def set_loop_b(self,layer,clip,b=1):
+		addr = "/layer{}/loop/b".format(layer+1)
+		b = 100 * b
+		return (addr, b)

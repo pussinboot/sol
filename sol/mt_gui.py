@@ -50,8 +50,9 @@ class MTGui:
 		loop_addr = BASE_ADDR + 'layer{}/loop/'.format(layer)
 		self.osc_client.build_n_send(loop_addr+'on_off',loop_on)
 		self.osc_client.build_n_send(loop_addr+'type',loop_type)
-		self.update_lp(layer,clip)
-		self.update_cur_loop_range(layer,clip)
+		if clip is not None:
+			self.update_lp(layer,clip)
+			self.update_cur_loop_range(layer,clip)
 
 	def update_cur_loop_range(self,layer,clip):
 		cl = self.magi.loop_get(layer)
@@ -100,6 +101,7 @@ class MTGui:
 
 	### magi required funs ###
 	def update_clip(self,layer,clip):
+		if clip is None: return
 		self.update_loop(layer,clip)
 		self.update_speed(layer,clip)
 		self.update_sens(layer,clip)

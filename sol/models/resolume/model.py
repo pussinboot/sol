@@ -22,6 +22,7 @@ class Resolume:
 		for n in range(no_layers):
 			self.clip_pos_addr[n] = "/layer{}/video/position/values".format(n+1)
 			
+		self.external_looping = False
 		# have to do something like this as well
 		# 1st make a generator that returns something like this (per layer)
 		# def fun_tor(_,msg):
