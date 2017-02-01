@@ -70,7 +70,27 @@ class Magi:
 		self.map_search_funs()
 		self.map_col_funs()
 		self.map_loop_funs()
-
+		if self.model.external_looping:
+			def external_loop_fun(layer):
+				cl = self.loop_get(layer)
+				if cl is not None:
+					a,b = cl[1][0], cl[1][1]
+					lt = cl[1][2]
+				else:
+					a, b = 0, 1
+					lt = 'd'
+				cur_clip = self.clip_storage.current_clips[layer]
+				a_addr, a_msg = self.model.set_loop_a(layer,cur_clip,a)
+				b_addr, b_msg = self.model.set_loop_b(layer,cur_clip,b)
+				lt_addr, lt_msg = self.model.set_loop_type(layer,lt)
+				self.osc_client.build_n_send(a_addr, a_msg)
+				self.osc_client.build_n_send(b_addr, b_msg)
+				self.osc_client.build_n_send(lt_addr, lt_msg)
+				return
+		else:
+			def external_loop_fun(layer):
+				return
+		self.send_loop = external_loop_fun
 		self.load_midi()
 
 	###
@@ -89,6 +109,20 @@ class Magi:
 
 		def gen_update_fun(layer):
 			i = layer
+
+			# if looping is handled externally no need to set all of this up
+			def update_fun_external_looping(_,msg):
+				try:
+					new_val = float(msg)
+					# if C.DEBUG: print("clip_{0} : {1}".format(i,new_val))
+					self.model.current_clip_pos[i] = new_val
+					# send new_val to gui as well
+					if self.gui is not None: self.gui.update_cur_pos(i,new_val)
+				except:
+					pass
+
+			if self.model.external_looping:
+				return update_fun_external_looping
 
 			loop_lookup = {'f':1,'b':-1}
 
@@ -126,7 +160,7 @@ class Magi:
 
 			lp_to_fun = {'d':default_loop,'b':bounce_loop}
 
-			def update_fun(_,msg):
+			def update_fun_internal_looping(_,msg):
 				try:
 					new_val = float(msg)
 					# if C.DEBUG: print("clip_{0} : {1}".format(i,new_val))
@@ -145,7 +179,8 @@ class Magi:
 				except:
 					pass
 
-			return update_fun
+			return update_fun_internal_looping
+			
 
 		for i in range(C.NO_LAYERS):
 			update_fun = gen_update_fun(i)
@@ -298,6 +333,7 @@ class Magi:
 		spd = clip.params['playback_speed']
 		spd_addr, spd_msg = self.model.set_playback_speed(layer,spd)
 		self.osc_client.build_n_send(spd_addr,spd_msg)
+		self.send_loop(layer)
 		if self.gui is not None: self.gui.update_clip(layer,clip)
 
 	def clear_clip(self,layer):
@@ -628,6 +664,7 @@ class Magi:
 					cur_clip = self.clip_storage.current_clips[i]
 					if cur_clip is None: return
 					cur_clip.params['loop_on'] = not cur_clip.params['loop_on']
+					self.send_loop(i)
 					if self.gui is not None: self.gui.update_clip_params(i,
 													cur_clip,'loop_on')
 
@@ -637,6 +674,7 @@ class Magi:
 					cur_clip = self.clip_storage.current_clips[i]
 					if cur_clip is None: return
 					cur_clip.params['loop_on'] = bool(on_off)
+					self.send_loop(i)
 					if self.gui is not None: self.gui.update_clip_params(i,
 													cur_clip,'loop_on')
 
@@ -659,8 +697,10 @@ class Magi:
 					else:
 						cl[2] = 'b'
 				cur_clip.params['loop_points'][ls] = cl
+				self.send_loop(i)
 				if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
 																	'loop_type')
+
 
 			def loop_select(_,n):
 				n = self.osc_server.osc_value(n)
@@ -669,6 +709,7 @@ class Magi:
 				if n > len(cur_clip.params['loop_points']): return
 				cur_clip.params['loop_selection'] = n
 				# print('current loop points\n',cur_clip.params['loop_points'][n])
+				self.send_loop(i)
 				if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
 															   'loop_selection')
 
@@ -694,6 +735,7 @@ class Magi:
 					to_select = allowed_indices[to_select_i]
 
 				cur_clip.params['loop_selection'] = to_select
+				self.send_loop(i)
 				if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
 															   'loop_selection')
 
@@ -709,6 +751,7 @@ class Magi:
 				cl = self.lp_create(cl)
 				cl[0] = pos
 				cur_clip.params['loop_points'][ls] = cl
+				self.send_loop(i)
 				if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
 															   'loop_selection')
 			def set_loop_a_cur(_,n):
@@ -729,6 +772,7 @@ class Magi:
 				cl = self.lp_create(cl)
 				cl[1] = pos
 				cur_clip.params['loop_points'][ls] = cl
+				self.send_loop(i)
 				if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
 															   'loop_selection')
 
@@ -753,6 +797,7 @@ class Magi:
 				cl = self.lp_create(cl)
 				cl[:2] = pos
 				cur_clip.params['loop_points'][ls] = cl
+				self.send_loop(i)
 				if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
 															      'loop_points')
 
@@ -762,6 +807,7 @@ class Magi:
 				if cur_clip is None: return
 				if n > len(cur_clip.params['loop_points']) or n < 0: return
 				cur_clip.params['loop_points'][n] = None
+				self.send_loop(i)
 				if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
 															      'loop_points')
 

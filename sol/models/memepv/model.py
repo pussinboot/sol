@@ -15,6 +15,8 @@ class MemePV:
 		# 	self.clip_pos_addr[n] = "/layer{}/video/position/values".format(n+1)
 		self.clip_pos_addr[0] = "/time"
 		self.clip_pos_addr[1] = "/time2"
+		self.external_looping = True
+
 
 	def play(self,layer):
 		return ('/play', 1)
@@ -38,3 +40,18 @@ class MemePV:
 
 	def set_playback_speed(self,layer,speed):
 		return ('/speed', speed) # have to map 0 - 10.0 to 0 - 1.0
+
+	### looping
+	# because mpv doesnt allow for a percentage in looping have to reference clip
+	def set_loop_a(self,layer,clip,a=0):
+		if clip is not None:
+			a = clip.params['duration'] * a
+		return ('/loop_a', a)
+
+	def set_loop_b(self,layer,clip,b=1):
+		if clip is not None:
+			b = clip.params['duration'] * b
+		return ('/loop_b', b)
+	# not implemented in mpv
+	def set_loop_type(self,layer,lt):
+		return ('/loop_type',lt)
