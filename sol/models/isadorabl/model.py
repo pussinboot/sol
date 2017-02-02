@@ -1,6 +1,6 @@
 class IsadoraBL:
 	"""
-	defines the memepv api
+	defines the isadorabl api
 	"""
 	def __init__(self,no_layers):
 		self.no_layers = 2 #no_layers
@@ -45,11 +45,11 @@ class IsadoraBL:
 
 	def set_clip_pos(self,layer,pos):
 		addr = "/layer{}/seek".format(layer+1)
-		return ('/seek', pos*100)
+		return (addr, pos*100)
 
 	def select_clip(self,layer,clip):
 		addr = "/layer{}/clip".format(layer+1)
-		return (addr, clip.command)
+		return (addr, int(clip.command))
 
 	def clear_clip(self,layer):
 		addr = "/layer{}/clip".format(layer+1)
@@ -66,13 +66,15 @@ class IsadoraBL:
 		loop_type = self.lt_lu[lt]
 		return (addr, loop_type)
 
-
-	def set_loop_a(self,layer,clip,a=0):
+	def set_loop_a(self,layer,clip,a=None,b=None):
+		if a is None: a = 0
 		addr = "/layer{}/loop/a".format(layer+1)
 		a = 100 * a
 		return (addr, a)
 
-	def set_loop_b(self,layer,clip,b=1):
+	def set_loop_b(self,layer,clip,a=None,b=None):
+		if a is None: a = 0
+		if b is None: b = 1
 		addr = "/layer{}/loop/b".format(layer+1)
-		b = 100 * b
+		b = 100 * (b-a) # actually duration
 		return (addr, b)

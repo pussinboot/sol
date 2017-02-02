@@ -41,12 +41,12 @@ class MemePV:
 
 	### looping
 	# because mpv doesnt allow for a percentage in looping have to reference clip
-	def set_loop_a(self,layer,clip,a=0):
+	def set_loop_a(self,layer,clip,a=0,b=1):
 		if clip is not None:
 			a = clip.params['duration'] * a
 		return ('/{}/loop_a'.format(layer), a)
 
-	def set_loop_b(self,layer,clip,b=1):
+	def set_loop_b(self,layer,clip,a=0,b=1):
 		if clip is not None:
 			b = clip.params['duration'] * b
 		return ('/{}/loop_b'.format(layer), b)
