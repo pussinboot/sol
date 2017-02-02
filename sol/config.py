@@ -19,7 +19,7 @@ REFRESH_INTERVAL = 166 # time in ms between frames
 NO_FRAMES = 5
 
 # model selection
-MODEL_SELECT = 'MPV'
+MODEL_SELECT = 'ISADORA'
 
 # resomeme
 RESOLUME_SAVE_DIR = "{0}{1}".format(os.environ['USERPROFILE'],"\\Documents\\Resolume Arena 5\\compositions")

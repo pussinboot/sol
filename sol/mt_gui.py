@@ -134,7 +134,7 @@ class MTGui:
 		thumbs_to_send = []
 		for i in range(len(self.magi.clip_storage.clip_col.clips)):
 			cur_col_clip = self.magi.clip_storage.clip_col.clips[i]
-			if cur_col_clip is None:
+			if cur_col_clip is None or cur_col_clip.t_names is None:
 				thumbs_to_send += ["None"]
 			else:
 				t_name = cur_col_clip.t_names[0]

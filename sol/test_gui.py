@@ -89,6 +89,15 @@ class MainGui:
 		filename = ask_fun(parent=self.root,title='Open Resolume Composition',initialdir=C.RESOLUME_SAVE_DIR)
 		if filename:
 			self.magi.load_resolume_comp(filename)
+			self.gen_thumbs()
+			self.refresh_after_load()
+
+	def load_isadora(self):
+		ask_fun = tkfd.askdirectory
+		foldername = ask_fun(parent=self.root,title='Add Folder', mustexist=True)
+		if foldername:
+			self.magi.load_isadora_comp(foldername)
+			self.gen_thumbs()
 			self.refresh_after_load()
 
 	def gen_thumbs(self):
@@ -167,6 +176,7 @@ class MainGui:
 		self.filemenu.add_command(label="load",command=self.load)
 		# load from resomeme
 		self.filemenu.add_command(label="load resolume comp",command=self.load_resolume)
+		self.filemenu.add_command(label="add folder (isadora)",command=self.load_isadora)
 		# create thumbnails
 		self.filemenu.add_command(label="generate thumbs",command=self.gen_thumbs)
 		# launch midi configurator

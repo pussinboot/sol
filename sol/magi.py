@@ -2,6 +2,7 @@ from database import database, clip, thumbs
 from inputs import osc, midi
 from models.resolume import model as ResolumeModel
 from models.memepv import model as MPVModel
+from models.isadorabl import model as IsadoraModel
 import config as C
 
 class Magi:
@@ -39,8 +40,10 @@ class Magi:
 		self.osc_client = osc.OscClient()
 		# model (resomeme for now)
 		model_selection_map = {'MPV': MPVModel.MemePV,
-							   'RESOLUME': ResolumeModel.Resolume}
+							   'RESOLUME': ResolumeModel.Resolume,
+							   'ISADORA': IsadoraModel.IsadoraBL}
 		self.model = model_selection_map[C.MODEL_SELECT](C.NO_LAYERS)
+		self.loader = None
 		self.play_dir_to_fun = { 'f' : self.model.play,
 								 'p' : self.model.pause,
 								 'b' : self.model.reverse,
@@ -73,15 +76,15 @@ class Magi:
 		if self.model.external_looping:
 			def external_loop_fun(layer):
 				cl = self.loop_get(layer)
-				if cl is not None:
+				if cl is not None and cl[0]:
 					a,b = cl[1][0], cl[1][1]
 					lt = cl[1][2]
 				else:
 					a, b = 0, 1
 					lt = 'd'
 				cur_clip = self.clip_storage.current_clips[layer]
-				a_addr, a_msg = self.model.set_loop_a(layer,cur_clip,a)
-				b_addr, b_msg = self.model.set_loop_b(layer,cur_clip,b)
+				a_addr, a_msg = self.model.set_loop_a(layer,cur_clip,a,b)
+				b_addr, b_msg = self.model.set_loop_b(layer,cur_clip,a,b)
 				lt_addr, lt_msg = self.model.set_loop_type(layer,lt)
 				self.osc_client.build_n_send(a_addr, a_msg)
 				self.osc_client.build_n_send(b_addr, b_msg)
@@ -111,15 +114,22 @@ class Magi:
 			i = layer
 
 			# if looping is handled externally no need to set all of this up
-			def update_fun_external_looping(_,msg):
-				try:
-					new_val = float(msg)
-					# if C.DEBUG: print("clip_{0} : {1}".format(i,new_val))
-					self.model.current_clip_pos[i] = new_val
-					# send new_val to gui as well
-					if self.gui is not None: self.gui.update_cur_pos(i,new_val)
-				except:
-					pass
+			if C.MODEL_SELECT == 'ISADORA':
+				def update_fun_external_looping(_,msg):
+					try:
+						new_val = float(msg) / 100
+						self.model.current_clip_pos[i] = new_val
+						if self.gui is not None: self.gui.update_cur_pos(i,new_val)
+					except:
+						pass
+			else:
+				def update_fun_external_looping(_,msg):
+					try:
+						new_val = float(msg)
+						self.model.current_clip_pos[i] = new_val
+						if self.gui is not None: self.gui.update_cur_pos(i,new_val)
+					except:
+						pass
 
 			if self.model.external_looping:
 				return update_fun_external_looping
@@ -901,6 +911,18 @@ class Magi:
 			self.db.add_clip(new_clip)
 		self.db.searcher.refresh()
 
+	def load_isadora_comp(self,path):
+		if self.loader is None:
+			from models.isadorabl import loader
+			self.loader = loader.IsadoraLoader(len(self.db.clips.values()))
+		print('adding folder', path)
+		self.loader.add_folder(path)
+		new_clips = self.loader.get_clips()
+		for clip_rep in new_clips:
+			new_clip = clip.Clip(*clip_rep)
+			self.db.add_clip(new_clip)
+		self.db.searcher.refresh()
+
 	def load_midi(self):
 		midi_load = self.db.file_ops.load_midi()
 		if midi_load is None: 
@@ -942,10 +964,12 @@ class Magi:
 
 
 	def gen_thumbs(self,desired_width=None,n_frames=1):
+		print('starting to generate thumbs')
 		if desired_width is not None:
 			self.thumb_maker.update_desired_width(desired_width)
 		for clip in self.db.clips.values():
-			clip.t_names = self.thumb_maker.gen_thumbnail(clip.f_name, n_frames)
+			if clip.t_names is None:
+				clip.t_names = self.thumb_maker.gen_thumbnail(clip.f_name, n_frames)
 
 	def rename_clip(self,clip,new_name):
 		self.db.rename_clip(clip,new_name)
