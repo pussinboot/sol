@@ -677,12 +677,9 @@ class ClipOrgClip(ClipContainer):
 		self.change_clip(clip)
 
 		self.label.unbind('<Button-2>')
-		self.label.bind("<MouseWheel>", parent.mouse_wheel)
-		self.label.bind("<Button-4>", parent.mouse_wheel)
-		self.label.bind("<Button-5>", parent.mouse_wheel)
-		self.frame.bind("<MouseWheel>", parent.mouse_wheel)
-		self.frame.bind("<Button-4>", parent.mouse_wheel)
-		self.frame.bind("<Button-5>", parent.mouse_wheel)
+		for b in ["<MouseWheel>","<Button-4>", "<Button-5>"]:
+			self.label.bind(b, parent.mouse_wheel)
+			self.frame.bind(b, parent.mouse_wheel)
 
 	def change_clip(self,clip):
 		if clip is None: 
