@@ -381,6 +381,8 @@ class LibraryBrowser:
 		style.layout("Treeview", [
 		    ('Treeview.treearea', {'sticky': 'nswe'})
 		])
+		style.configure('Treeview',indent=2)
+
 		self.backend = backend
 		# db (has searcher & search fun)
 		self.db = self.backend.db

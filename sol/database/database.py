@@ -122,6 +122,13 @@ class Database:
 		clip.name = new_name
 		self.add_a_clip(clip)
 
+	def move_clip(self,clip,new_fname,new_name=None):
+		self.remove_clip(clip)
+		clip.f_name = new_fname
+		if new_name is not None:
+			clip.name = new_name
+		self.add_a_clip(clip)
+
 	def clear(self):
 		self.clips = {}
 		self.searcher.clear()
