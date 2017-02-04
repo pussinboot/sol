@@ -3,7 +3,8 @@
 - clip initialization needs to be in folder order..
 - so as part of dumbed down gui add instantiate from folder
 - other changes to overall structure
-	- random playback callback
+	- random playback callback ?
+	- gotta make sure update speed when flipping it lol
 
 ##### list of osc addresses
 

@@ -15,8 +15,10 @@ from gui.tk_gui import midi_config
 
 from mt_gui import MTGui
 BASE_ADDR = '/modvj/sol_mt/'
-# IP_ADDR_SERV = "192.168.29.157"
-IP_ADDR_SERV = "192.168.0.123"
+
+IP_ADDR_SERV = "192.168.2.36" # home
+# IP_ADDR_SERV = "192.168.29.157" # laptop
+# IP_ADDR_SERV = "192.168.0.123" # appt
 
 IP_ADDR_RECV = "192.168.0.156" 
 # IP_ADDR_RECV = "127.0.0.1" 
@@ -36,6 +38,8 @@ class MainGui:
 		self.mt_gui = MTGui(self.magi,ip=IP_ADDR_RECV)
 		self.clip_controls = []
 		self.clip_org = None
+		self.lib_org = None
+
 		for i in range(C.NO_LAYERS):
 			new_frame = tk.Frame(self.cc_frame,pady=0,padx=0)
 			self.clip_controls.append(clip_control.ClipControl(new_frame,self.magi,i))
@@ -142,15 +146,40 @@ class MainGui:
 		# library browser
 		self.clip_conts.search_frame.pack(side=tk.LEFT,fill=tk.Y)
 
+	def enter_lib_org_gui(self):
+		# only want 1 clip control =)
+		for i in range(1,len(self.cc_frames)):
+			self.cc_frames[i].pack_forget()
+		
+		# resize the 1 clip control
+		self.clip_controls[0].resize(575)
+		# we want different library browser sry
+		self.clip_conts.search_frame.pack_forget()
+		# self.lib_org = clip_collections.ClipOrg(tk.Toplevel(),self)
+
+	def exit_lib_org_gui(self,*args):
+		# close clip_org if it isn't closed yet
+		if self.clip_org is not None:
+			self.lib_org.close()
+			self.lib_org = None
+		# resize the 1st clip control back to normal
+		self.clip_controls[0].resize(300)
+		for i in range(1,len(self.cc_frames)):
+			self.cc_frames[i].pack(side=tk.LEFT)
+		# library browser
+		self.clip_conts.search_frame.pack(side=tk.LEFT,fill=tk.Y)
+
 
 	def change_views(self,*args):
 		new_view = self.cur_view.get()
 		enter_actions = {
-			'clip_org' : self.enter_clip_org_gui
+			'clip_org' : self.enter_clip_org_gui,
+			'lib_org' : self.enter_lib_org_gui
 		}
 
 		exit_actions = {
-			'clip_org' : self.exit_clip_org_gui
+			'clip_org' : self.exit_clip_org_gui,
+			'lib_org' : self.exit_lib_org_gui
 		}
 
 		# exit last
@@ -201,7 +230,9 @@ class MainGui:
 		self.viewmenu.add_separator()
 		self.viewmenu.add_radiobutton(label='full view',value='full',variable=self.cur_view)
 		self.viewmenu.add_radiobutton(label='clip org view',value='clip_org',variable=self.cur_view)
-		self.viewmenu.add_radiobutton(label='performace view',value='perf',variable=self.cur_view)
+		self.viewmenu.add_radiobutton(label='lib org view',value='lib_org',variable=self.cur_view)
+
+		# self.viewmenu.add_radiobutton(label='performace view',value='perf',variable=self.cur_view)
 		self.cur_view.set('full')
 		# pack it
 		self.menubar.add_cascade(label='file',menu=self.filemenu)
