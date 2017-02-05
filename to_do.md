@@ -27,4 +27,6 @@ File "C:\Users\leo\Documents\Code\sol\sol\test_gui.py", line 301, in update_clip
 
 AttributeError: 'ClipControl' object has no attribute 'change_name'
 
-memepv keep track of duration so i dont have to send it -.-
+ok for some reason keep getting crashes on mpv side
+maybe dont load plugins?
+also stop sending loop shit 5 times on activation...
