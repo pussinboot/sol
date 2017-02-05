@@ -28,4 +28,4 @@ File "C:\Users\leo\Documents\Code\sol\sol\test_gui.py", line 301, in update_clip
 AttributeError: 'ClipControl' object has no attribute 'change_name'
 
 ok for some reason keep getting crashes on mpv side
-maybe dont load plugins?
+maybe dont load plugins? yep this is it!!
