@@ -73,9 +73,12 @@ class Magi:
 		self.map_search_funs()
 		self.map_col_funs()
 		self.map_loop_funs()
+		self.last_sent_loop = None
 		if self.model.external_looping:
 			def external_loop_fun(layer):
 				cl = self.loop_get(layer)
+				if cl == self.last_sent_loop:
+					return
 				if cl is not None and cl[0]:
 					a,b = cl[1][0], cl[1][1]
 					lt = cl[1][2]
@@ -89,6 +92,7 @@ class Magi:
 				self.osc_client.build_n_send(a_addr, a_msg)
 				self.osc_client.build_n_send(b_addr, b_msg)
 				self.osc_client.build_n_send(lt_addr, lt_msg)
+				self.last_sent_loop = cl
 				return
 		else:
 			def external_loop_fun(layer):
@@ -329,6 +333,7 @@ class Magi:
 		# do model prep work
 		model_addr, model_msg = self.model.select_clip(layer,clip)
 		self.osc_client.build_n_send(model_addr,model_msg)
+		self.last_sent_loop = None
 		# activate clip command
 		## eeehhh this is resolume stuff.. think how to work around..
 		if C.MODEL_SELECT == 'RESOLUME':

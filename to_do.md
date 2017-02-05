@@ -29,4 +29,3 @@ AttributeError: 'ClipControl' object has no attribute 'change_name'
 
 ok for some reason keep getting crashes on mpv side
 maybe dont load plugins?
-also stop sending loop shit 5 times on activation...
