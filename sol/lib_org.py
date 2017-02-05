@@ -140,6 +140,8 @@ class ClipAddGui:
 		self.parent = parent
 		self.backend = parent.backend
 		self.db = self.backend.db
+		# this is garbage and needs to be redone
+		# so i can keep track of which clip is selected 
 		self.clip_queue = []
 		self.clip_to_id = {}
 		self.fname_to_clip = {}
@@ -165,6 +167,8 @@ class ClipAddGui:
 		for c in new_clips:
 			new_clip = clip.Clip(c,'0')
 			self.db.init_a_clip(new_clip)
+			new_clip.params['play_direction'] = 'f'
+
 			self.clip_queue += [new_clip]
 			self.add_clip_to_list(new_clip)
 
