@@ -8,6 +8,7 @@ import tkinter as tk
 import tkinter.filedialog as tkfd
 
 from magi import Magi
+from lib_org import LibraryOrgGui
 
 from gui.tk_gui import clip_control
 from gui.tk_gui import clip_collections
@@ -56,7 +57,10 @@ class MainGui:
 		# menu
 		self.setup_menubar()
 		# quit behavior
-		self.root.protocol("WM_DELETE_WINDOW",self.quit)		
+		self.root.protocol("WM_DELETE_WINDOW",self.quit)	
+		# move it to nice place
+		# self.root	
+
 
 	def start(self):
 		self.magi.start()
@@ -147,19 +151,25 @@ class MainGui:
 		self.clip_conts.search_frame.pack(side=tk.LEFT,fill=tk.Y)
 
 	def enter_lib_org_gui(self):
+		# close clip_org if it isn't closed yet
+		if self.lib_org is not None:
+			self.lib_org.close()
+			self.lib_org = None
 		# only want 1 clip control =)
 		for i in range(1,len(self.cc_frames)):
 			self.cc_frames[i].pack_forget()
 		
 		# resize the 1 clip control
+		self.root.geometry('750x567+50+50') # TEMP!!
 		self.clip_controls[0].resize(575)
 		# we want different library browser sry
 		self.clip_conts.search_frame.pack_forget()
-		# self.lib_org = clip_collections.ClipOrg(tk.Toplevel(),self)
+		self.lib_org = LibraryOrgGui(tk.Toplevel(),self)
+
 
 	def exit_lib_org_gui(self,*args):
 		# close clip_org if it isn't closed yet
-		if self.clip_org is not None:
+		if self.lib_org is not None:
 			self.lib_org.close()
 			self.lib_org = None
 		# resize the 1st clip control back to normal
@@ -168,6 +178,7 @@ class MainGui:
 			self.cc_frames[i].pack(side=tk.LEFT)
 		# library browser
 		self.clip_conts.search_frame.pack(side=tk.LEFT,fill=tk.Y)
+
 
 
 	def change_views(self,*args):
@@ -324,6 +335,7 @@ if __name__ == '__main__':
 	# testgui.clip_controls[0].resize(575)
 	# testgui.configure_midi()
 	# testgui.enter_clip_org_gui()
+	testgui.enter_lib_org_gui()
 	root.mainloop()
 	# testgui.magi.gui = None
 	# testgui.magi.fun_store['/magi/layer0/playback/clear']('',True)

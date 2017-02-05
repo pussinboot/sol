@@ -40,6 +40,9 @@ class Clip:
 		if not tag in self.tags:
 			self.tags.append(tag)
 
+	def str_tags(self):
+		return ','.join(self.tags)
+
 	def remove_tag(self,tag):
 		if tag in self.tags:
 			self.tags.remove(tag)
