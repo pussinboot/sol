@@ -22,3 +22,9 @@
 | /speed | playback spped (-10 - 10), negative is reverse, 0 is pause |
 
 and uhh it sends to /layer[1,2]/position
+
+File "C:\Users\leo\Documents\Code\sol\sol\test_gui.py", line 301, in update_clip_names
+
+AttributeError: 'ClipControl' object has no attribute 'change_name'
+
+memepv keep track of duration so i dont have to send it -.-

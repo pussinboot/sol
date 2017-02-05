@@ -3,7 +3,8 @@ import tkinter.filedialog as tkfd
 from tkinter import ttk
 
 import os
-from database import database
+from database import database, clip
+import config as C
 
 class LibraryOrgGui:
 	def __init__(self,root, parent):
@@ -65,14 +66,14 @@ class LibraryOrgGui:
 		if not tv.selection():
 			return
 		item = tv.selection()[0]
-		if tv.item(item,"values")[0] != 'clip':
+		if tv.item(item,"values")[-1] != 'clip':
 			return
 		clip_fname = tv.item(item,"values")[1]
-		if clip_fname not in self.db.clips: return
-		return self.db.clips[clip_fname]
+		return clip_fname
 
 	def create_clip_gui(self):
-		self.add_clip_gui = ClipAddGui(tk.Toplevel(),self.backend)
+		self.add_clip_gui = ClipAddGui(tk.Toplevel(),self)
+
 
 	def init_tree(self):
 		files = self.db.hierarchical_listing
@@ -109,7 +110,6 @@ class Treeview:
 
 		self.frame = containing_frame
 		self.inner_frame = tk.Frame(self.frame)
-		self.inner_frame.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=True)
 
 		self.tree = ttk.Treeview(self.inner_frame,selectmode=select_mode, height = 20,\
 			columns = ('tags','fpath'))
@@ -117,6 +117,7 @@ class Treeview:
 		self.ysb = ttk.Scrollbar(self.frame, orient='vertical', command=self.tree.yview)
 		self.tree.configure(yscrollcommand=self.ysb.set)
 		self.ysb.pack(side=tk.RIGHT,anchor=tk.N,fill=tk.Y)
+		self.inner_frame.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=True)
 
 		# ttk
 		style = ttk.Style()
@@ -135,29 +136,54 @@ class Treeview:
 			self.tree.column(col_nos[i], stretch=col_stretch[i], width=w)
 
 class ClipAddGui:
-	def __init__(self,top_frame,backend):
-		self.backend = backend
-		self.db = backend.db
+	def __init__(self,top_frame,parent):
+		self.parent = parent
+		self.backend = parent.backend
+		self.db = self.backend.db
+		self.clip_queue = []
+		self.clip_to_id = {}
+		self.fname_to_clip = {}
 
 		self.root = top_frame
+		self.root.title('import wizard')
 		self.tree = Treeview(self.root,select_mode='browse',enabled_cols=[0,2])
+		self.tree.tree.bind('<Double-1>',self.activate_clip)
 		self.menubar = tk.Menu(self.root)
 		self.menubar.add_command(label="add folder",command=self.add_folder)
 		self.root.config(menu=self.menubar)
 
 	def add_folder(self):
 		ask_fun = tkfd.askdirectory
-		foldername = ask_fun(parent=self.root,title='Add Folder', mustexist=True)
+		foldername = ask_fun(parent=self.root,title='add folder', mustexist=True)
+		new_clips = []
 		if foldername:
-			print(foldername)
+			for item in os.listdir(foldername):
+				full_path = os.path.join(foldername,item)
+				if not os.path.isdir(full_path):
+					if full_path.lower().endswith(C.SUPPORTED_FILETYPES):
+						new_clips += [full_path]
+		for c in new_clips:
+			new_clip = clip.Clip(c,'0')
+			self.db.init_a_clip(new_clip)
+			self.clip_queue += [new_clip]
+			self.add_clip_to_list(new_clip)
+
+	def add_clip_to_list(self,clip):
+		self.fname_to_clip[clip.f_name] = clip
+		self.clip_to_id[clip] = self.tree.tree.insert('','end',text=clip.name,
+			values=[clip.str_tags(),clip.f_name,'clip'])
+
+	def activate_clip(self,event):
+		what_clip = self.parent.get_clip_from_click(event)
+		if what_clip is None: return
+		print(what_clip)
+		if what_clip in self.fname_to_clip:
+			actual_clip = self.fname_to_clip[what_clip]
+			self.backend.select_clip(actual_clip,0)
+
 
 
 
 if __name__ == '__main__':
-	dayta = database.Database()
-	root = tk.Tk()
-	root.title('lib_org')
-	test_lib_org = LibraryOrgGui(root,dayta)
-	root.mainloop()
-	# print(dayta.file_ops.last_save)
+	print('no')
 

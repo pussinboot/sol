@@ -24,6 +24,16 @@ class Database:
 		self.clips = {}
 		self.searcher = ClipSearch(self.clips)
 		self.search = self.searcher.search
+		self.def_params = {
+		'play_direction' : 'p',
+		'playback_speed' : 1.0,
+		'cue_points'     : [None] * C.NO_Q,
+		'loop_points'    : [None] * C.NO_LP,
+		'loop_selection' : -1,
+		'loop_on'        : False,
+		'duration'		 : 0.0,
+		'control_sens'	 : 1.0
+		}
 
 	@property
 	def last_search(self):
@@ -73,21 +83,14 @@ class Database:
 	# 		tor += child.__str__(prefix+"\t")
 	# 	return tor
 
-	
-
 	def add_clip(self,clip):
+		self.init_a_clip(clip)		
+		self.clips[clip.f_name] = clip
+		self.searcher.add_clip(clip)
+
+	def init_a_clip(self,clip):
 		# add default params (if they dont exist)
-		def_params = {
-		'play_direction' : 'p',
-		'playback_speed' : 1.0,
-		'cue_points'     : [None] * C.NO_Q,
-		'loop_points'    : [None] * C.NO_LP,
-		'loop_selection' : -1,
-		'loop_on'        : False,
-		'duration'		 : 0.0,
-		'control_sens'	 : 1.0
-		}
-		for p, p_val in def_params.items():
+		for p, p_val in self.def_params.items():
 			if p not in clip.params:
 				clip.params[p] = p_val
 		# create durations, this is pretty quick even with hundreds of clips
@@ -101,9 +104,6 @@ class Database:
 				clip.params['duration'] = float(file_info.decode('utf-8'))
 			except:
 				pass
-				
-		self.clips[clip.f_name] = clip
-		self.searcher.add_clip(clip)
 
 	def add_a_clip(self,clip):
 		# for when adding a single clip

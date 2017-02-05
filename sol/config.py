@@ -27,3 +27,6 @@ RESOLUME_SAVE_DIR = "{0}{1}".format(os.environ['USERPROFILE'],"\\Documents\\Reso
 
 # control hacks
 DEFAULT_SENSITIVITY = 0.005 # how many seconds the default control adjustment is
+
+# filetypes
+SUPPORTED_FILETYPES = ('.mov', '.webm', '.mp4','.avi')
