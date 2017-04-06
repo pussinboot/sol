@@ -3,8 +3,17 @@ import tkinter.filedialog as tkfd
 from tkinter import ttk
 
 import os
-from database import database, clip
-import config as C
+
+if __name__ == '__main__' and __package__ is None:
+	import sys
+	from pathlib import Path
+	root = str(Path(__file__).resolve().parents[3])
+	sys.path.append(root)
+	from sol.database import database, clip
+	from sol import config as C
+else:
+	from database import database, clip
+	import config as C
 
 class LibraryOrgGui:
 	def __init__(self,root, parent):
