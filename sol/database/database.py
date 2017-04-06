@@ -11,8 +11,10 @@ try:
 except: # stupid for testing
 	from clip import Clip
 	from clip import ClipCollection
-
-import config as C
+try:
+	import config as C
+except:
+	from sol import config as C
 
 class Database:
 	"""

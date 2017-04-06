@@ -8,7 +8,7 @@ import tkinter as tk
 import tkinter.filedialog as tkfd
 
 from magi import Magi
-from lib_org import LibraryOrgGui
+from gui.lib_org import lib_org
 
 from gui.tk_gui import clip_control
 from gui.tk_gui import clip_collections
@@ -164,7 +164,7 @@ class MainGui:
 		self.clip_controls[0].resize(575)
 		# we want different library browser sry
 		self.clip_conts.search_frame.pack_forget()
-		self.lib_org = LibraryOrgGui(tk.Toplevel(),self)
+		self.lib_org = lib_org.LibraryOrgGui(tk.Toplevel(),self)
 
 
 	def exit_lib_org_gui(self,*args):
