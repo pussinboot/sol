@@ -16,7 +16,10 @@ if __name__ == '__main__' and __package__ is None:
 else:
 	from .clip import Clip
 	from .clip import ClipCollection
-	import config as C
+	try:
+		import config as C
+	except:
+		from sol import config as C
 
 
 class Database:
