@@ -15,11 +15,14 @@ from gui.tk_gui import clip_collections
 from gui.tk_gui import midi_config
 
 from mt_gui import MTGui
+
 BASE_ADDR = '/modvj/sol_mt/'
 
-IP_ADDR_SERV = "192.168.2.36" # home
+# IP_ADDR_SERV = "192.168.2.36" # home
 # IP_ADDR_SERV = "192.168.29.157" # laptop
 # IP_ADDR_SERV = "192.168.0.123" # appt
+IP_ADDR_SERV = None
+
 
 IP_ADDR_RECV = "192.168.0.156" 
 # IP_ADDR_RECV = "127.0.0.1" 
@@ -214,9 +217,10 @@ class MainGui:
 		self.filemenu.add_command(label="save as",command=self.save_as)
 		# load
 		self.filemenu.add_command(label="load",command=self.load)
-		# load from resomeme
-		self.filemenu.add_command(label="load resolume comp",command=self.load_resolume)
-		self.filemenu.add_command(label="add folder (isadora)",command=self.load_isadora)
+		if C.MODEL_SELECT == 'RESOLUME':
+			self.filemenu.add_command(label="load resolume comp",command=self.load_resolume)
+		elif C.MODEL_SELECT == 'ISADORA':
+			self.filemenu.add_command(label="add folder (isadora)",command=self.load_isadora)
 		# create thumbnails
 		self.filemenu.add_command(label="generate thumbs",command=self.gen_thumbs)
 		# launch midi configurator
@@ -335,7 +339,7 @@ if __name__ == '__main__':
 	# testgui.clip_controls[0].resize(575)
 	# testgui.configure_midi()
 	# testgui.enter_clip_org_gui()
-	testgui.enter_lib_org_gui()
+	# testgui.enter_lib_org_gui()
 	root.mainloop()
 	# testgui.magi.gui = None
 	# testgui.magi.fun_store['/magi/layer0/playback/clear']('',True)
