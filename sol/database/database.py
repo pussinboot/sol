@@ -2,19 +2,22 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from bisect import bisect_left
 
-import os.path
+import os
 import subprocess
 
-try:
+if __name__ == '__main__' and __package__ is None:
+	import sys
+	from pathlib import Path
+	root_path = str(Path(__file__).resolve().parents[2])
+	sys.path.append(root_path)
+	from sol import config as C
+	from sol.database.clip import Clip
+	from sol.database.clip import ClipCollection
+else:
 	from .clip import Clip
 	from .clip import ClipCollection
-except: # stupid for testing
-	from clip import Clip
-	from clip import ClipCollection
-try:
 	import config as C
-except:
-	from sol import config as C
+
 
 class Database:
 	"""
@@ -64,18 +67,14 @@ class Database:
 			hierarchy.add_clip(clip_n_c[1])
 		tor = []
 		def traverse(node):
+			# print(node)
 			if node.f_or_f == 'clip':
 				return [('clip',node.name,node.data)]
 			else:
-				if len(node.children) > 1:
-					tor = [('folder',node.name,node.data)]
-					for child in node.children:
-						tor += traverse(child)
-					return tor
-				elif len(node.children) == 1:
-					return traverse(node.children[0])
-				else:
-					return # shouldn't happe
+				tor = [('folder',node.name,node.data)]
+				for child in node.children:
+					tor += traverse(child)
+				return tor
 
 		tor += traverse(hierarchy.root_node)
 		return tor
@@ -444,9 +443,10 @@ class FileHierarchy:
 			cur_node = self.root_node
 		if tail is None:
 			tail = self.splitpath(clip.f_name)
-			# special fix for me because i put files into folder based on file extension
-			if 'dxv' in tail:
-				del tail[tail.index('dxv')]
+			# allows you to ignore subfolders you don't want cluttering db
+			tail = self.check_ignore(tail)
+			# if 'dxv' in tail:
+			# 	del tail[tail.index('dxv')]
 		head = tail[0]
 		# we've reached the filename (guaranteed to be unique i swear)
 		if len(tail) == 1:
@@ -468,6 +468,9 @@ class FileHierarchy:
 		return self.splitpath(head, maxdepth - 1) + [tail] \
 			if maxdepth and head and head != path \
 			else [ head or tail ]
+
+	def check_ignore(self,path_list):
+		return [p for p in path_list if p not in C.IGNORED_DIRS]
 
 if __name__ == '__main__':
 	testdb = Database()

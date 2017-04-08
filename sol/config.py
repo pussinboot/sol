@@ -30,3 +30,6 @@ DEFAULT_SENSITIVITY = 0.005 # how many seconds the default control adjustment is
 
 # filetypes
 SUPPORTED_FILETYPES = ('.mov', '.webm', '.mp4','.avi')
+
+# ignored directory names
+IGNORED_DIRS = ['dxv']
