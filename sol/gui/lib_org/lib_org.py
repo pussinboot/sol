@@ -7,21 +7,37 @@ import os
 if __name__ == '__main__' and __package__ is None:
 	import sys
 	from pathlib import Path
-	root = str(Path(__file__).resolve().parents[3])
-	sys.path.append(root)
+	root_path = str(Path(__file__).resolve().parents[3])
+	sys.path.append(root_path)
 	from sol.database import database, clip
 	from sol import config as C
+	from sol.inputs import osc
+
 else:
 	from database import database, clip
 	import config as C
+	from inputs import osc
+
 
 class LibraryOrgGui:
-	def __init__(self,root, parent):
+	def __init__(self,root,parent,standalone=False):
 		# class data
 		self.parent = parent # the big gui
 		self.backend = self.parent.magi
 		self.db = self.backend.db
 		self.add_clip_gui = None
+		self.osc_client = None
+
+		if standalone or C.MODEL_SELECT != 'MPV':
+			from subprocess import Popen
+			Popen(['node','C:\\code\\vj\\memepv\\wiz_kid.js'])
+			self.osc_client = osc.OscClient(port=6999)
+			def clip_selector(clip,layer=0):
+				self.osc_client.build_n_send('/0/load',clip.f_name)
+			self.select_clip = clip_selector
+		else:
+			self.select_clip = self.backend.select_clip
+
 
 		# tk
 		self.root = root
@@ -39,7 +55,7 @@ class LibraryOrgGui:
 		self.menubar.add_command(label="import wizard",command=self.create_clip_gui)
 		# self.filemenu.add_command(label="load",command=self.load)
 		self.root.config(menu=self.menubar)
-		self.root.geometry('750x400+50+700')
+		self.root.geometry('750x400+50+100')
 
 
 
@@ -61,9 +77,14 @@ class LibraryOrgGui:
 		self.mainframe.pack(fill=tk.BOTH,expand=tk.Y)
 		self.init_tree()
 
+	def quit(self,*args):
+		if self.osc_client is not None:
+			self.osc_client.build_n_send('/0/quit', True)
+		self.root.destroy()
+
 	def close(self,*args):
 		self.parent.root.call('wm', 'attributes', '.', '-topmost', str(int(self.parent.on_top_toggle.get())))
-		self.root.destroy()
+		self.quit()
 
 	def get_clip_from_click(self,event):
 		if event.state != 8: # sure numlock is on for 8 to work...
@@ -192,11 +213,35 @@ class ClipAddGui:
 		print(what_clip)
 		if what_clip in self.fname_to_clip:
 			actual_clip = self.fname_to_clip[what_clip]
-			self.backend.select_clip(actual_clip,0)
+			self.parent.select_clip(actual_clip,0)
 
 
+class FakeParent():
+	def __init__(self,root):
+		self.root = root
+		self.magi = self
+		self.db = database.Database()
+		self.on_top_toggle = tk.BooleanVar()
+		self.on_top_toggle.set(False)
+		self.child = None
+
+
+	def exit_lib_org_gui(self,*args):
+		if self.child is not None:
+			self.child.close()
+		self.root.destroy()
+
+
+		
 
 
 if __name__ == '__main__':
-	print('no')
+	rootwin = tk.Tk()
+	rootwin.title('lib_org')
+	rootwin.withdraw()
 
+	fp = FakeParent(rootwin)
+	saliborg = LibraryOrgGui(tk.Toplevel(),fp,standalone=True)
+	fp.child = saliborg
+
+	rootwin.mainloop()
