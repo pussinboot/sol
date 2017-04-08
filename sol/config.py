@@ -1,7 +1,6 @@
 # defines global variables
 import os
 
-
 DEBUG = True 
 
 # actual magi params
