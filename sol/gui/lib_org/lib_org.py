@@ -28,9 +28,9 @@ class LibraryOrgGui:
 		self.add_clip_gui = None
 		self.osc_client = None
 
-		if standalone or C.MODEL_SELECT != 'MPV':
+		if standalone or C.MODEL_SELECT != 'MPV' and os.path.exists(C.MEMEPV_SCRIPT_PATH):
 			from subprocess import Popen
-			Popen(['node','C:\\code\\vj\\memepv\\wiz_kid.js'])
+			Popen(['node',C.MEMEPV_SCRIPT_PATH, '1', '6999'])
 			self.osc_client = osc.OscClient(port=6999)
 			def clip_selector(clip,layer=0):
 				self.osc_client.build_n_send('/0/load',clip.f_name)
@@ -224,6 +224,9 @@ class FakeParent():
 		self.on_top_toggle = tk.BooleanVar()
 		self.on_top_toggle.set(False)
 		self.child = None
+		def do_nothing(*args):
+			pass
+		self.select_clip = do_nothing 
 
 
 	def exit_lib_org_gui(self,*args):
