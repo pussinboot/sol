@@ -185,7 +185,6 @@ class Treeview:
 		self.tree.selection_set(to_select)
 		self.tree.focus(to_select)
 
-
 	def go_home(self,event=None):
 		self.last_bot_loc = 0.0
 		to_select = self.tree.get_children()[0]
@@ -222,6 +221,20 @@ class Treeview:
 			self.select_top()
 			self.last_bot_loc = new_bot
 
+	def delet_selected(self,event=None):
+		cur_item = self.tree.selection()
+		if len(cur_item) < 1:
+			return
+		cur_item = cur_item[0]
+		sel_clip = self.tree.item(cur_item)
+		next_item = self.tree.next(cur_item)
+		if next_item=='':
+			next_item = self.tree.prev(cur_item)
+		self.tree.delete(cur_item)
+		self.tree.selection_set(next_item)
+		self.tree.focus(next_item)
+		return sel_clip
+
 
 class ClipAddGui:
 	def __init__(self,top_frame,parent):
@@ -231,7 +244,6 @@ class ClipAddGui:
 		# this is garbage and needs to be redone
 		# so i can keep track of which clip is selected 
 		self.clip_queue = []
-		self.clip_to_id = {}
 		self.fname_to_clip = {}
 
 		self.root = top_frame
@@ -241,8 +253,6 @@ class ClipAddGui:
 		self.tree.tree.bind('<Double-1>',self.activate_click)
 		self.tree.tree.bind('<Return>',self.activate_return)
 
-
-
 		self.menubar = tk.Menu(self.root)
 		self.menubar.add_command(label="add folder",command=self.add_folder_prompt)
 		self.menubar.add_command(label="import to library",command=self.do_import)
@@ -250,9 +260,16 @@ class ClipAddGui:
 		self.menubar.add_command(label="quit", command=self.quit)
 		self.root.bind_all("<Control-q>",self.quit)
 		self.root.config(menu=self.menubar)
-
 		self.root.protocol("WM_DELETE_WINDOW",self.quit)		
 
+		y_pad = 5
+		self.bottom_bar = tk.Frame(self.root)
+		self.bottom_bar.pack(side=tk.BOTTOM,anchor=tk.S,fill=tk.X,expand=True)
+		self.root.bind_all("<Delete>",self.delete_clip)
+		self.delete_but = tk.Button(self.bottom_bar,text='x',pady=y_pad,command=self.delete_clip)
+
+		for but in [self.delete_but]:
+			but.pack(side=tk.LEFT)
 
 	def add_folder_prompt(self):
 		ask_fun = tkfd.askdirectory
@@ -280,7 +297,6 @@ class ClipAddGui:
 
 	def clear_all(self):
 		self.clip_queue = []
-		self.clip_to_id = {}
 		self.fname_to_clip = {}
 		self.tree.clear()
 
@@ -292,8 +308,9 @@ class ClipAddGui:
 
 	def add_clip_to_list(self,clip):
 		self.fname_to_clip[clip.f_name] = clip
-		self.clip_to_id[clip] = self.tree.tree.insert('','end',text=clip.name,
-			values=[clip.str_tags(),clip.f_name,'clip'])
+		self.tree.tree.insert('','end',text=clip.name,
+					values=[clip.str_tags(),clip.f_name,'clip'])
+
 
 	def activate_click(self,event):
 		what_clip = self.parent.get_clip_from_click(event)
@@ -316,6 +333,16 @@ class ClipAddGui:
 		if clip in self.fname_to_clip:
 			actual_clip = self.fname_to_clip[clip]
 			self.parent.select_clip(actual_clip,0)
+
+	def delete_clip(self,event=None):
+		clip = self.tree.delet_selected()
+		if clip is not None:
+			clip_fname = clip['values'][1]
+			if clip_fname in self.fname_to_clip:
+				to_del = self.fname_to_clip[clip_fname]
+				del self.clip_queue[self.clip_queue.index(to_del)]
+				del self.fname_to_clip[clip_fname]
+
 
 
 
