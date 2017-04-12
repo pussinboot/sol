@@ -920,7 +920,7 @@ class Magi:
 		if self.loader is None:
 			from models.isadorabl import loader
 			self.loader = loader.IsadoraLoader(len(self.db.clips.values()))
-		print('adding folder', path)
+		if C.DEBUG: print('adding folder', path)
 		self.loader.add_folder(path)
 		new_clips = self.loader.get_clips()
 		for clip_rep in new_clips:
@@ -969,7 +969,7 @@ class Magi:
 
 
 	def gen_thumbs(self,desired_width=None,n_frames=1):
-		print('starting to generate thumbs')
+		if C.DEBUG: print('starting to generate thumbs')
 		if desired_width is not None:
 			self.thumb_maker.update_desired_width(desired_width)
 		for clip in self.db.clips.values():
