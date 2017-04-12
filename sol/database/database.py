@@ -229,16 +229,19 @@ class FileOPs:
 	"""
 	def __init__(self):
 		self.last_save = None
-		if not os.path.exists('./savedata/'): 
-			os.makedirs('./savedata/')
-		elif os.path.exists('./savedata/last_save'):
-			with open('./savedata/last_save') as last_save:
+		folder_name = '{}/'.format(C.SAVEDATA_DIR)
+		last_save_fname = '{}/last_save'.format(C.SAVEDATA_DIR)
+		if not os.path.exists(folder_name): 
+			os.makedirs(folder_name)
+		elif os.path.exists(last_save_fname):
+			with open(last_save_fname) as last_save:
 				self.last_save = last_save.read()
 
 
 	def update_last_save(self,filename):
 		self.last_save = filename
-		with open('./savedata/last_save','w') as last_save:
+		last_save_fname = '{}/last_save'.format(C.SAVEDATA_DIR)
+		with open(last_save_fname,'w') as last_save:
 			last_save.write(self.last_save)
 
 	def save_settings(self,settings,name="settings"):
@@ -390,15 +393,16 @@ class FileOPs:
 			new_key = ET.SubElement(midi_root,'midi_key')
 			for j in range(len(parts)):
 				new_key.set(parts[j],big_midi_list[i][j])
-
-		with open('./savedata/midi.xml','wt') as f:
+		midi_fname = '{}/midi.xml'.format(C.SAVEDATA_DIR)
+		with open(midi_fname,'wt') as f:
 			f.write(self.pretty_print(midi_root))
 
 	def load_midi(self):
-		if not os.path.exists('./savedata/midi.xml'): return
+		midi_fname = '{}/midi.xml'.format(C.SAVEDATA_DIR)
+		if not os.path.exists(midi_fname): return
 		tor = []
 		try:
-			root = ET.parse('./savedata/midi.xml').getroot()
+			root = ET.parse(midi_fname).getroot()
 			for midi_key_el in root.findall('midi_key'):
 				key = midi_key_el.get('key')
 				key_type = midi_key_el.get('type')

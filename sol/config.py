@@ -1,6 +1,11 @@
 # defines global variables
 import os
 
+##### ##### ####  #####
+  #   #   # #   # #   #
+  #   ##### ####  #####
+
+# give this a gui and save these things to a .ini
 DEBUG = True 
 
 # actual magi params
@@ -19,7 +24,7 @@ NO_FRAMES = 5
 
 # model selection
 # options are RESOLUME, MPV, ISADORA
-MODEL_SELECT = 'MPV'
+MODEL_SELECT = 'RESOLUME'
 
 # resomeme
 RESOLUME_SAVE_DIR = "{0}{1}".format(os.environ['USERPROFILE'],"\\Documents\\Resolume Arena 5\\compositions")
@@ -36,4 +41,6 @@ DEFAULT_SENSITIVITY = 0.005 # how many seconds the default control adjustment is
 SUPPORTED_FILETYPES = ('.mov', '.webm', '.mp4','.avi')
 
 # ignored directory names
-IGNORED_DIRS = ['dxv']
+IGNORED_DIRS = ['dxv','C:\\','C:/','VJ']
+
+SAVEDATA_DIR = './savedata'
