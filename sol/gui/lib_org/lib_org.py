@@ -60,6 +60,7 @@ class LibraryOrgGui:
 
 
 
+
 		# try:
 		# 	fio = self.db.file_ops
 		# 	# parse the xml into an element tree
@@ -102,7 +103,10 @@ class LibraryOrgGui:
 		return clip_fname
 
 	def create_clip_gui(self):
-		self.add_clip_gui = ClipAddGui(tk.Toplevel(),self)
+		if self.add_clip_gui is None:
+			self.add_clip_gui = ClipAddGui(tk.Toplevel(),self)
+		else:
+			self.add_clip_gui.root.lift()
 
 
 	def init_tree(self):
@@ -141,6 +145,14 @@ class Treeview:
 		self.frame = containing_frame
 		self.inner_frame = tk.Frame(self.frame)
 
+		self.frame.bind('<KeyRelease-Home>',self.go_home)
+		self.frame.bind('<Prior>',self.page_up)
+		self.last_bot_loc = 0
+		self.row_offset = 35
+		self.frame.bind('<KeyRelease-Next>',self.page_down)
+		self.frame.bind('<KeyRelease-End>',self.go_end)
+
+
 		self.tree = ttk.Treeview(self.inner_frame,selectmode=select_mode, height = 20,\
 			columns = ('tags','fpath'))
 		self.tree.pack(side=tk.LEFT,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)#.grid(row=2,column=1,sticky=tk.N) 
@@ -165,6 +177,52 @@ class Treeview:
 			self.tree.heading(col_nos[i], text=h)
 			self.tree.column(col_nos[i], stretch=col_stretch[i], width=w)
 
+	def clear(self):
+		self.tree.delete(*self.tree.get_children())
+
+	def select_top(self,*args):
+		to_select = self.tree.identify_row(self.row_offset) # height offset from row titles
+		self.tree.selection_set(to_select)
+		self.tree.focus(to_select)
+
+
+	def go_home(self,event=None):
+		self.last_bot_loc = 0.0
+		to_select = self.tree.get_children()[0]
+		self.tree.selection_set(to_select)
+		self.tree.focus(to_select)
+		self.tree.yview_moveto(0)
+
+
+	def go_end(self,event=None):
+		self.last_bot_loc = 1.0
+		to_select = self.tree.get_children()[-1]
+		self.tree.selection_set(to_select)
+		self.tree.focus(to_select)
+		self.tree.yview_moveto(1)
+
+	def page_up(self,event):
+		new_bot = self.ysb.get()[1]
+		if new_bot == self.last_bot_loc == 1.0:
+			def do_me_later():
+				self.last_bot_loc = 0.99
+				self.tree.yview_moveto(1)
+				self.frame.after(15, self.select_top)
+			self.frame.after(10, do_me_later)
+		else:
+			self.select_top()
+			self.last_bot_loc = self.ysb.get()[1]
+
+
+	def page_down(self,event):
+		new_bot = self.ysb.get()[1]
+		if new_bot == self.last_bot_loc == 1.0:
+			self.go_end()
+		else:
+			self.select_top()
+			self.last_bot_loc = new_bot
+
+
 class ClipAddGui:
 	def __init__(self,top_frame,parent):
 		self.parent = parent
@@ -178,19 +236,34 @@ class ClipAddGui:
 
 		self.root = top_frame
 		self.root.title('import wizard')
+
 		self.tree = Treeview(self.root,select_mode='browse',enabled_cols=[0,2])
-		self.tree.tree.bind('<Double-1>',self.activate_clip)
+		self.tree.tree.bind('<Double-1>',self.activate_click)
+		self.tree.tree.bind('<Return>',self.activate_return)
+
+
+
 		self.menubar = tk.Menu(self.root)
-		self.menubar.add_command(label="add folder",command=self.add_folder)
+		self.menubar.add_command(label="add folder",command=self.add_folder_prompt)
+		self.menubar.add_command(label="import to library",command=self.do_import)
+		self.menubar.add_command(label="clear",command=self.clear_all)
+		self.menubar.add_command(label="quit", command=self.quit)
+		self.root.bind_all("<Control-q>",self.quit)
 		self.root.config(menu=self.menubar)
 
-	def add_folder(self):
+		self.root.protocol("WM_DELETE_WINDOW",self.quit)		
+
+
+	def add_folder_prompt(self):
 		ask_fun = tkfd.askdirectory
 		foldername = ask_fun(parent=self.root,title='add folder', mustexist=True)
+		self.add_folder(foldername)
+
+	def add_folder(self,folder):
 		new_clips = []
-		if foldername:
-			for item in os.listdir(foldername):
-				full_path = os.path.join(foldername,item)
+		if folder:
+			for item in os.listdir(folder):
+				full_path = os.path.join(folder,item)
 				if not os.path.isdir(full_path):
 					if full_path.lower().endswith(C.SUPPORTED_FILETYPES):
 						new_clips += [full_path]
@@ -202,18 +275,48 @@ class ClipAddGui:
 			self.clip_queue += [new_clip]
 			self.add_clip_to_list(new_clip)
 
+	def do_import(self):
+		self.clear_all()
+
+	def clear_all(self):
+		self.clip_queue = []
+		self.clip_to_id = {}
+		self.fname_to_clip = {}
+		self.tree.clear()
+
+	def quit(self,*args):
+		self.root.destroy()
+		self.parent.add_clip_gui = None
+		self.parent.parent.exit_lib_org_gui() # quit whole thing (((TEMP)))
+
+
 	def add_clip_to_list(self,clip):
 		self.fname_to_clip[clip.f_name] = clip
 		self.clip_to_id[clip] = self.tree.tree.insert('','end',text=clip.name,
 			values=[clip.str_tags(),clip.f_name,'clip'])
 
-	def activate_clip(self,event):
+	def activate_click(self,event):
 		what_clip = self.parent.get_clip_from_click(event)
-		if what_clip is None: return
-		print(what_clip)
-		if what_clip in self.fname_to_clip:
-			actual_clip = self.fname_to_clip[what_clip]
+		self.activate_clip(what_clip)
+
+	def activate_return(self,event):
+		cur_item = event.widget.selection()
+		if len(cur_item) < 1:
+			return
+		cur_item = cur_item[0]
+		sel_clip = self.tree.tree.item(cur_item)
+		try:
+			self.activate_clip(sel_clip['values'][1])
+		except:
+			pass
+
+	def activate_clip(self,clip=None):
+		if clip is None: return
+		print(clip)
+		if clip in self.fname_to_clip:
+			actual_clip = self.fname_to_clip[clip]
 			self.parent.select_clip(actual_clip,0)
+
 
 
 class FakeParent():
@@ -246,5 +349,6 @@ if __name__ == '__main__':
 	fp = FakeParent(rootwin)
 	saliborg = LibraryOrgGui(tk.Toplevel(),fp,standalone=True)
 	fp.child = saliborg
-
+	saliborg.create_clip_gui()
+	saliborg.add_clip_gui.add_folder('C:/VJ/zzz_incoming_clips')
 	rootwin.mainloop()
