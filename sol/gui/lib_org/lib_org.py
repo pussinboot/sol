@@ -53,9 +53,16 @@ class LibraryOrgGui:
 		# menubar
 		self.menubar = tk.Menu(self.root)
 		self.filemenu = tk.Menu(self.menubar,tearoff=0) # file menu
+
 		self.filemenu.add_command(label="save",command=self.save_prompt)
+		self.root.bind("<Control-s>",lambda e:self.save_prompt())
+
 		self.filemenu.add_command(label="save as",command=self.save_as_prompt)
+		self.root.bind("<Control-Shift-KeyPress-S>",lambda e:self.save_as_prompt())
+
 		self.filemenu.add_command(label="load",command=self.load_prompt)
+		self.root.bind("<Control-o>",lambda e:self.load_prompt())
+
 		self.menubar.add_cascade(label='file',menu=self.filemenu)
 		self.menubar.add_command(label="import wizard",command=self.create_clip_gui)
 		# self.filemenu.add_command(label="load",command=self.load)
@@ -190,6 +197,7 @@ class LibraryOrgGui:
 		self.init_tree()
 
 	def rename_dialog(self,clip):
+
 		pass
 
 class Treeview:
