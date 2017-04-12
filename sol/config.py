@@ -25,7 +25,9 @@ MODEL_SELECT = 'MPV'
 RESOLUME_SAVE_DIR = "{0}{1}".format(os.environ['USERPROFILE'],"\\Documents\\Resolume Arena 5\\compositions")
 
 # memepv
-MEMEPV_SCRIPT_PATH = 'C:\\code\\vj\\memepv\\test.js'
+# MEMEPV_SCRIPT_PATH = 'C:\\code\\vj\\memepv\\test.js'
+MEMEPV_SCRIPT_PATH = 'C:\\Users\\leo\\Documents\\Code\\vj\\memepv\\test.js'
+
 
 # control hacks
 DEFAULT_SENSITIVITY = 0.005 # how many seconds the default control adjustment is
