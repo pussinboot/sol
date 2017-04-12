@@ -133,6 +133,10 @@ class LibraryOrgGui:
 				tags = self.db.clips[fname].str_tags()
 				self.tree.tree.insert(cur_folder, 'end', text=files[i][1],values=[tags,fname,'clip'])
 
+	def refresh(self):
+		self.tree.clear()
+		self.init_tree()
+
 class Treeview:
 	def __init__(self,containing_frame,select_mode='extended',enabled_cols=[0,1,2]):
 		# select_mode can also be 'browse' if you want only 1 to be possible to select
@@ -258,17 +262,20 @@ class ClipAddGui:
 		self.menubar.add_command(label="import to library",command=self.do_import)
 		self.menubar.add_command(label="clear",command=self.clear_all)
 		self.menubar.add_command(label="quit", command=self.quit)
-		self.root.bind_all("<Control-q>",self.quit)
+		self.root.bind("<Control-q>",self.quit)
 		self.root.config(menu=self.menubar)
 		self.root.protocol("WM_DELETE_WINDOW",self.quit)		
 
 		y_pad = 5
 		self.bottom_bar = tk.Frame(self.root)
 		self.bottom_bar.pack(side=tk.BOTTOM,anchor=tk.S,fill=tk.X,expand=True)
-		self.root.bind_all("<Delete>",self.delete_clip)
-		self.delete_but = tk.Button(self.bottom_bar,text='x',pady=y_pad,command=self.delete_clip)
+		self.root.bind("<Delete>",self.delete_clip)
+		self.delete_but = tk.Button(self.bottom_bar,text='(DEL)ete',pady=y_pad,command=self.delete_clip)
+		self.rename_but = tk.Button(self.bottom_bar,text='(R)ename',pady=y_pad,command=lambda: print('not done yet'))
+		self.tag_but = tk.Button(self.bottom_bar,text='(T)ag',pady=y_pad,command=lambda: print('not done yet'))
+		self.move_but = tk.Button(self.bottom_bar,text='(M)ove',pady=y_pad,command=lambda: print('not done yet'))
 
-		for but in [self.delete_but]:
+		for but in [self.delete_but,self.rename_but, self.tag_but, self.move_but, ]:
 			but.pack(side=tk.LEFT)
 
 	def add_folder_prompt(self):
@@ -293,6 +300,10 @@ class ClipAddGui:
 			self.add_clip_to_list(new_clip)
 
 	def do_import(self):
+		for clip in self.clip_queue:
+			self.db.add_clip(clip)
+		self.db.searcher.refresh()
+		self.parent.refresh()
 		self.clear_all()
 
 	def clear_all(self):
