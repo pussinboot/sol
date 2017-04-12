@@ -27,6 +27,7 @@ class LibraryOrgGui:
 		self.db = self.backend.db
 		self.add_clip_gui = None
 		self.osc_client = None
+		self.clip_storage_dict = None
 
 		if standalone or C.MODEL_SELECT != 'MPV' and os.path.exists(C.MEMEPV_SCRIPT_PATH):
 			from subprocess import Popen
@@ -51,26 +52,18 @@ class LibraryOrgGui:
 		self.root.lift()
 		# menubar
 		self.menubar = tk.Menu(self.root)
-		# self.filemenu = tk.Menu(self.menubar,tearoff=0) # file menu
+		self.filemenu = tk.Menu(self.menubar,tearoff=0) # file menu
+		self.filemenu.add_command(label="save",command=self.save_prompt)
+		self.filemenu.add_command(label="save as",command=self.save_as_prompt)
+		self.filemenu.add_command(label="load",command=self.load_prompt)
+		self.menubar.add_cascade(label='file',menu=self.filemenu)
 		self.menubar.add_command(label="import wizard",command=self.create_clip_gui)
 		# self.filemenu.add_command(label="load",command=self.load)
 		self.root.config(menu=self.menubar)
 		self.root.geometry('750x400+50+100')
 
-
-
-
-
-		# try:
-		# 	fio = self.db.file_ops
-		# 	# parse the xml into an element tree
-		# 	parsed_xml = fio.create_load(fio.last_save)
-		# 	# load the database 
-		# 	self.db.clear()
-		# 	fio.load_database(parsed_xml.find('database'),self.db)
-		# 	print('successfully loaded',fio.last_save)
-		# except:
-		# 	print('failed to load')
+		if standalone:
+			self.load()
 		self.folders = {}
 
 		# pack everything
@@ -78,9 +71,68 @@ class LibraryOrgGui:
 		self.mainframe.pack(fill=tk.BOTH,expand=tk.Y)
 		self.init_tree()
 
+	def save_prompt(self,filename = None):
+		if filename is None:
+			filename = self.db.file_ops.last_save
+		if filename is None: 
+			self.save_as_prompt()
+		else:
+			self.save(filename)
+
+	def save_as_prompt(self):
+		ask_fun = tkfd.asksaveasfilename
+		filename = ask_fun(parent=self.root,title='Save as..',initialdir=C.SAVEDATA_DIR)
+		if filename:
+			self.save(filename)
+
+	def load_prompt(self,*args):
+		ask_fun = tkfd.askopenfilename
+		filename = ask_fun(parent=self.root,title='Load',initialdir=C.SAVEDATA_DIR)
+		if filename:
+			if self.load(filename):
+				self.refresh()
+
+	def save(self,filename=None):
+		fio = self.db.file_ops
+		if filename is None:
+			filename = fio.last_save
+		if filename is None:
+			return
+		root = fio.create_save('magi')
+		root.append(self.clip_storage_dict)
+		root.append(fio.save_database(self.db))
+		save_data =  fio.pretty_print(root)
+		with open(filename,'wt') as f:
+			f.write(save_data)
+		fio.update_last_save(filename)
+		if C.DEBUG: print('successfully saved',filename)
+
+	def load(self,filename=None):
+		try:
+			fio = self.db.file_ops
+			if filename is None:
+				filename = fio.last_save
+			# if filename is None:
+			# 	filename = 'C:/Users/leo/Documents/Code/sol/sol/savedata/lib_org_work.xml'
+			parsed_xml = fio.create_load(filename)
+			# load the database 
+			self.db.clear()
+			fio.load_database(parsed_xml.find('database'),self.db)
+			# save clip storage
+			self.clip_storage_dict = parsed_xml.find('clip_storage')
+			fio.update_last_save(filename)
+			if C.DEBUG: print('successfully loaded',fio.last_save)
+			return True
+		except:
+			if C.DEBUG: print('failed to load')
+			return False
+
 	def quit(self,*args):
 		if self.osc_client is not None:
 			self.osc_client.build_n_send('/0/quit', True)
+		# if standalone
+		if type(self.parent) == FakeParent: 
+			self.save()
 		self.root.destroy()
 
 	def close(self,*args):
@@ -136,6 +188,9 @@ class LibraryOrgGui:
 	def refresh(self):
 		self.tree.clear()
 		self.init_tree()
+
+	def rename_dialog(self,clip):
+		pass
 
 class Treeview:
 	def __init__(self,containing_frame,select_mode='extended',enabled_cols=[0,1,2]):
