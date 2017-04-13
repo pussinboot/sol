@@ -32,6 +32,7 @@ class LibraryOrgGui:
 		self.child_wins = {}
 		self.last_selected_clip = None
 		self.delayed_actions = []
+		self.all_folder_names = [] # all folders that contain clips
 
 		def perform_delayed_actions(clip):
 			self.last_selected_clip = clip
@@ -186,6 +187,15 @@ class LibraryOrgGui:
 			self.clip_storage_dict = parsed_xml.find('clip_storage')
 			fio.update_last_save(filename)
 			if C.DEBUG: print('successfully loaded',fio.last_save)
+			# update all folders
+			all_folders = []
+			hl = self.db.hierarchical_listing
+			for i in range(len(hl)-1):
+				if hl[i][0] == 'folder':
+					if hl[i+1][0] == 'clip':
+						all_folders.append(hl[i][1])
+			self.all_folder_names = all_folders
+
 			return True
 		except:
 			if C.DEBUG: print('failed to load')
