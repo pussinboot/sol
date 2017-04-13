@@ -877,7 +877,7 @@ class Magi:
 		return fio.pretty_print(root)
 
 	def save_to_file(self,filename):
-		with open(filename,'wt') as f:
+		with open(filename,'wb') as f:
 			f.write(self.generate_save_data())
 		self.db.file_ops.update_last_save(filename)
 		if C.DEBUG: print('successfully saved',filename)
