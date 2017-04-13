@@ -1,32 +1,16 @@
 #########################################
 ###         actual to-do list         ###
 #########################################
-- tags
-current position isn't set on start.. any way to query it?
-fft clip control
-	works as it used to, want to do 'bucketing' in future version
-		2 parts to this
-		1. select certain ranges of spectrum to focus on
-		2. when a beat comes into said 'bucket' 
-			instead of just jumping to its intensity as is done now
-			allow to jump to predefined 'cue' point
-		this will work just like a fx plugin
-		so that can save these extra cue points as params 
-fx plugins for new multitouch meme interface
-	every fx define what params it has
-		adds param to the gui
-		adds param memory to clips so can save/ set param presets per clip
-loop_lines 
-	- maybe change clip collection interface?
-		so that when switch between clip and loop select
-		it switches from the clip collections gui to showing 
-		loop lines (performance mode only?)
-menus -  switch interfaces, models(?)
-scratch
-	- slip mode (?)
-- loop off ?
-- param save
-org_gui - organize by parent folder? 
+
+consistent filenaming/paths
+
+MOVE FOLDERS
+
+TAGS
+
+config gui
+
+widths fixing
 
 #########################################
 ###         overview/features         ###
