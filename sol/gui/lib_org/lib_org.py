@@ -51,13 +51,21 @@ class LibraryOrgGui:
 				self.osc_client.build_n_send('/0/load',clip.f_name)
 				perform_delayed_actions(clip)
 
+			def clip_clearer(*args):
+				self.osc_client.build_n_send('/0/clear',1)
+				self.last_selected_clip = None
+
 		else:
 			self.last_selected_clip = self.backend.clip_storage.current_clips[0]
 			def clip_selector(clip,layer):
 				self.backend.select_clip(clip,layer)
 				perform_delayed_actions(clip)
+			def clip_clearer(*args):
+				self.backend.clear_clip(0)
+				self.last_selected_clip = None
 
 		self.select_clip = clip_selector
+		self.clear_clip = clip_clearer
 
 		# tk
 		self.root = root
@@ -68,6 +76,8 @@ class LibraryOrgGui:
 
 		self.tree.tree.bind('<Double-1>',self.activate_click)
 		self.tree.tree.bind('<Return>',self.activate_return)
+		self.tree.tree.bind('<Double-3>',self.clear_clip)
+
 
 		self.parent.root.call('wm', 'attributes', '.', '-topmost', '0')
 		self.root.protocol("WM_DELETE_WINDOW",self.parent.exit_lib_org_gui)		
@@ -116,6 +126,13 @@ class LibraryOrgGui:
 		self.mainframe.pack(fill=tk.BOTH,expand=tk.Y)
 		self.init_tree()
 
+	def be_safe(self):
+		for clip_action_pair in self.delayed_actions:
+			if clip_action_pair[0] == self.last_selected_clip:
+				self.clear_clip()
+			clip_action_pair[1]()
+		self.delayed_actions = []
+
 	def save_prompt(self,filename = None):
 		if filename is None:
 			filename = self.db.file_ops.last_save
@@ -143,6 +160,7 @@ class LibraryOrgGui:
 			filename = fio.last_save
 		if filename is None:
 			return
+		self.be_safe()
 		root = fio.create_save('magi')
 		root.append(self.clip_storage_dict)
 		root.append(fio.save_database(self.db))
@@ -153,6 +171,7 @@ class LibraryOrgGui:
 		if C.DEBUG: print('successfully saved',filename)
 
 	def load(self,filename=None):
+		self.be_safe()
 		try:
 			fio = self.db.file_ops
 			if filename is None:
@@ -173,6 +192,7 @@ class LibraryOrgGui:
 			return False
 
 	def quit(self,*args):
+		self.be_safe()
 		if self.osc_client is not None:
 			self.osc_client.build_n_send('/0/quit', True)
 		# if standalone
@@ -303,18 +323,17 @@ class LibraryOrgGui:
 		selected_row = self.tree.tree.selection()
 		selected_item = self.tree.tree.item(selected_row)
 		if selected_item['values'][2] == 'folder':
-			yes_no = tkmb.askyesno('delete','are you sure you want to delete this folder?',default='no')
+			yes_no = tkmb.askyesno('delete','are you sure you want to delete this folder?',
+				icon='warning',default='no')
 			if yes_no:
 				fnames_to_delet = self.tree.delet_all_children(selected_row)
 				for fn in fnames_to_delet:
-					self.delete_clip_fname(fn)
+					delete_clip_fname(fn)
 		else:
 			clip = self.tree.delet_selected_clip()
 			if clip is not None:
 				clip_fname = clip['values'][1]
-				self.delete_clip_fname(clip_fname)
-
-
+				delete_clip_fname(clip_fname)
 
 
 
@@ -562,6 +581,8 @@ class ClipAddGui:
 
 		self.tree = Treeview(self.root,self.root,select_mode='browse',enabled_cols=[0,2])
 		self.tree.tree.bind('<Double-1>',self.activate_click)
+		self.tree.tree.bind('<Double-3>',self.parent.clear_clip)
+
 		self.tree.tree.bind('<Return>',self.activate_return)
 
 		self.menubar = tk.Menu(self.root)
@@ -612,6 +633,7 @@ class ClipAddGui:
 			self.add_clip_to_list(new_clip)
 
 	def do_import(self):
+		self.parent.be_safe()
 		for clip in self.clip_queue:
 			self.db.add_clip(clip)
 		self.db.searcher.refresh()
@@ -626,6 +648,7 @@ class ClipAddGui:
 	def quit(self,*args):
 		self.root.destroy()
 		self.parent.add_clip_gui = None
+		self.parent.be_safe()
 		self.parent.parent.exit_lib_org_gui() # quit whole thing (((TEMP)))
 
 

@@ -34,7 +34,7 @@ class MemePV:
 		return ('/{}/load'.format(layer), clip.f_name)
 
 	def clear_clip(self,layer):
-		return ('/{}/load'.format(layer), 'blank.png')
+		return ('/{}/clear'.format(layer),1)
 
 	def set_playback_speed(self,layer,speed):
 		return ('/{}/speed'.format(layer), speed) # have to map 0 - 10.0 to 0 - 1.0
