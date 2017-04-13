@@ -1,4 +1,4 @@
-import xml.etree.ElementTree as ET
+from lxml import etree as ET
 from xml.dom import minidom
 from bisect import bisect_left
 
@@ -262,9 +262,9 @@ class FileOPs:
 		return settings
 
 	def pretty_print(self,el):
-		rough_string = ET.tostring(el, 'utf-8')
+		rough_string = ET.tostring(el)
 		reparsed = minidom.parseString(rough_string)
-		return reparsed.toprettyxml(indent="  ") # alternatively \t
+		return reparsed.toprettyxml(indent="  ",encoding="utf-8") # alternatively \t
 
 	def save_clip(self,clip):
 		clip_element = ET.Element('clip')
@@ -394,7 +394,7 @@ class FileOPs:
 			for j in range(len(parts)):
 				new_key.set(parts[j],big_midi_list[i][j])
 		midi_fname = '{}/midi.xml'.format(C.SAVEDATA_DIR)
-		with open(midi_fname,'wt') as f:
+		with open(midi_fname,'wb') as f:
 			f.write(self.pretty_print(midi_root))
 
 	def load_midi(self):
@@ -417,7 +417,8 @@ class FileOPs:
 		return ET.Element(name)
 
 	def create_load(self,filename):
-		tree = ET.parse(filename)
+		parser = ET.XMLParser(encoding="utf-8",remove_blank_text=True)
+		tree = ET.parse(filename,parser=parser)
 		root = tree.getroot()
 		return root
 
