@@ -162,14 +162,19 @@ class LibraryOrgGui:
 		if filename is None:
 			return
 		self.be_safe()
-		root = fio.create_save('magi')
-		root.append(self.clip_storage_dict)
-		root.append(fio.save_database(self.db))
-		save_data =  fio.pretty_print(root)
-		with open(filename,'wt') as f:
-			f.write(save_data)
-		fio.update_last_save(filename)
-		if C.DEBUG: print('successfully saved',filename)
+		try:
+			root = fio.create_save('magi')
+			root.append(self.clip_storage_dict)
+			root.append(fio.save_database(self.db))
+			save_data =  fio.pretty_print(root)
+			with open(filename,'wb') as f:
+				f.write(save_data)
+			fio.update_last_save(filename)
+			if C.DEBUG: print('successfully saved',filename)
+		except Exception as e:
+			if C.DEBUG: 
+				print(e)
+				print('failed to save',filename)
 
 	def load(self,filename=None):
 		self.be_safe()
@@ -188,18 +193,78 @@ class LibraryOrgGui:
 			fio.update_last_save(filename)
 			if C.DEBUG: print('successfully loaded',fio.last_save)
 			# update all folders
-			all_folders = []
-			hl = self.db.hierarchical_listing
-			for i in range(len(hl)-1):
-				if hl[i][0] == 'folder':
-					if hl[i+1][0] == 'clip':
-						all_folders.append(hl[i][1])
-			self.all_folder_names = all_folders
-
+			self.gen_all_folder_names()
 			return True
-		except:
-			if C.DEBUG: print('failed to load')
+		except Exception as e:
+			if C.DEBUG: 
+				print(e)
+				print('failed to load')
 			return False
+
+	def gen_all_folder_names(self):
+		self.all_folder_names = []
+		hl = self.db.hierarchical_listing
+		for i in range(len(hl)-1):
+			if hl[i][0] == 'folder':
+				if hl[i+1][0] == 'clip':
+					self.add_a_folder_name(os.path.split(hl[i+1][2])[0],hl[i][1])
+		if C.DEBUG: print(self.all_folder_names)
+
+	def add_a_folder_name(self,f_path,f_name=None):
+		if f_name is None:
+			f_name = os.path.split(f_path)[1]
+
+		just_fnames = [os.path.split(f)[1] for f, _ in self.all_folder_names]
+
+		if f_name in just_fnames:
+			# find all matches
+			indices = [i for i, f in enumerate(just_fnames) if f == f_name]
+
+			# find unique .. path
+			# first put all subfolders into a list of lists
+			split_paths = []
+			def gen_flist(f):
+				f_list = os.path.normpath(f).split(os.sep)
+				f_list = [p for p in f_list if p not in C.IGNORED_DIRS]
+				f_list.reverse()
+				return f_list
+
+			new_path_list = gen_flist(f_path)
+			split_paths.append(new_path_list)
+
+			min_len = len(new_path_list)
+
+			for i in indices:
+				f_list = gen_flist(self.all_folder_names[i][1])
+				split_paths.append(f_list)
+				min_len = min(min_len,len(f_list))
+
+			# now find first index that is unique
+			found_i = -1
+			for i in range(min_len):
+				check_subpaths = [fl[i] for fl in split_paths]
+				if len(check_subpaths) == len(set(check_subpaths)):
+					found_i = i
+					break
+
+			# now update the foldernames
+			for i in range(len(split_paths)):
+				if found_i > -1:
+					paths_to_join = split_paths[i][:found_i+1][::-1]
+					paths_to_join.insert(0,'..')
+				else:
+					paths_to_join = split_paths[i][::-1]
+
+				new_fname = os.sep.join(paths_to_join)
+
+				if i == 0:
+					# new folder
+					self.all_folder_names.append([new_fname,f_path])
+				else:
+					# old ones
+					self.all_folder_names[indices[i-1]][0] = new_fname
+		else:
+			self.all_folder_names.append([f_name,f_path])
 
 	def quit(self,*args):
 		self.be_safe()
@@ -418,7 +483,6 @@ class RenameWin(ChildWin):
 		self.text_entry.selection_range(0, tk.END)
 		self.text_entry.icursor(tk.END)
 
-
 	def ok(self,*args):
 		new_fname = self.fname_var.get()
 		if len(new_fname) == 0:
@@ -433,7 +497,15 @@ class RenameWin(ChildWin):
 
 	def close(self,*args):
 		super(RenameWin, self).close()
+
+class MoveWin(ChildWin):
+	def __init__(self, parent, clip, callback):
+		super(MoveWin, self).__init__(parent,'move',0.75,0.5)
+
+	def close(self,*args):
+		super(MoveWin, self).close()
 		
+
 
 class Treeview:
 	def __init__(self,containing_frame,bind_to,select_mode='extended',enabled_cols=[0,1,2]):
@@ -778,6 +850,6 @@ if __name__ == '__main__':
 	fp = FakeParent(rootwin)
 	saliborg = LibraryOrgGui(tk.Toplevel(takefocus=True),fp,standalone=True)
 	fp.child = saliborg
-	# saliborg.create_clip_gui()
-	# saliborg.add_clip_gui.add_folder('C:/VJ/zzz_incoming_clips')
+	saliborg.create_clip_gui()
+	saliborg.add_clip_gui.add_folder('C:/VJ/zzz_incoming_clips')
 	rootwin.mainloop()
