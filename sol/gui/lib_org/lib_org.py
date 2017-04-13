@@ -28,6 +28,19 @@ class LibraryOrgGui:
 		self.add_clip_gui = None
 		self.osc_client = None
 		self.clip_storage_dict = None
+		self.child_wins = {}
+		self.last_selected_clip = None
+		self.delayed_actions = []
+
+		def perform_delayed_actions(clip):
+			self.last_selected_clip = clip
+			new_delayed_actions = []
+			for clip_action_pair in self.delayed_actions:
+				if clip_action_pair[0] != clip:
+					clip_action_pair[1]()
+				else:
+					new_delayed_actions += [clip_action_pair]
+			self.delayed_actions = new_delayed_actions
 
 		if standalone or C.MODEL_SELECT != 'MPV' and os.path.exists(C.MEMEPV_SCRIPT_PATH):
 			from subprocess import Popen
@@ -35,10 +48,15 @@ class LibraryOrgGui:
 			self.osc_client = osc.OscClient(port=6999)
 			def clip_selector(clip,layer=0):
 				self.osc_client.build_n_send('/0/load',clip.f_name)
-			self.select_clip = clip_selector
-		else:
-			self.select_clip = self.backend.select_clip
+				perform_delayed_actions(clip)
 
+		else:
+			self.last_selected_clip = self.backend.clip_storage.current_clips[0]
+			def clip_selector(clip,layer):
+				self.backend.select_clip(clip,layer)
+				perform_delayed_actions(clip)
+
+		self.select_clip = clip_selector
 
 		# tk
 		self.root = root
@@ -50,6 +68,7 @@ class LibraryOrgGui:
 		self.parent.root.call('wm', 'attributes', '.', '-topmost', '0')
 		self.root.protocol("WM_DELETE_WINDOW",self.parent.exit_lib_org_gui)		
 		self.root.lift()
+		self.root.focus_force()
 		# menubar
 		self.menubar = tk.Menu(self.root)
 		self.filemenu = tk.Menu(self.menubar,tearoff=0) # file menu
@@ -163,9 +182,10 @@ class LibraryOrgGui:
 
 	def create_clip_gui(self):
 		if self.add_clip_gui is None:
-			self.add_clip_gui = ClipAddGui(tk.Toplevel(),self)
+			self.add_clip_gui = ClipAddGui(tk.Toplevel(takefocus=True),self)
 		else:
 			self.add_clip_gui.root.lift()
+			self.add_clip_gui.root.focus_force()
 
 
 	def init_tree(self):
@@ -196,9 +216,94 @@ class LibraryOrgGui:
 		self.tree.clear()
 		self.init_tree()
 
-	def rename_dialog(self,clip):
+	def rename_dialog(self,parent,clip):
+		rename_win = RenameWin(parent,clip)
 
-		pass
+
+class ChildWin:
+	def __init__(self,parent,dict_key,width_percent=0.8,height_percent=0.5):
+		self.parent = parent
+		self.dict_key = dict_key
+		if dict_key in self.parent.child_wins:
+			already_one = self.parent.child_wins[dict_key]
+			if already_one is not None:
+				already_one.close()
+
+		self.root_frame = tk.Toplevel(takefocus=True)
+		self.root_frame.title(dict_key)
+		self.root_frame.protocol("WM_DELETE_WINDOW",self.close)		
+
+		self.parent.child_wins[dict_key] = self
+		# this window is 80% width, & height_percent height
+		x,y = self.parent.root.winfo_x(), self.parent.root.winfo_y()
+		pw, ph =  self.parent.root.winfo_width(), self.parent.root.winfo_height()
+		w = int(width_percent * pw)
+		h = int(height_percent * ph)
+		x += (pw - w)//2
+		y += (ph - h)//2
+		self.root_frame.geometry("{}x{}+{}+{}".format(w,h,x,y))
+		self.root_frame.focus_force()
+
+	def close(self,*args):
+		self.root_frame.destroy()
+		self.parent.child_wins[self.dict_key] = None
+
+class RenameWin(ChildWin):
+	def __init__(self, parent, clip, callback):
+		super(RenameWin, self).__init__(parent,'rename',0.6,0.25)
+		self.clip = clip
+		self.callback = callback
+		self.fname_var = tk.StringVar()
+
+		self.entry_frame = tk.Frame(self.root_frame)
+		self.entry_frame.pack(side=tk.TOP,expand=True,fill=tk.X,anchor=tk.S)
+		self.bottom_frame = tk.Frame(self.root_frame)
+		self.bottom_frame.pack(side=tk.BOTTOM,expand=True,fill=tk.X,anchor='n')
+		self.button_frame = tk.Frame(self.bottom_frame)
+		self.button_frame.pack(anchor='center')
+
+		self.ok_but = tk.Button(self.button_frame,text='ok',command=self.ok)
+		self.ok_but.pack(side=tk.LEFT)
+		self.cancel_but = tk.Button(self.button_frame,text='cancel',command=self.cancel)
+		self.cancel_but.pack(side=tk.LEFT)
+		self.root_frame.bind('<Escape>',self.cancel)
+		self.root_frame.bind('<Return>',self.ok)
+
+		rest_of_path, start_f = os.path.split(self.clip.f_name)
+		dot_i = start_f.rfind('.')
+		self.start_name, ext = start_f[:dot_i], start_f[dot_i:]
+
+		self.fname_var.set(self.start_name)
+
+		self.text_entry = tk.Entry(self.entry_frame,textvariable=self.fname_var,
+						justify="right",relief="sunken",bd=3)
+		self.text_entry.pack(side=tk.LEFT,expand=True,fill=tk.X,anchor=tk.S)
+
+		ext_label = tk.Entry(self.entry_frame,
+						justify="left",relief="sunken",bd=3)
+		ext_label.insert(0,ext)
+		ext_label.pack(side=tk.LEFT,anchor=tk.S)
+		ext_label.config(state='disabled')
+
+		self.format_return = rest_of_path + '/{}' + ext
+
+		self.text_entry.focus()
+		self.text_entry.selection_range(0, tk.END)
+		self.text_entry.icursor(tk.END)
+
+
+	def ok(self,*args):
+		new_fname = self.fname_var.get()
+		if len(new_fname) == 0 or new_fname == self.start_name:
+			return
+		self.callback(self.clip,self.format_return.format(new_fname),new_fname)
+
+	def cancel(self,*args):
+		self.close()
+
+	def close(self,*args):
+		super(RenameWin, self).close()
+		
 
 class Treeview:
 	def __init__(self,containing_frame,select_mode='extended',enabled_cols=[0,1,2]):
@@ -312,6 +417,7 @@ class ClipAddGui:
 		# so i can keep track of which clip is selected 
 		self.clip_queue = []
 		self.fname_to_clip = {}
+		self.child_wins = self.parent.child_wins
 
 		self.root = top_frame
 		self.root.title('import wizard')
@@ -325,7 +431,7 @@ class ClipAddGui:
 		self.menubar.add_command(label="import to library",command=self.do_import)
 		self.menubar.add_command(label="clear",command=self.clear_all)
 		self.menubar.add_command(label="quit", command=self.quit)
-		self.root.bind("<Control-q>",self.quit)
+		self.root.bind_all("<Control-q>",self.quit) # temp
 		self.root.config(menu=self.menubar)
 		self.root.protocol("WM_DELETE_WINDOW",self.quit)		
 
@@ -334,12 +440,16 @@ class ClipAddGui:
 		self.bottom_bar.pack(side=tk.BOTTOM,anchor=tk.S,fill=tk.X,expand=True)
 		self.root.bind("<Delete>",self.delete_clip)
 		self.delete_but = tk.Button(self.bottom_bar,text='(DEL)ete',pady=y_pad,command=self.delete_clip)
-		self.rename_but = tk.Button(self.bottom_bar,text='(R)ename',pady=y_pad,command=lambda: print('not done yet'))
+		self.root.bind("r",self.rename_clip)
+		self.rename_but = tk.Button(self.bottom_bar,text='(R)ename',pady=y_pad,command=self.rename_clip)
 		self.tag_but = tk.Button(self.bottom_bar,text='(T)ag',pady=y_pad,command=lambda: print('not done yet'))
 		self.move_but = tk.Button(self.bottom_bar,text='(M)ove',pady=y_pad,command=lambda: print('not done yet'))
 
 		for but in [self.delete_but,self.rename_but, self.tag_but, self.move_but, ]:
 			but.pack(side=tk.LEFT)
+
+		self.root.lift()
+		self.root.focus_force()
 
 	def add_folder_prompt(self):
 		ask_fun = tkfd.askdirectory
@@ -350,7 +460,7 @@ class ClipAddGui:
 		new_clips = []
 		if folder:
 			for item in os.listdir(folder):
-				full_path = os.path.join(folder,item)
+				full_path = "{}/{}".format(folder,item)
 				if not os.path.isdir(full_path):
 					if full_path.lower().endswith(C.SUPPORTED_FILETYPES):
 						new_clips += [full_path]
@@ -417,8 +527,54 @@ class ClipAddGui:
 				del self.clip_queue[self.clip_queue.index(to_del)]
 				del self.fname_to_clip[clip_fname]
 
+	def gen_callback(self,item):
+		i = item
+		def gend_fun(clip,new_path,new_name):
+			hold_vals = self.tree.tree.item(i)['values']
+			old_path = hold_vals[1]
+			hold_vals[1] = new_path
 
+			# change row in the treeview
+			self.tree.tree.item(i,text=new_name)
+			self.tree.tree.item(i,values=hold_vals)
 
+			# update fname_to_clip..
+			if old_path in self.fname_to_clip:
+				del self.fname_to_clip[old_path]
+			self.fname_to_clip[new_path] = clip
+
+			def maybe_do_later():
+				if os.path.exists(old_path):
+					def rename_later():
+						try:
+							# actually rename the file?
+							os.rename(old_path,new_path)
+							# change clip's fname/name
+							clip.f_name = new_path
+							clip.name = new_name
+						except:
+							pass
+					self.parent.root.after(1000, rename_later)
+
+			if self.parent.last_selected_clip == clip:
+				self.parent.delayed_actions += [(clip,maybe_do_later)]
+			else:
+				maybe_do_later()
+
+		return gend_fun
+
+	def rename_clip(self,event=None):
+		cur_item = self.tree.tree.selection()
+		if len(cur_item) < 1:
+			return
+		cur_item = cur_item[0]
+		sel_clip = self.tree.tree.item(cur_item)
+		clip_fname = sel_clip['values'][1]
+		if clip_fname not in self.fname_to_clip:
+			return
+		actual_clip = self.fname_to_clip[clip_fname]
+		callback = self.gen_callback(cur_item)
+		RenameWin(self,actual_clip,callback)
 
 class FakeParent():
 	def __init__(self,root):
@@ -448,7 +604,7 @@ if __name__ == '__main__':
 	rootwin.withdraw()
 
 	fp = FakeParent(rootwin)
-	saliborg = LibraryOrgGui(tk.Toplevel(),fp,standalone=True)
+	saliborg = LibraryOrgGui(tk.Toplevel(takefocus=True),fp,standalone=True)
 	fp.child = saliborg
 	saliborg.create_clip_gui()
 	saliborg.add_clip_gui.add_folder('C:/VJ/zzz_incoming_clips')
