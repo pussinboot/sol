@@ -38,19 +38,11 @@ class LibraryOrgGui:
 		self.last_selected_clip = None
 
 		# class data
-		self.delayed_actions = []
-		self.all_folder_names = [] 
 		self.standalone = standalone
+		self.folders = {}
+		self.all_folder_names = [] 
+		self.delayed_actions = []
 
-		def perform_delayed_actions(clip):
-			self.last_selected_clip = clip
-			new_delayed_actions = []
-			for clip_action_pair in self.delayed_actions:
-				if clip_action_pair[0] != clip:
-					clip_action_pair[1]()
-				else:
-					new_delayed_actions += [clip_action_pair]
-			self.delayed_actions = new_delayed_actions
 
 		if standalone or C.MODEL_SELECT != 'MPV' and os.path.exists(C.MEMEPV_SCRIPT_PATH):
 			from subprocess import Popen
@@ -59,7 +51,7 @@ class LibraryOrgGui:
 
 			def clip_selector(clip,layer=0):
 				self.osc_client.build_n_send('/0/load',clip.f_name)
-				perform_delayed_actions(clip)
+				self.perform_delayed_actions(clip)
 
 			def clip_clearer(*args):
 				self.osc_client.build_n_send('/0/clear',1)
@@ -70,7 +62,7 @@ class LibraryOrgGui:
 
 			def clip_selector(clip,layer):
 				self.backend.select_clip(clip,layer)
-				perform_delayed_actions(clip)
+				self.perform_delayed_actions(clip)
 
 			def clip_clearer(*args):
 				self.backend.clear_clip(0)
@@ -82,28 +74,32 @@ class LibraryOrgGui:
 		###############
 		# SETUP THE GUI
 
+		# main window
 		self.root = root
 		self.root.title('lib org')
 		self.mainframe = tk.Frame(root,pady=0,padx=0)
-		self.tree_frame = tk.Frame(self.mainframe)
-		self.tree = Treeview(self.tree_frame,self.root)
-
-		self.tree.tree.bind('<Double-1>',self.activate_click)
-		self.tree.tree.bind('<Return>',self.activate_return)
-		self.tree.tree.bind('<Double-3>',self.clear_clip)
+		self.mainframe.pack(fill=tk.BOTH,expand=tk.Y)
 
 		self.parent.root.call('wm', 'attributes', '.', '-topmost', '0')
 		self.root.protocol("WM_DELETE_WINDOW",self.parent.exit_lib_org_gui)		
 		self.root.lift()
 		self.root.focus_force()
+
+		# treeview
+		self.tree_frame = tk.Frame(self.mainframe)
+		self.tree_frame.pack(side=tk.TOP,fill=tk.BOTH,expand=True)
+		self.tree = Treeview(self.tree_frame,self.root)
+		self.tree.tree.bind('<Double-1>',self.activate_clip)
+		self.tree.tree.bind('<Return>',self.activate_clip)
+		self.tree.tree.bind('<Double-3>',self.clear_clip)
+
 		# menubar
 		self.menubar = tk.Menu(self.root)
 		self.filemenu = tk.Menu(self.menubar,tearoff=0) # file menu
 
 		self.filemenu.add_command(label="save",command=self.save_prompt)
-		self.root.bind("<Control-s>",lambda e:self.save_prompt())
-
 		self.filemenu.add_command(label="save as",command=self.save_as_prompt)
+		self.root.bind("<Control-s>",lambda e:self.save_prompt())
 		self.root.bind("<Control-Shift-KeyPress-S>",lambda e:self.save_as_prompt())
 
 		self.filemenu.add_command(label="load",command=self.load_prompt)
@@ -119,25 +115,28 @@ class LibraryOrgGui:
 		y_pad = 5
 		self.bottom_bar = tk.Frame(self.root)
 		self.bottom_bar.pack(side=tk.BOTTOM,anchor=tk.S,fill=tk.X,expand=True)
-		self.root.bind("<Delete>",self.delete_prompt)
+
 		self.delete_but = tk.Button(self.bottom_bar,text='(DEL)ete',pady=y_pad,command=self.delete_prompt)
+		self.root.bind("<Delete>",self.delete_prompt)
+
+		self.rename_but = tk.Button(self.bottom_bar,text='(R)ename',pady=y_pad,command=self.rename_prompt)
 		self.root.bind("r",self.rename_prompt)
 		self.root.bind("<F2>",self.rename_prompt)
-		self.rename_but = tk.Button(self.bottom_bar,text='(R)ename',pady=y_pad,command=self.rename_prompt)
+
 		self.tag_but = tk.Button(self.bottom_bar,text='(T)ag',pady=y_pad,command=lambda: print('not done yet'))
+
 		self.move_but = tk.Button(self.bottom_bar,text='(M)ove',pady=y_pad,command=lambda: print('not done yet'))
+
 
 		for but in [self.delete_but,self.rename_but, self.tag_but, self.move_but, ]:
 			but.pack(side=tk.LEFT)
 
+		# LAST STEPS...
+
 		if standalone:
 			self.load()
-		self.folders = {}
-
-		# pack everything
-		self.tree_frame.pack(side=tk.TOP,fill=tk.BOTH,expand=True)
-		self.mainframe.pack(fill=tk.BOTH,expand=tk.Y)
 		self.init_tree()
+
 
 	def init_tree(self):
 		files = self.db.hierarchical_listing
@@ -225,7 +224,7 @@ class LibraryOrgGui:
 			if fname in self.db.clips:
 				self.db.remove_clip(self.db.clips[fname])
 
-		selected_row = self.tree.tree.selection()
+		selected_row = self.tree.tree.selection() # fix for multiple selection : )
 		selected_item = self.tree.tree.item(selected_row)
 		if selected_item['values'][2] == 'folder':
 			yes_no = tkmb.askyesno('delete','are you sure you want to delete this folder?',
@@ -308,6 +307,16 @@ class LibraryOrgGui:
 		else:
 			self.all_folder_names.append([f_name,f_path])
 
+	############
+	# CLIP STUFF
+
+	def activate_clip(self,event=None):
+		clip_fname = self.tree.get_selected_clip(event)
+		if clip_fname is None or len(clip_fname) < 1: return
+		print(clip_fname)
+		if clip_fname in self.db.clips:
+			self.select_clip(self.db.clips[clip_fname],0)
+
 	###########
 	# SAVE/LOAD
 
@@ -385,45 +394,6 @@ class LibraryOrgGui:
 				print('failed to load')
 			return False
 
-	############
-	# CLIP STUFF
-
-	def activate_clip(self,clip_fname=None):
-		if clip_fname is None or len(clip_fname) < 1: return
-		print(clip_fname)
-		if clip_fname in self.db.clips:
-			self.select_clip(self.db.clips[clip_fname],0)
-
-	def activate_click(self,event):
-		what_clip = self.get_clip_from_click(event)
-		self.activate_clip(what_clip)
-
-	def activate_return(self,event=None):
-		cur_item = self.tree.tree.selection()
-		if len(cur_item) < 1:
-			return
-		cur_item = cur_item[0]
-		sel_clip = self.tree.tree.item(cur_item)
-		try:
-			self.activate_clip(sel_clip['values'][1])
-		except:
-			pass
-
-	def get_clip_from_click(self,event):
-		if event.state != 8: # sure numlock is on for 8 to work...
-			if event.state != 0:
-				return
-		tv = event.widget
-		if tv.identify_row(event.y) not in tv.selection():
-			tv.selection_set(tv.identify_row(event.y))    
-		if not tv.selection():
-			return
-		item = tv.selection()[0]
-		if tv.item(item,"values")[-1] != 'clip':
-			return
-		clip_fname = tv.item(item,"values")[1]
-		return clip_fname
-
 	#####################
 	# MISC HELPER METHODS
 
@@ -443,6 +413,15 @@ class LibraryOrgGui:
 			self.save()
 		self.root.destroy()
 
+	def perform_delayed_actions(self,clip):
+		self.last_selected_clip = clip
+		new_delayed_actions = []
+		for clip_action_pair in self.delayed_actions:
+			if clip_action_pair[0] != clip:
+				clip_action_pair[1]()
+			else:
+				new_delayed_actions += [clip_action_pair]
+		self.delayed_actions = new_delayed_actions
 
 class ImportWizardGui:
 	def __init__(self,top_frame,parent):
@@ -459,10 +438,10 @@ class ImportWizardGui:
 		self.root.title('import wizard')
 
 		self.tree = Treeview(self.root,self.root,select_mode='browse',enabled_cols=[0,2])
-		self.tree.tree.bind('<Double-1>',self.activate_click)
+		self.tree.tree.bind('<Double-1>',self.activate_clip)
+		self.tree.tree.bind('<Return>',self.activate_clip)
 		self.tree.tree.bind('<Double-3>',self.parent.clear_clip)
 
-		self.tree.tree.bind('<Return>',self.activate_return)
 
 		self.menubar = tk.Menu(self.root)
 		self.menubar.add_command(label="add folder",command=self.add_folder_prompt)
@@ -531,26 +510,12 @@ class ImportWizardGui:
 	# MORE CLIPS FUN
 
 	def activate_clip(self,clip=None):
-		if clip is None: return
-		print(clip)
-		if clip in self.fname_to_clip:
-			actual_clip = self.fname_to_clip[clip]
+		clip_fname = self.tree.get_selected_clip(event)
+		if clip_fname is None or len(clip_fname) < 1: return
+		print(clip_fname)
+		if clip_fname in self.fname_to_clip:
+			actual_clip = self.fname_to_clip[clip_fname]
 			self.parent.select_clip(actual_clip,0)
-	
-	def activate_click(self,event):
-		what_clip = self.parent.get_clip_from_click(event)
-		self.activate_clip(what_clip)
-
-	def activate_return(self,event):
-		cur_item = event.widget.selection()
-		if len(cur_item) < 1:
-			return
-		cur_item = cur_item[0]
-		sel_clip = self.tree.tree.item(cur_item)
-		try:
-			self.activate_clip(sel_clip['values'][1])
-		except:
-			pass
 
 	##########
 	# DELETING
@@ -577,10 +542,10 @@ class ImportWizardGui:
 		if clip_fname not in self.fname_to_clip:
 			return
 		actual_clip = self.fname_to_clip[clip_fname]
-		callback = self.gen_callback(cur_item)
+		callback = self.gen_rename_callback(cur_item)
 		RenameWin(self,actual_clip,callback)
 
-	def gen_callback(self,item):
+	def gen_rename_callback(self,item):
 		i = item
 		def gend_fun(clip,new_path,new_name):
 			hold_vals = self.tree.tree.item(i)['values']
@@ -615,6 +580,13 @@ class ImportWizardGui:
 				maybe_do_later()
 
 		return gend_fun
+
+	##############
+	# MOVING
+
+	def move_clip(self,event=None):
+		pass
+
 
 	##############
 	# MISC HELPERS
