@@ -142,6 +142,57 @@ class Treeview:
 			self.tree.heading(col_nos[i], text=h)
 			self.tree.column(col_nos[i], stretch=col_stretch[i], width=w)
 
+	def get_selected_clip(self,event=None):
+		cur_item = self.tree.selection()
+		if len(cur_item) < 1:
+			return
+		cur_item = cur_item[0]
+		sel_clip = self.tree.item(cur_item)
+		try:
+			if sel_clip["values"][-1] != 'clip':
+				return
+			return sel_clip["values"][1]
+		except Exception as e:
+			print(e)
+			return
+
+
+	def delet_selected_clip(self,event=None):
+		cur_item = self.tree.selection()
+		if len(cur_item) < 1:
+			return
+		cur_item = cur_item[0]
+		sel_clip = self.tree.item(cur_item)
+		next_item = self.tree.next(cur_item)
+		if next_item=='':
+			next_item = self.tree.prev(cur_item)
+		self.tree.delete(cur_item)
+		self.tree.selection_set(next_item)
+		self.tree.focus(next_item)
+		return sel_clip
+
+	def delet_all_children(self,row_id):
+		def check_if_clip(item_id):
+			try:
+				return self.tree.item(item_id)['values'][2] == 'clip'
+			except:
+				return False
+
+		tor=[]
+
+		children = self.tree.get_children(row_id)
+		children = list(children)
+
+		while len(children) > 0:
+			c = children.pop()
+			if check_if_clip(c):
+				tor.append(self.tree.item(c)['values'][1])
+			else:
+				children.extend(list(self.tree.get_children(c)))
+
+		self.tree.delete(row_id)
+		return tor
+
 	def clear(self):
 		self.tree.delete(*self.tree.get_children())
 
@@ -191,7 +242,6 @@ class Treeview:
 			self.select_top()
 			self.last_bot_loc = self.ysb.get()[1]
 
-
 	def page_down(self,event):
 		new_bot = self.ysb.get()[1]
 		if new_bot == self.last_bot_loc == 1.0:
@@ -199,39 +249,3 @@ class Treeview:
 		else:
 			self.select_top()
 			self.last_bot_loc = new_bot
-
-	def delet_selected_clip(self,event=None):
-		cur_item = self.tree.selection()
-		if len(cur_item) < 1:
-			return
-		cur_item = cur_item[0]
-		sel_clip = self.tree.item(cur_item)
-		next_item = self.tree.next(cur_item)
-		if next_item=='':
-			next_item = self.tree.prev(cur_item)
-		self.tree.delete(cur_item)
-		self.tree.selection_set(next_item)
-		self.tree.focus(next_item)
-		return sel_clip
-
-	def delet_all_children(self,row_id):
-		def check_if_clip(item_id):
-			try:
-				return self.tree.item(item_id)['values'][2] == 'clip'
-			except:
-				return False
-
-		tor=[]
-
-		children = self.tree.get_children(row_id)
-		children = list(children)
-
-		while len(children) > 0:
-			c = children.pop()
-			if check_if_clip(c):
-				tor.append(self.tree.item(c)['values'][1])
-			else:
-				children.extend(list(self.tree.get_children(c)))
-
-		self.tree.delete(row_id)
-		return tor
