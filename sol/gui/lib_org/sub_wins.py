@@ -3,6 +3,8 @@ import tkinter.filedialog as tkfd
 import tkinter.messagebox as tkmb
 from tkinter import ttk
 
+import os
+
 class ChildWin:
 	def __init__(self,parent,dict_key,width_percent=0.8,height_percent=0.5):
 		self.parent = parent
@@ -145,23 +147,24 @@ class Treeview:
 	def get_selected_clip(self,event=None):
 		cur_item = self.tree.selection()
 		if len(cur_item) < 1:
-			return
+			return None, None
 		cur_item = cur_item[0]
 		sel_clip = self.tree.item(cur_item)
 		try:
 			if sel_clip["values"][-1] != 'clip':
-				return
-			return sel_clip["values"][1]
+				return None, None
+			return sel_clip["values"][1], cur_item
 		except Exception as e:
 			print(e)
-			return
+			return None, None
 
 
-	def delet_selected_clip(self,event=None):
-		cur_item = self.tree.selection()
-		if len(cur_item) < 1:
-			return
-		cur_item = cur_item[0]
+	def delet_selected_clip(self,cur_item=None):
+		if cur_item is None:
+			cur_item = self.tree.selection()
+			if len(cur_item) < 1:
+				return
+			cur_item = cur_item[0]
 		sel_clip = self.tree.item(cur_item)
 		next_item = self.tree.next(cur_item)
 		if next_item=='':

@@ -207,12 +207,12 @@ class LibraryOrgGui:
 
 			return gend_fun
 
-		selected_row = self.tree.tree.selection()
-		selected_item = self.tree.tree.item(selected_row)
-		if selected_item['values'][2] == 'clip':
-			clip_fname = selected_item['values'][1]
-			if clip_fname in self.db.clips:
-				rename_win = RenameWin(self,self.db.clips[clip_fname],gen_callback(selected_row))
+
+
+		clip_fname, row_id = self.tree.get_selected_clip()
+		if clip_fname is None or len(clip_fname) < 1: return
+		if clip_fname in self.db.clips:
+			rename_win = RenameWin(self,self.db.clips[clip_fname],gen_callback(row_id))
 
 
 	##########
@@ -220,24 +220,45 @@ class LibraryOrgGui:
 
 	def delete_prompt(self,event=None):
 
-		def delete_clip_fname(fname):
-			if fname in self.db.clips:
-				self.db.remove_clip(self.db.clips[fname])
+		selected_rows = self.tree.tree.selection() 
+		for sr in selected_rows:
+			check_break = self.delete_selected_row(sr)
+			if not check_break:
+				return
 
-		selected_row = self.tree.tree.selection() # fix for multiple selection : )
-		selected_item = self.tree.tree.item(selected_row)
+	def delete_selected_row(self,row_id):
+		try:
+			selected_item = self.tree.tree.item(row_id)
+		except: # if we deleted the folder earlier row_id wont exist anymore
+			return True
 		if selected_item['values'][2] == 'folder':
-			yes_no = tkmb.askyesno('delete','are you sure you want to delete this folder?',
+			find_folder = selected_item['text']
+			# get the full folder path
+			check_folders = [fp[0].split(os.sep)[-1] for fp in self.all_folder_names]
+			extra_string = find_folder
+			if find_folder in check_folders:
+				full_path = self.all_folder_names[check_folders.index(find_folder)][1]
+				extra_string += "\t({})".format(full_path)
+			yes_no = tkmb.askyesno('delete','are you sure you want to delete this folder\n{}?'.format(extra_string),
 				icon='warning',default='no')
 			if yes_no:
-				fnames_to_delet = self.tree.delet_all_children(selected_row)
+				fnames_to_delet = self.tree.delet_all_children(row_id)
 				for fn in fnames_to_delet:
-					delete_clip_fname(fn)
+					self.delete_clip_fname(fn)
+				return True
+			else:
+				return False
 		else:
-			clip = self.tree.delet_selected_clip()
+			clip = self.tree.delet_selected_clip(row_id)
 			if clip is not None:
 				clip_fname = clip['values'][1]
-				delete_clip_fname(clip_fname)
+				self.delete_clip_fname(clip_fname)
+		return True
+
+
+	def delete_clip_fname(self,fname):
+		if fname in self.db.clips:
+			self.db.remove_clip(self.db.clips[fname])
 
 	#########
 	# MOVING
@@ -311,7 +332,7 @@ class LibraryOrgGui:
 	# CLIP STUFF
 
 	def activate_clip(self,event=None):
-		clip_fname = self.tree.get_selected_clip(event)
+		clip_fname, _ = self.tree.get_selected_clip(event)
 		if clip_fname is None or len(clip_fname) < 1: return
 		print(clip_fname)
 		if clip_fname in self.db.clips:
@@ -509,8 +530,8 @@ class ImportWizardGui:
 	################
 	# MORE CLIPS FUN
 
-	def activate_clip(self,clip=None):
-		clip_fname = self.tree.get_selected_clip(event)
+	def activate_clip(self,event=None):
+		clip_fname, _ = self.tree.get_selected_clip(event)
 		if clip_fname is None or len(clip_fname) < 1: return
 		print(clip_fname)
 		if clip_fname in self.fname_to_clip:
@@ -533,16 +554,11 @@ class ImportWizardGui:
 	# RENAMING
 
 	def rename_clip(self,event=None):
-		cur_item = self.tree.tree.selection()
-		if len(cur_item) < 1:
-			return
-		cur_item = cur_item[0]
-		sel_clip = self.tree.tree.item(cur_item)
-		clip_fname = sel_clip['values'][1]
+		clip_fname, row_id = self.tree.get_selected_clip(event)
 		if clip_fname not in self.fname_to_clip:
 			return
 		actual_clip = self.fname_to_clip[clip_fname]
-		callback = self.gen_rename_callback(cur_item)
+		callback = self.gen_rename_callback(row_id)
 		RenameWin(self,actual_clip,callback)
 
 	def gen_rename_callback(self,item):
@@ -585,7 +601,10 @@ class ImportWizardGui:
 	# MOVING
 
 	def move_clip(self,event=None):
-		pass
+		clip_fname, row_id = self.tree.get_selected_clip(event)
+		if clip_fname not in self.fname_to_clip:
+			return
+		actual_clip = self.fname_to_clip[clip_fname]
 
 
 	##############
