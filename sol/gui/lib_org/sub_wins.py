@@ -29,6 +29,28 @@ class ChildWin:
 		self.root_frame.geometry("{}x{}+{}+{}".format(w,h,x,y))
 		self.root_frame.focus_force()
 
+	def setup_ok_cancel(self,bot_or_top=False):
+		anchor_opt = 'n'
+		if bot_or_top:
+			anchor_opt = 's'
+		self.bottom_frame = tk.Frame(self.root_frame)
+		self.bottom_frame.pack(side=tk.BOTTOM,expand=(not bot_or_top),fill=tk.X,anchor=anchor_opt)
+		self.button_frame = tk.Frame(self.bottom_frame)
+		self.button_frame.pack(anchor='center')
+
+		self.ok_but = tk.Button(self.button_frame,text='ok',command=self.ok)
+		self.ok_but.pack(side=tk.LEFT)
+		self.cancel_but = tk.Button(self.button_frame,text='cancel',command=self.cancel)
+		self.cancel_but.pack(side=tk.LEFT)
+		self.root_frame.bind('<Escape>',self.cancel)
+		self.root_frame.bind('<Return>',self.ok)
+
+	def ok(self,*args):
+		pass
+
+	def cancel(self,*args):
+		self.close()
+
 	def close(self,*args):
 		self.root_frame.destroy()
 		self.parent.child_wins[self.dict_key] = None
@@ -40,19 +62,11 @@ class RenameWin(ChildWin):
 		self.callback = callback
 		self.fname_var = tk.StringVar()
 
+		self.setup_ok_cancel()
+
 		self.entry_frame = tk.Frame(self.root_frame)
 		self.entry_frame.pack(side=tk.TOP,expand=True,fill=tk.X,anchor=tk.S)
-		self.bottom_frame = tk.Frame(self.root_frame)
-		self.bottom_frame.pack(side=tk.BOTTOM,expand=True,fill=tk.X,anchor='n')
-		self.button_frame = tk.Frame(self.bottom_frame)
-		self.button_frame.pack(anchor='center')
 
-		self.ok_but = tk.Button(self.button_frame,text='ok',command=self.ok)
-		self.ok_but.pack(side=tk.LEFT)
-		self.cancel_but = tk.Button(self.button_frame,text='cancel',command=self.cancel)
-		self.cancel_but.pack(side=tk.LEFT)
-		self.root_frame.bind('<Escape>',self.cancel)
-		self.root_frame.bind('<Return>',self.ok)
 
 		rest_of_path, start_f = os.path.split(self.clip.f_name)
 		dot_i = start_f.rfind('.')
@@ -85,8 +99,7 @@ class RenameWin(ChildWin):
 		self.callback(self.clip,self.format_return.format(new_fname),new_fname)
 		self.close()
 
-	def cancel(self,*args):
-		self.close()
+
 
 	def close(self,*args):
 		super(RenameWin, self).close()
@@ -94,9 +107,200 @@ class RenameWin(ChildWin):
 class MoveWin(ChildWin):
 	def __init__(self, parent, clip, callback):
 		super(MoveWin, self).__init__(parent,'move',0.75,0.5)
+		self.clip = clip
+		self.callback = callback
+		self.top_frame = tk.Frame(self.root_frame)
+		self.top_frame.pack(side=tk.TOP,expand=True,fill=tk.BOTH,anchor=tk.S)
+		self.setup_ok_cancel(True)
+
+		# move clip to folder
+		# display current clip path
+		cur_path, f_name = os.path.split(clip.f_name)
+		filename_label = tk.Label(self.top_frame,text='clip: {}'.format(f_name))
+		filename_label.pack(side=tk.TOP)
+		current_path_label = tk.Label(self.top_frame,text='currently @ {}'.format(cur_path))
+		current_path_label.pack(side=tk.TOP)
+
+		# paginated list of all folders > subclass with checkbox/radio & keybindz
+		self.mc_frame = tk.Frame(self.top_frame,relief='ridge',bd=2)
+		self.mc_frame.pack(side=tk.TOP,expand=True,fill=tk.BOTH)
+		instruction_text = tk.Label(self.mc_frame,text='select a folder to move to')
+		instruction_text.pack(side=tk.TOP)
+
+		selection_texts = [fn[0] for fn in parent.all_folder_names]
+		self.mc_pane = MultiChoicePane(self,selection_texts,True)
+		# or add new folder
+
 
 	def close(self,*args):
 		super(MoveWin, self).close()
+
+
+class MultiChoicePane:
+	def __init__(self,parent_win,list_of_choices,radio_or_check=True):
+		# radio_or_check - True means radio
+		self.frame = parent_win.mc_frame
+
+		self.list_of_choices = list_of_choices
+		self.NUM_OPT_PER_PAGE = 6
+		self.opt_keybinds = ['qwerty','12345']
+		for c, kb in enumerate(self.opt_keybinds):
+			self.opt_keybinds[c] = kb[:self.NUM_OPT_PER_PAGE//2]
+		self.radio_or_check = radio_or_check
+
+		if self.radio_or_check:
+			self.actually_select_shortcut = self.select_radio_shortcut
+		else:
+			self.actually_select_shortcut = self.select_check_shortcut
+
+
+		self.top_frame = tk.Frame(self.frame) # good
+		self.top_frame.pack(side=tk.TOP,expand=True,fill=tk.BOTH)
+		self.bot_frame = tk.Frame(self.frame)
+		self.bot_frame.pack(side=tk.TOP,expand=False,fill=tk.X)
+
+		self.pane_selection_text = tk.StringVar()
+
+		self.sub_frames = []
+		self.sub_frame_i = 0
+
+		s = ttk.Style()
+		s.layout('Poop.TNotebook.Tab', []) # turn off tabs
+
+		self.notebook = ttk.Notebook(self.top_frame,style='Poop.TNotebook')
+		self.notebook.pack(expand=True,fill=tk.BOTH)
+
+		for choice in self.list_of_choices:
+			self.add_opt(choice)
+
+		# bottombar
+		self.go_l_but = tk.Button(self.bot_frame,text='<',command=lambda : self.switch_tab(-1))
+		parent_win.root_frame.bind(',',lambda e: self.switch_tab(-1))
+		self.go_r_but = tk.Button(self.bot_frame,text='>',command=lambda : self.switch_tab(+1))
+		parent_win.root_frame.bind('.',lambda e: self.switch_tab(+1))
+		self.bot_text = tk.Label(self.bot_frame,textvariable=self.pane_selection_text)
+		
+		self.go_r_but.pack(side=tk.RIGHT,anchor='e')
+		self.go_l_but.pack(side=tk.RIGHT,anchor='e')
+		self.bot_text.pack(side=tk.RIGHT,anchor='e')
+
+		self.update_tab_selection()
+
+		def gen_kb(r,c):
+			ind = 2*r + c
+			def curry(e):
+				self.select_shortcut(ind)
+			return curry
+
+		# keybinds
+		for c, kbl in enumerate(self.opt_keybinds):
+			for r, kb in enumerate(kbl):
+				# print(c,r,kb)
+				kbf = gen_kb(r,c)
+				parent_win.root_frame.bind(kb,kbf)
+
+
+	def add_opt(self,option_text):
+		if (len(self.sub_frames) > 0) and (self.sub_frames[-1].last_i + 1 < self.NUM_OPT_PER_PAGE):
+			selected_subpane = self.sub_frames[-1]
+		else:
+			# add a new subpane
+			selected_subpane = MultiChoiceSubPane(self.top_frame,self.radio_or_check,self.opt_keybinds)
+			self.sub_frames.append(selected_subpane)
+			self.notebook.add(selected_subpane.frame)
+		selected_subpane.add_but(option_text)
+
+	def switch_tab(self,diff):
+		self.sub_frame_i = (self.sub_frame_i + diff) % len(self.sub_frames)
+		self.notebook.select(self.sub_frame_i)
+		self.update_tab_selection()
+
+	def update_tab_selection(self):
+		if len(self.sub_frames) > 0:
+			bot_text = "{}/{}".format(self.sub_frame_i+1,len(self.sub_frames))
+			cs = 'active'
+		else:
+			bot_text = "-/-"
+			cs = 'disabled'
+
+		self.pane_selection_text.set(bot_text)
+		for b in [self.go_r_but,self.go_l_but,self.bot_text]:
+			b.config(state=cs)
+
+	def select_shortcut(self,i):
+		if len(self.sub_frames) == 0:
+			return
+		if i > self.sub_frames[self.sub_frame_i].last_i:
+			return
+		self.actually_select_shortcut(i)
+
+	def select_radio_shortcut(self,i):
+		self.sub_frames[self.sub_frame_i].chosen_value.set(i)
+
+	def select_check_shortcut(self,i):
+		str_var = self.sub_frames[self.sub_frame_i].chosen_values[i]
+		cv = str_var.get()
+		str_var.set(1-cv)
+
+
+class MultiChoiceSubPane:
+	def __init__(self, containing_frame,radio_or_check,kb_opts):
+		self.top_frame = containing_frame
+		self.radio_or_check = radio_or_check
+		self.last_i = -1
+
+		self.opt_keybinds = kb_opts
+
+		self.frame = tk.Frame(self.top_frame,relief='sunken',bd=2)
+		l_frame = tk.Frame(self.frame)
+		l_h_frame = tk.Frame(self.frame)
+		r_frame = tk.Frame(self.frame)
+		r_h_frame = tk.Frame(self.frame)
+		l_h_frame.pack(side=tk.LEFT,fill=tk.Y,expand=False)
+		l_frame.pack(side=tk.LEFT,fill=tk.BOTH,expand=True)
+		r_h_frame.pack(side=tk.LEFT,fill=tk.Y,expand=False)
+		r_frame.pack(side=tk.LEFT,fill=tk.BOTH,expand=True)
+		self.lr_frames = [l_frame,l_h_frame,r_frame,r_h_frame]
+
+		if self.radio_or_check:
+			self.add_but = self.add_radio_but
+			self.chosen_value = tk.IntVar()
+		else:
+			self.add_but = self.add_check_but
+			self.chosen_values = []
+
+
+
+
+	def add_radio_but(self,text_label):
+		self.last_i += 1
+		
+		col = 2*(self.last_i % 2)
+		shortcut_text = "({})".format(self.opt_keybinds[col//2][self.last_i//2].upper())
+
+		radio_but = tk.Radiobutton(self.lr_frames[col],text=text_label,
+					variable=self.chosen_value,value=self.last_i)
+		radio_but.pack(side=tk.TOP,anchor='w')
+
+		shortcut_label = tk.Label(self.lr_frames[col+1],text=shortcut_text,
+			pady=3) # god i hope this looks good not on my system lol
+		shortcut_label.pack(side=tk.TOP,anchor='e')
+
+
+	def add_check_but(self,text_label):
+		self.chosen_values.append(tk.IntVar())
+		self.last_i += 1
+		col = 2*(self.last_i % 2)
+		shortcut_text = "({})".format(self.opt_keybinds[col//2][self.last_i//2].upper())
+
+		check_but = tk.Checkbutton(self.lr_frames[col],text=text_label,
+					variable=self.chosen_values[self.last_i])
+		check_but.pack(side=tk.TOP,anchor='w')
+
+		shortcut_label = tk.Label(self.lr_frames[col+1],text=shortcut_text,
+			pady=3) # god i hope this looks good not on my system lol
+		shortcut_label.pack(side=tk.TOP,anchor='e')
+
 
 
 class Treeview:
