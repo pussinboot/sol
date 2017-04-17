@@ -257,6 +257,8 @@ class MainGui:
 	def quit(self):
 		self.save()
 		self.magi.stop()
+		if self.lib_org is not None:
+			self.lib_org.close()
 		self.root.destroy()
 
 	# funs required by magi
