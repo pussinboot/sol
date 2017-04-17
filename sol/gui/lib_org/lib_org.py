@@ -3,7 +3,10 @@ import tkinter.filedialog as tkfd
 import tkinter.messagebox as tkmb
 from tkinter import ttk
 
-from sub_wins import RenameWin, MoveWin, Treeview
+try:
+	from sub_wins import RenameWin, MoveWin, Treeview
+except:
+	from gui.lib_org.sub_wins import RenameWin, MoveWin, Treeview
 
 import os
 
@@ -449,6 +452,9 @@ class ImportWizardGui:
 		self.parent = parent
 		self.backend = parent.backend
 		self.db = self.backend.db
+
+		self.all_folder_names = self.parent.all_folder_names
+		self.add_a_folder_name = self.parent.add_a_folder_name
 		# this is garbage and needs to be redone
 		# so i can keep track of which clip is selected 
 		self.clip_queue = []
@@ -476,13 +482,19 @@ class ImportWizardGui:
 		y_pad = 5
 		self.bottom_bar = tk.Frame(self.root)
 		self.bottom_bar.pack(side=tk.BOTTOM,anchor=tk.S,fill=tk.X,expand=True)
+
 		self.root.bind("<Delete>",self.delete_clip)
 		self.delete_but = tk.Button(self.bottom_bar,text='(DEL)ete',pady=y_pad,command=self.delete_clip)
+
 		self.root.bind("r",self.rename_clip)
 		self.root.bind("<F2>",self.rename_clip)
 		self.rename_but = tk.Button(self.bottom_bar,text='(R)ename',pady=y_pad,command=self.rename_clip)
+
+		self.root.bind("t",lambda e: print('not done yet'))
 		self.tag_but = tk.Button(self.bottom_bar,text='(T)ag',pady=y_pad,command=lambda: print('not done yet'))
-		self.move_but = tk.Button(self.bottom_bar,text='(M)ove',pady=y_pad,command=lambda: print('not done yet'))
+
+		self.root.bind("m",self.move_clip)
+		self.move_but = tk.Button(self.bottom_bar,text='(M)ove',pady=y_pad,command=self.move_clip)
 
 		for but in [self.delete_but,self.rename_but, self.tag_but, self.move_but, ]:
 			but.pack(side=tk.LEFT)
@@ -605,6 +617,11 @@ class ImportWizardGui:
 		if clip_fname not in self.fname_to_clip:
 			return
 		actual_clip = self.fname_to_clip[clip_fname]
+		def fake_callback(clip,new_path):
+			print(clip)
+			print(new_path)
+
+		MoveWin(self,actual_clip,fake_callback)
 
 
 	##############
