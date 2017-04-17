@@ -84,7 +84,7 @@ class RenameWin(ChildWin):
 		ext_label.pack(side=tk.LEFT,anchor=tk.S)
 		ext_label.config(state='disabled')
 
-		self.format_return = rest_of_path + '/{}' + ext
+		self.format_return = rest_of_path + os.sep + '{}' + ext
 
 		self.text_entry.focus()
 		self.text_entry.selection_range(0, tk.END)
@@ -134,6 +134,7 @@ class MoveWin(ChildWin):
 		ask_fun = tkfd.askdirectory
 		new_folder_path = ask_fun(parent=self.root_frame,title='add folder', mustexist=True)
 		if new_folder_path:
+			new_folder_path = os.sep.join(new_folder_path.split('/'))
 			self.parent.add_a_folder_name(new_folder_path)
 			selection_texts = [fn[0] for fn in self.parent.all_folder_names]
 			self.mc_pane.reset(selection_texts)
