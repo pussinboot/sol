@@ -138,7 +138,14 @@ class MoveWin(ChildWin):
 			selection_texts = [fn[0] for fn in self.parent.all_folder_names]
 			self.mc_pane.reset(selection_texts)
 
-
+	def ok(self,*args):
+		current_i = self.mc_pane.sub_frame_i
+		ct = self.mc_pane.current_tab
+		if ct is None: return
+		add_i = ct.chosen_value.get()
+		actual_i = current_i * self.mc_pane.NUM_OPT_PER_PAGE + add_i
+		self.callback(self.clip,self.parent.all_folder_names[actual_i][1])
+		self.close()
 
 	def close(self,*args):
 		super(MoveWin, self).close()
@@ -227,7 +234,10 @@ class MultiChoicePane:
 		if not first_time:
 			self.switch_tab(len(self.sub_frames)-1)
 
-
+	@property
+	def current_tab(self):
+		if len(self.sub_frames) == 0: return None
+		return self.sub_frames[self.sub_frame_i]
 
 	def add_opt(self,option_text):
 		if (len(self.sub_frames) > 0) and (self.sub_frames[-1].last_i + 1 < self.NUM_OPT_PER_PAGE):
@@ -259,15 +269,15 @@ class MultiChoicePane:
 	def select_shortcut(self,i):
 		if len(self.sub_frames) == 0:
 			return
-		if i > self.sub_frames[self.sub_frame_i].last_i:
+		if i > self.current_tab.last_i:
 			return
 		self.actually_select_shortcut(i)
 
 	def select_radio_shortcut(self,i):
-		self.sub_frames[self.sub_frame_i].chosen_value.set(i)
+		self.current_tab.chosen_value.set(i)
 
 	def select_check_shortcut(self,i):
-		str_var = self.sub_frames[self.sub_frame_i].chosen_values[i]
+		str_var = self.current_tab.chosen_values[i]
 		cv = str_var.get()
 		str_var.set(1-cv)
 
