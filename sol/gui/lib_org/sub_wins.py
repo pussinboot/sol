@@ -19,7 +19,6 @@ class ChildWin:
 		self.root_frame.protocol("WM_DELETE_WINDOW",self.close)		
 
 		self.parent.child_wins[dict_key] = self
-		# this window is 80% width, & height_percent height
 		x,y = self.parent.root.winfo_x(), self.parent.root.winfo_y()
 		pw, ph =  self.parent.root.winfo_width(), self.parent.root.winfo_height()
 		w = int(width_percent * pw)
@@ -46,6 +45,7 @@ class ChildWin:
 		self.root_frame.bind('<Return>',self.ok)
 
 	def ok(self,*args):
+		# OVERRIDE ME PLS
 		pass
 
 	def cancel(self,*args):
@@ -99,19 +99,19 @@ class RenameWin(ChildWin):
 		self.callback(self.clip,self.format_return.format(new_fname),new_fname)
 		self.close()
 
-
-
 	def close(self,*args):
 		super(RenameWin, self).close()
 
 class MoveWin(ChildWin):
 	def __init__(self, parent, clip, callback):
 		super(MoveWin, self).__init__(parent,'move',0.75,0.5)
+		self.parent = parent
 		self.clip = clip
 		self.callback = callback
 		self.top_frame = tk.Frame(self.root_frame)
 		self.top_frame.pack(side=tk.TOP,expand=True,fill=tk.BOTH,anchor=tk.S)
 		self.setup_ok_cancel(True)
+		self.add_new_fun = self.add_new_folder # or can add new folder
 
 		# move clip to folder
 		# display current clip path
@@ -127,22 +127,31 @@ class MoveWin(ChildWin):
 		instruction_text = tk.Label(self.mc_frame,text='select a folder to move to')
 		instruction_text.pack(side=tk.TOP)
 
-		selection_texts = [fn[0] for fn in parent.all_folder_names]
+		selection_texts = [fn[0] for fn in self.parent.all_folder_names]
 		self.mc_pane = MultiChoicePane(self,selection_texts,True)
-		# or add new folder
+
+	def add_new_folder(self,*args):
+		ask_fun = tkfd.askdirectory
+		new_folder_path = ask_fun(parent=self.root_frame,title='add folder', mustexist=True)
+		if new_folder_path:
+			self.parent.add_a_folder_name(new_folder_path)
+			selection_texts = [fn[0] for fn in self.parent.all_folder_names]
+			self.mc_pane.reset(selection_texts)
+
 
 
 	def close(self,*args):
 		super(MoveWin, self).close()
 
 
+
 class MultiChoicePane:
 	def __init__(self,parent_win,list_of_choices,radio_or_check=True):
 		# radio_or_check - True means radio
-		self.frame = parent_win.mc_frame
+		self.parent = parent_win
+		self.frame = self.parent.mc_frame
 
-		self.list_of_choices = list_of_choices
-		self.NUM_OPT_PER_PAGE = 6
+		self.NUM_OPT_PER_PAGE = 8
 		self.opt_keybinds = ['qwerty','12345']
 		for c, kb in enumerate(self.opt_keybinds):
 			self.opt_keybinds[c] = kb[:self.NUM_OPT_PER_PAGE//2]
@@ -150,8 +159,11 @@ class MultiChoicePane:
 
 		if self.radio_or_check:
 			self.actually_select_shortcut = self.select_radio_shortcut
+			self.add_but_text = '(N)ew folder'
 		else:
 			self.actually_select_shortcut = self.select_check_shortcut
+			self.add_but_text = '(N)ew tag'
+
 
 
 		self.top_frame = tk.Frame(self.frame) # good
@@ -170,20 +182,23 @@ class MultiChoicePane:
 		self.notebook = ttk.Notebook(self.top_frame,style='Poop.TNotebook')
 		self.notebook.pack(expand=True,fill=tk.BOTH)
 
-		for choice in self.list_of_choices:
-			self.add_opt(choice)
-
 		# bottombar
 		self.go_l_but = tk.Button(self.bot_frame,text='<',command=lambda : self.switch_tab(-1))
-		parent_win.root_frame.bind(',',lambda e: self.switch_tab(-1))
+		self.parent.root_frame.bind(',',lambda e: self.switch_tab(-1))
 		self.go_r_but = tk.Button(self.bot_frame,text='>',command=lambda : self.switch_tab(+1))
-		parent_win.root_frame.bind('.',lambda e: self.switch_tab(+1))
+		self.parent.root_frame.bind('.',lambda e: self.switch_tab(+1))
 		self.bot_text = tk.Label(self.bot_frame,textvariable=self.pane_selection_text)
 		
+		self.add_new_but = tk.Button(self.bot_frame,text=self.add_but_text,command=self.parent.add_new_fun)
+		self.parent.root_frame.bind('n',self.parent.add_new_fun)
+
 		self.go_r_but.pack(side=tk.RIGHT,anchor='e')
 		self.go_l_but.pack(side=tk.RIGHT,anchor='e')
 		self.bot_text.pack(side=tk.RIGHT,anchor='e')
 
+		self.add_new_but.pack(side=tk.LEFT,anchor='w')
+
+		self.reset(list_of_choices,True)
 		self.update_tab_selection()
 
 		def gen_kb(r,c):
@@ -197,7 +212,21 @@ class MultiChoicePane:
 			for r, kb in enumerate(kbl):
 				# print(c,r,kb)
 				kbf = gen_kb(r,c)
-				parent_win.root_frame.bind(kb,kbf)
+				self.parent.root_frame.bind(kb,kbf)
+
+	def reset(self,new_option_names,first_time=False):
+		for _ in range(len(self.sub_frames)):
+			self.notebook.forget(0)
+		self.sub_frames = []
+		self.sub_frame_i = 0
+
+		self.list_of_choices = new_option_names
+		for choice in self.list_of_choices:
+			self.add_opt(choice)
+
+		if not first_time:
+			self.switch_tab(len(self.sub_frames)-1)
+
 
 
 	def add_opt(self,option_text):
