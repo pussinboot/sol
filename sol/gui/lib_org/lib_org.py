@@ -45,6 +45,7 @@ class LibraryOrgGui:
 		self.folders = {}
 		self.all_folder_names = [] 
 		self.delayed_actions = []
+		self.total_deleted_count = 0
 
 
 		if standalone or C.MODEL_SELECT != 'MPV' and os.path.exists(C.MEMEPV_SCRIPT_PATH):
@@ -239,15 +240,20 @@ class LibraryOrgGui:
 			# get the full folder path
 			check_folders = [fp[0].split(os.sep)[-1] for fp in self.all_folder_names]
 			extra_string = find_folder
+			found_i = -1
 			if find_folder in check_folders:
-				full_path = self.all_folder_names[check_folders.index(find_folder)][1]
+				found_i = check_folders.index(find_folder)
+				full_path = self.all_folder_names[found_i][1]
 				extra_string += "\t({})".format(full_path)
 			yes_no = tkmb.askyesno('delete','are you sure you want to delete this folder\n{}?'.format(extra_string),
 				icon='warning',default='no')
 			if yes_no:
 				fnames_to_delet = self.tree.delet_all_children(row_id)
+				if found_i >= 0:
+					del self.all_folder_names[found_i]
 				for fn in fnames_to_delet:
 					self.delete_clip_fname(fn)
+					self.total_deleted_count += 1
 				return True
 			else:
 				return False
@@ -256,6 +262,7 @@ class LibraryOrgGui:
 			if clip is not None:
 				clip_fname = clip['values'][1]
 				self.delete_clip_fname(clip_fname)
+				self.total_deleted_count += 1
 		return True
 
 
@@ -411,6 +418,7 @@ class LibraryOrgGui:
 			if C.DEBUG: print('successfully loaded',fio.last_save)
 			# update all folders
 			self.gen_all_folder_names()
+			self.total_deleted_count = 0
 			return True
 		except Exception as e:
 			if C.DEBUG: 
@@ -434,7 +442,15 @@ class LibraryOrgGui:
 		if self.osc_client is not None:
 			self.osc_client.build_n_send('/0/quit', True)
 		if self.standalone: 
-			self.save()
+			yes_no = True
+			if self.total_deleted_count > 10:
+				yes_no = tkmb.askyesno('overwrite save',
+					'you\'ve deleted a lot of clips ({} to be exact)\nare you sure you want to overwrite your savefile?'.format(self.total_deleted_count),
+					icon='warning',default='no')
+			if yes_no:
+				self.save()
+			else:
+				self.save_as_prompt()
 		self.root.destroy()
 
 	def perform_delayed_actions(self,clip):
