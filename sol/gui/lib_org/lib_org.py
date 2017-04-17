@@ -111,9 +111,11 @@ class LibraryOrgGui:
 
 		self.menubar.add_cascade(label='file',menu=self.filemenu)
 		self.menubar.add_command(label="import wizard",command=self.create_clip_gui)
+		self.menubar.add_command(label="refresh (f5)",command=self.init_tree)
+		self.root.bind("<F5>",self.init_tree)
 
 		self.root.config(menu=self.menubar)
-		self.root.geometry('750x400+50+100') # temp.....
+		self.root.geometry('750x500+50+100') # temp.....
 
 		# bottombar
 		y_pad = 5
@@ -129,7 +131,8 @@ class LibraryOrgGui:
 
 		self.tag_but = tk.Button(self.bottom_bar,text='(T)ag',pady=y_pad,command=lambda: print('not done yet'))
 
-		self.move_but = tk.Button(self.bottom_bar,text='(M)ove',pady=y_pad,command=lambda: print('not done yet'))
+		self.move_but = tk.Button(self.bottom_bar,text='(M)ove',pady=y_pad,command=self.move_prompt)
+		self.root.bind("m",self.move_prompt)
 
 
 		for but in [self.delete_but,self.rename_but, self.tag_but, self.move_but, ]:
@@ -142,7 +145,8 @@ class LibraryOrgGui:
 		self.init_tree()
 
 
-	def init_tree(self):
+	def init_tree(self,*args):
+		self.be_safe()
 		files = self.db.hierarchical_listing
 		# print(files)
 		for folder in self.folders.values():
@@ -338,6 +342,48 @@ class LibraryOrgGui:
 		else:
 			self.all_folder_names.append([f_name,f_path])
 
+	def move_prompt(self,*args):
+
+		def gen_move_callback(item):
+			i = item
+			def gend_fun(clip,new_path):
+				hold_vals = self.tree.tree.item(i)['values']
+				old_path = hold_vals[1]
+
+				new_fname = os.path.join(new_path,os.path.split(clip.f_name)[1])
+
+				hold_vals[1] = new_fname
+
+				# change row in the treeview
+				self.tree.tree.item(i,values=hold_vals)
+
+
+				def maybe_do_later():
+					if os.path.exists(old_path):
+						def rename_later():
+							try:
+								# actually rename the file?
+								os.rename(old_path,new_fname)
+								# change clip's fname/
+								self.db.move_clip(clip,new_fname)
+
+							except:
+								pass
+						self.parent.root.after(1000, rename_later)
+
+				if self.last_selected_clip == clip:
+					self.delayed_actions += [(clip,maybe_do_later)]
+				else:
+					maybe_do_later()
+
+			return gend_fun
+
+	
+		clip_fname, row_id = self.tree.get_selected_clip()
+		if clip_fname is None or len(clip_fname) < 1: return
+		if clip_fname in self.db.clips:
+			move_win = MoveWin(self,self.db.clips[clip_fname],gen_move_callback(row_id))
+
 	############
 	# CLIP STUFF
 
@@ -524,13 +570,14 @@ class ImportWizardGui:
 	def add_folder_prompt(self):
 		ask_fun = tkfd.askdirectory
 		foldername = ask_fun(parent=self.root,title='add folder', mustexist=True)
+		foldername = os.sep.join(foldername.split('/'))
 		self.add_folder(foldername)
 
 	def add_folder(self,folder):
 		new_clips = []
 		if folder:
 			for item in os.listdir(folder):
-				full_path = "{}/{}".format(folder,item)
+				full_path = os.path.join(folder,item)
 				if not os.path.isdir(full_path):
 					if full_path.lower().endswith(C.SUPPORTED_FILETYPES):
 						new_clips += [full_path]
@@ -719,5 +766,5 @@ if __name__ == '__main__':
 	saliborg = LibraryOrgGui(tk.Toplevel(takefocus=True),fp,standalone=True)
 	fp.child = saliborg
 	saliborg.create_clip_gui()
-	saliborg.add_clip_gui.add_folder('C:/VJ/zzz_incoming_clips')
+	saliborg.add_clip_gui.add_folder('C:\\VJ\\zzz_incoming_clips')
 	rootwin.mainloop()
