@@ -633,12 +633,47 @@ class ImportWizardGui:
 		if clip_fname not in self.fname_to_clip:
 			return
 		actual_clip = self.fname_to_clip[clip_fname]
-		def fake_callback(clip,new_path):
-			print(clip)
-			print(new_path)
 
-		MoveWin(self,actual_clip,fake_callback)
+		callback = self.gen_move_callback(row_id)
+		MoveWin(self,actual_clip,callback)
 
+	def gen_move_callback(self,item):
+		i = item
+		def gend_fun(clip,new_path):
+			hold_vals = self.tree.tree.item(i)['values']
+			old_path = hold_vals[1]
+
+			new_fname = os.path.join(new_path,os.path.split(clip.f_name)[1])
+
+			hold_vals[1] = new_fname
+
+			# change row in the treeview
+			self.tree.tree.item(i,values=hold_vals)
+
+			# update fname_to_clip..
+			if old_path in self.fname_to_clip:
+				del self.fname_to_clip[old_path]
+			self.fname_to_clip[new_fname] = clip
+
+			def maybe_do_later():
+				if os.path.exists(old_path):
+					def rename_later():
+						try:
+							# actually rename the file?
+							os.rename(old_path,new_fname)
+							# change clip's fname/name
+							clip.f_name = new_fname
+							clip.name = new_name
+						except:
+							pass
+					self.parent.root.after(1000, rename_later)
+
+			if self.parent.last_selected_clip == clip:
+				self.parent.delayed_actions += [(clip,maybe_do_later)]
+			else:
+				maybe_do_later()
+
+		return gend_fun
 
 	##############
 	# MISC HELPERS
