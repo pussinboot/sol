@@ -5,8 +5,6 @@
 consistent filenaming/paths
 
 TAGS
-lib org 
-	allow for tagging multiple clips?
 
 then make sure clip_collections' library adds a tag browser too 
 	-> will determine what search looks like 
