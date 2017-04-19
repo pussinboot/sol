@@ -63,6 +63,8 @@ class MainGui:
 		self.root.protocol("WM_DELETE_WINDOW",self.quit)	
 		# move it to nice place
 		# self.root	
+		self.root.resizable(0,0)
+
 
 
 	def start(self):

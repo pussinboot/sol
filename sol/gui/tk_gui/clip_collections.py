@@ -249,7 +249,7 @@ class CollectionsHolder:
 		self.frame = parent_frame
 		self.col_frame = tk.Frame(self.frame)
 		self.collections_frame = tk.Frame(self.col_frame)
-		self.collections_labels_frame = tk.Frame(self.col_frame)
+		self.collections_labels_frame = tk.Frame(self.col_frame,height=15,width=300)
 		self.search_frame = tk.Frame(self.frame)
 
 		self.library_browse = LibraryBrowser(self.backend,self.search_frame)
@@ -260,9 +260,10 @@ class CollectionsHolder:
 		self.setup_labels()
 
 		self.collections_frame.pack(side=tk.TOP)
-		self.collections_labels_frame.pack(side=tk.TOP,fill=tk.X)
-		self.col_frame.pack(side=tk.LEFT)
-		self.search_frame.pack(side=tk.LEFT,fill=tk.Y)
+		self.collections_labels_frame.pack(side=tk.TOP,fill=tk.Y,expand=True)
+		self.collections_labels_frame.pack_propagate(0)
+		self.col_frame.pack(side=tk.LEFT,expand=True)
+		self.search_frame.pack(side=tk.LEFT,fill=tk.Y,anchor='e')
 
 	def setup_labels(self):
 		self.add_col_but = tk.Button(self.collections_labels_frame,text='+',command=self.add_collection)
