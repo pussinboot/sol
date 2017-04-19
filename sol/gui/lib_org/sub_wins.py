@@ -210,22 +210,22 @@ class MultiChoicePane:
 		# radio_or_check - True means radio
 		self.parent = parent_win
 		self.frame = self.parent.mc_frame
-
-		self.NUM_OPT_PER_PAGE = 8
-		self.opt_keybinds = ['qwerty','12345']
-		for c, kb in enumerate(self.opt_keybinds):
-			self.opt_keybinds[c] = kb[:self.NUM_OPT_PER_PAGE//2]
 		self.radio_or_check = radio_or_check
 
 		if self.radio_or_check:
+			self.NUM_OPT_PER_PAGE = 8
 			self.actually_select_shortcut = self.select_radio_shortcut
 			self.add_but_text = '(N)ew folder'
 		else:
+			self.NUM_OPT_PER_PAGE = 10
 			self.actually_select_shortcut = self.select_check_shortcut
 			self.add_but_text = '(N)ew tag'
 			self.opt_to_val = {}
 
 
+		self.opt_keybinds = ['qwerty','12345']
+		for c, kb in enumerate(self.opt_keybinds):
+			self.opt_keybinds[c] = kb[:self.NUM_OPT_PER_PAGE//2]
 
 		self.top_frame = tk.Frame(self.frame) # good
 		self.top_frame.pack(side=tk.TOP,expand=True,fill=tk.BOTH)

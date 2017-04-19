@@ -382,11 +382,10 @@ class LibraryOrgGui:
 
 			return gend_fun
 
-	
 		clip_fname, row_id = self.tree.get_selected_clip()
 		if clip_fname is None or len(clip_fname) < 1: return
 		if clip_fname in self.db.clips:
-			move_win = MoveWin(self,self.db.clips[clip_fname],gen_move_callback(row_id))
+			MoveWin(self,self.db.clips[clip_fname],gen_move_callback(row_id))
 
 	##########
 	# TAGGING
@@ -590,8 +589,8 @@ class ImportWizardGui:
 		self.root.bind("<F2>",self.rename_clip)
 		self.rename_but = tk.Button(self.bottom_bar,text='(R)ename',pady=y_pad,command=self.rename_clip)
 
-		self.root.bind("t",lambda e: print('not done yet'))
-		self.tag_but = tk.Button(self.bottom_bar,text='(T)ag',pady=y_pad,command=lambda: print('not done yet'))
+		self.root.bind("t",self.tag_clip)
+		self.tag_but = tk.Button(self.bottom_bar,text='(T)ag',pady=y_pad,command=self.tag_clip)
 
 		self.root.bind("m",self.move_clip)
 		self.move_but = tk.Button(self.bottom_bar,text='(M)ove',pady=y_pad,command=self.move_clip)
@@ -759,6 +758,25 @@ class ImportWizardGui:
 				maybe_do_later()
 
 		return gend_fun
+
+	##########
+	# TAGGING
+
+	def tag_clip(self,*args):
+
+		def gen_tag_callback(item):
+			i = item
+			def gend_fun(tag_list,clip):
+				self.db.tagdb.update_clip_tags(tag_list,clip)
+				self.db.tagdb.refresh()
+
+			return gend_fun
+
+		clip_fname, row_id = self.tree.get_selected_clip()
+		if clip_fname not in self.fname_to_clip:
+			return
+		TagWin(self,self.fname_to_clip[clip_fname],gen_tag_callback(row_id))
+
 
 	##############
 	# MISC HELPERS
