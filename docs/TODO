@@ -5,8 +5,8 @@
 consistent filenaming/paths
 
 TAGS
-add to lib org/wiz
-shud b easier now that i have multichoice panes setup cleanly :v)
+lib org 
+	allow for tagging multiple clips?
 
 then make sure clip_collections' library adds a tag browser too 
 	-> will determine what search looks like 
