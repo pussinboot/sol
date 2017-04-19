@@ -5,7 +5,11 @@
 consistent filenaming/paths
 
 TAGS
+add to lib org/wiz
 shud b easier now that i have multichoice panes setup cleanly :v)
+
+then make sure clip_collections' library adds a tag browser too 
+	-> will determine what search looks like 
 
 config gui
 

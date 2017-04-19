@@ -33,7 +33,7 @@ class Database:
 		self.searcher = ClipSearch(self.clips)
 		self.tagdb = TagDB()
 		self.search = self.searcher.search
-		self.def_params = {
+		self.default_params = {
 		'play_direction' : 'p',
 		'playback_speed' : 1.0,
 		'cue_points'     : [None] * C.NO_Q,
@@ -96,7 +96,7 @@ class Database:
 
 	def init_a_clip(self,clip):
 		# add default params (if they dont exist)
-		for p, p_val in self.def_params.items():
+		for p, p_val in self.default_params.items():
 			if p not in clip.params:
 				clip.params[p] = p_val
 		# create durations, this is pretty quick even with hundreds of clips
@@ -118,16 +118,16 @@ class Database:
 
 	def remove_clip(self,clip):
 		self.searcher.remove_clip(clip)
+		self.tagdb.remove_clip(clip)
 		if clip.f_name in self.clips:
 			del self.clips[clip.f_name]
 
-
 	def rename_clip(self,clip,new_name):
 		# gotta remove and readd for searcher to play nice
-		# and potentially tags etc too
-		self.remove_clip(clip)
+		self.searcher.remove_clip(clip)
 		clip.name = new_name
-		self.add_a_clip(clip)
+		self.searcher.add_clip(clip)
+		self.searcher.refresh()
 
 	def move_clip(self,clip,new_fname,new_name=None):
 		self.remove_clip(clip)
@@ -139,6 +139,7 @@ class Database:
 	def clear(self):
 		self.clips = {}
 		self.searcher.clear()
+		self.tagdb.clear()
 
 class Search:
 	"""
@@ -223,9 +224,7 @@ class ClipSearch(Search):
 class TagDB(Search):
 	def __init__(self):
 		super().__init__()
-		self.tags_to_clips = {}
-		self.needs_refresh = False
-		self.search_res = []
+		self.clear()
 
 	def add_clip(self,clip):
 		for tag in clip.tags:
@@ -243,6 +242,17 @@ class TagDB(Search):
 	def add_tag_to_clip(self,tag,clip):
 		clip.add_tag(tag)
 		self.add_tag(tag,clip)
+		self.refresh()
+
+	def update_clip_tags(self,tag_list,clip):
+		# accepts a list of tag-boolean tuples 
+		# then either adds or removes said tag from the clip
+		for tb in tag_list:
+			if len(tb) == 2:
+				if tb[1]:
+					self.add_tag_to_clip(tb[0],clip)
+				else:
+					self.remove_tag_from_clip(tb[0],clip)
 		self.refresh()
 
 	def remove_clip(self,clip):
@@ -276,6 +286,11 @@ class TagDB(Search):
 		if self.needs_refresh:
 			super().refresh()
 			self.needs_refresh = False
+
+	def clear(self):
+		self.tags_to_clips = {}
+		self.needs_refresh = False
+		self.search_res = []
 
 
 class FileOPs:
@@ -448,12 +463,12 @@ class FileOPs:
 			new_key = ET.SubElement(midi_root,'midi_key')
 			for j in range(len(parts)):
 				new_key.set(parts[j],big_midi_list[i][j])
-		midi_fname = '{}/midi.xml'.format(C.SAVEDATA_DIR)
+		midi_fname = os.path.join(C.SAVEDATA_DIR,'midi.xml')
 		with open(midi_fname,'wb') as f:
 			f.write(self.pretty_print(midi_root))
 
 	def load_midi(self):
-		midi_fname = '{}/midi.xml'.format(C.SAVEDATA_DIR)
+		midi_fname = os.path.join(C.SAVEDATA_DIR,'midi.xml')
 		if not os.path.exists(midi_fname): return
 		tor = []
 		try:
@@ -592,10 +607,26 @@ if __name__ == '__main__':
 			'C:\VJ\__clips__\gundam\dxv\gundam bad blue guy kills feds.mov',
 			'C:\VJ\__clips__\gundam\dxv\gundam beamspam suicides etc.mov',
 			'C:\VJ\__clips__\gundum\dxv\gundam big battle.mov']
+	test_tags = ['cool','funny','epic','stupid']
 
-	# test_fh = FileHierarchy()
+	import random
+
 	for fname in test_fnames:
-		testdb.add_a_clip(Clip(fname,"fake act"))
-	test_listing = testdb.hierarchical_listing
+		new_clip = Clip(fname,"fake act")
+		random.shuffle(test_tags)
+		for t in test_tags[0:random.randint(0,len(test_tags))]:
+			new_clip.add_tag(t)
+		testdb.add_a_clip(new_clip)
+	# test_fh = FileHierarchy()
+	# test_listing = testdb.hierarchical_listing
 	# print(test_fh.root_node)
-	print(test_listing)
+	# print(test_listing)
+
+	# print(random.choice(test_tags))
+	for fn,clip in testdb.clips.items():
+		print(clip,clip.tags)
+		last_clip = clip
+
+	print(testdb.tagdb.search(""))
+	testdb.tagdb.update_clip_tags([('zzz',True),('cool',False)],last_clip)
+	print(last_clip.tags)
