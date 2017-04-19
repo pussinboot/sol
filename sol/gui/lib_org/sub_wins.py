@@ -98,7 +98,7 @@ class RenameWin(ChildWin):
 			return
 		if new_fname == self.start_name:
 			self.close()
-		self.callback(self.clip,self.format_return.format(new_fname),new_fname)
+		self.callback(self.format_return.format(new_fname),new_fname)
 		self.close()
 
 	def close(self,*args):
@@ -147,7 +147,9 @@ class MoveWin(ChildWin):
 		if ct is None: return
 		add_i = ct.chosen_value.get()
 		actual_i = current_i * self.mc_pane.NUM_OPT_PER_PAGE + add_i
-		self.callback(self.clip,self.parent.all_folder_names[actual_i][1])
+		new_path = self.parent.all_folder_names[actual_i][1]
+		new_fname = os.path.join(new_path,os.path.split(self.clip.f_name)[1])
+		self.callback(new_fname)
 		self.close()
 
 	def close(self,*args):
@@ -181,7 +183,7 @@ class TagWin(ChildWin):
 	def ok(self,*args):
 		# construct the updated list of tags
 		updated_tag_list = [(k,bool(val_var.get())) for k, val_var in self.mc_pane.opt_to_val.items()]
-		self.callback(updated_tag_list,self.clip)
+		self.callback(updated_tag_list)
 		self.close()
 
 
@@ -229,7 +231,7 @@ class AddTagWin(TagWin):
 	def ok(self,*args):
 		# construct the updated list of tags
 		updated_tag_list = [(k,True) for k, val_var in self.mc_pane.opt_to_val.items() if bool(val_var.get())]
-		self.callback(updated_tag_list,self.clips)
+		self.callback(updated_tag_list)
 		self.close()
 
 
