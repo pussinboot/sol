@@ -349,8 +349,9 @@ class ClipControl:
 			for but in control_buts:
 				but.config(state='disabled')
 				but.config(relief='flat')
-				# self.loop_type_tk.set(self.loop_type_convert['d'])
-				# self.loop_select_tk.set('-1')
+				self.loop_type_tk.set(self.loop_type_convert['d'])
+				self.loop_select_tk.set('-1')
+				
 			return
 		for but in control_buts:
 			but.config(state='active')
