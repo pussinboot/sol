@@ -31,6 +31,7 @@ class Database:
 		self.file_ops = FileOPs()
 		self.clips = {}
 		self.searcher = ClipSearch(self.clips)
+		self.tagdb = TagDB()
 		self.search = self.searcher.search
 		self.def_params = {
 		'play_direction' : 'p',
@@ -91,6 +92,7 @@ class Database:
 		self.init_a_clip(clip)		
 		self.clips[clip.f_name] = clip
 		self.searcher.add_clip(clip)
+		self.tagdb.add_clip(clip)
 
 	def init_a_clip(self,clip):
 		# add default params (if they dont exist)
@@ -282,8 +284,8 @@ class FileOPs:
 	"""
 	def __init__(self):
 		self.last_save = None
-		folder_name = '{}/'.format(C.SAVEDATA_DIR)
-		last_save_fname = '{}/last_save'.format(C.SAVEDATA_DIR)
+		folder_name = C.SAVEDATA_DIR + os.sep
+		last_save_fname = os.path.join(C.SAVEDATA_DIR,'last_save')
 		if not os.path.exists(folder_name): 
 			os.makedirs(folder_name)
 		elif os.path.exists(last_save_fname):
@@ -293,7 +295,7 @@ class FileOPs:
 
 	def update_last_save(self,filename):
 		self.last_save = filename
-		last_save_fname = '{}/last_save'.format(C.SAVEDATA_DIR)
+		last_save_fname = os.path.join(C.SAVEDATA_DIR,'last_save')
 		with open(last_save_fname,'w') as last_save:
 			last_save.write(self.last_save)
 
