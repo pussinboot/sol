@@ -183,22 +183,28 @@ class LibraryOrgGui:
 			self.add_clip_gui.root.lift()
 			self.add_clip_gui.root.focus_force()
 
-	##########
-	# RENAMING
+	####################
+	# NEATER SUBWIN FUNS
 
-	def rename_prompt(self,*args):
+	def get_clip_and_i(self):
+		clip_fname, row_id = self.tree.get_selected_clip()
+		if clip_fname is not None and len(clip_fname) > 0:
+			if clip_fname in self.db.clips:
+				return self.db.clips[clip_fname], row_id
+		return None, None
 
-		def gen_callback(row_id):
-			i = row_id
-			def gend_fun(clip,new_path,new_name):
+	def callback_gen(self,clip,row_id,what_kind):
+		stor_clip = clip
+		i = row_id
+
+		if what_kind in ['move','rename']:
+			def callback(new_path,new_name=None):
 				hold_vals = self.tree.tree.item(i)['values']
 				old_path = hold_vals[1]
 				hold_vals[1] = new_path
-
-				# change row in the treeview
-				self.tree.tree.item(i,text=new_name)
 				self.tree.tree.item(i,values=hold_vals)
-
+				if new_name is not None:
+					self.tree.tree.item(i,text=new_name)
 
 				def maybe_do_later():
 					if os.path.exists(old_path):
@@ -207,25 +213,80 @@ class LibraryOrgGui:
 								# actually rename the file?
 								os.rename(old_path,new_path)
 								# change clip's fname/name
-								self.db.move_clip(clip,new_path,new_name)
+								self.db.move_clip(stor_clip,new_path,new_name)
 							except:
 								pass
 						self.parent.root.after(1000, rename_later)
 
-				if self.last_selected_clip == clip:
-					self.delayed_actions += [(clip,maybe_do_later)]
+				if self.last_selected_clip == stor_clip:
+					self.delayed_actions += [(stor_clip,maybe_do_later)]
 				else:
 					maybe_do_later()
 
+		else: # tag
+			def callback(new_tags):
+				self.db.tagdb.update_clip_tags(new_tags,stor_clip)
+				self.db.tagdb.refresh()
+
+				new_tags = stor_clip.str_tags()
+				hold_vals = self.tree.tree.item(i)['values']
+				hold_vals[0] = new_tags
+
+				# change row in the treeview
+				self.tree.tree.item(i,values=hold_vals)
+
+		return callback
+			
+
+	#################
+	# ACTION PROMPTS
+
+	def move_prompt(self,*args):
+		clip, row_id = self.get_clip_and_i()
+		if clip is None: return
+		callback = self.callback_gen(clip,row_id,'move')
+		MoveWin(self,clip,callback)
+
+	def rename_prompt(self,*args):
+		clip, row_id = self.get_clip_and_i()
+		if clip is None: return
+		callback = self.callback_gen(clip,row_id,'rename')
+		RenameWin(self,clip,callback)
+
+	def tag_prompt(self,*args):
+
+		def gen_tag_list_callback(cliplist, itemlist):
+			clipz = cliplist
+			iz = itemlist
+			def gend_fun(tag_list):
+				for i,clip in enumerate(clipz):
+					self.db.tagdb.update_clip_tags(tag_list,clip)
+					new_tags = clip.str_tags()
+					hold_vals = self.tree.tree.item(iz[i])['values']
+					hold_vals[0] = new_tags
+					self.tree.tree.item(iz[i],values=hold_vals)
+				self.db.tagdb.refresh()
+
 			return gend_fun
 
+		selected_rows = self.tree.tree.selection() 
+		selected_ids = []
+		selected_clips = []
+		for r in selected_rows:
+			selected_item = self.tree.tree.item(r)['values']
+			if selected_item[2] == 'clip':
+				clip_fname = selected_item[1]
+				if (len(clip_fname) > 0) and selected_item[1] in self.db.clips:
+					selected_clips.append(self.db.clips[clip_fname])
+					selected_ids.append(r)
 
-
-		clip_fname, row_id = self.tree.get_selected_clip()
-		if clip_fname is None or len(clip_fname) < 1: return
-		if clip_fname in self.db.clips:
-			rename_win = RenameWin(self,self.db.clips[clip_fname],gen_callback(row_id))
-
+		if len(selected_ids) == 0:
+			return
+		elif len(selected_ids) == 1:
+			callback = self.callback_gen(selected_clips[0],selected_ids[0],'tag')
+			TagWin(self,selected_clips[0],callback)
+		else:
+			AddTagWin(self,selected_clips,gen_tag_list_callback(selected_clips,selected_ids))
 
 	##########
 	# DELETING
@@ -346,44 +407,6 @@ class LibraryOrgGui:
 		else:
 			self.all_folder_names.append([f_name,f_path])
 
-	def move_prompt(self,*args):
-
-		def gen_move_callback(item):
-			i = item
-			def gend_fun(clip,new_path):
-				hold_vals = self.tree.tree.item(i)['values']
-				old_path = hold_vals[1]
-				new_fname = os.path.join(new_path,os.path.split(clip.f_name)[1])
-				hold_vals[1] = new_fname
-
-				# change row in the treeview
-				self.tree.tree.item(i,values=hold_vals)
-
-				def maybe_do_later():
-					if os.path.exists(old_path):
-						def rename_later():
-							try:
-								# actually rename the file?
-								os.rename(old_path,new_fname)
-								# change clip's fname/
-								self.db.move_clip(clip,new_fname)
-
-							except:
-								pass
-						self.parent.root.after(1000, rename_later)
-
-				if self.last_selected_clip == clip:
-					self.delayed_actions += [(clip,maybe_do_later)]
-				else:
-					maybe_do_later()
-
-			return gend_fun
-
-		clip_fname, row_id = self.tree.get_selected_clip()
-		if clip_fname is None or len(clip_fname) < 1: return
-		if clip_fname in self.db.clips:
-			MoveWin(self,self.db.clips[clip_fname],gen_move_callback(row_id))
-
 	##########
 	# TAGGING
 
@@ -394,56 +417,6 @@ class LibraryOrgGui:
 		self.all_tags.append(tag)
 		self.all_tags.sort()
 	
-	def tag_prompt(self,*args):
-
-		def gen_tag_callback(item):
-			i = item
-			def gend_fun(tag_list,clip):
-				self.db.tagdb.update_clip_tags(tag_list,clip)
-				self.db.tagdb.refresh()
-
-				new_tags = clip.str_tags()
-				hold_vals = self.tree.tree.item(i)['values']
-				hold_vals[0] = new_tags
-
-				# change row in the treeview
-				self.tree.tree.item(i,values=hold_vals)
-			return gend_fun
-
-		def gen_tag_list_callback(itemlist):
-			iz = itemlist
-			def gend_fun(tag_list,clips):
-				for i,clip in enumerate(clips):
-					self.db.tagdb.update_clip_tags(tag_list,clip)
-					new_tags = clip.str_tags()
-					hold_vals = self.tree.tree.item(iz[i])['values']
-					hold_vals[0] = new_tags
-
-					# change row in the treeview
-					self.tree.tree.item(iz[i],values=hold_vals)
-				self.db.tagdb.refresh()
-
-			return gend_fun
-
-		selected_rows = self.tree.tree.selection() 
-		selected_ids = []
-		selected_clips = []
-		for r in selected_rows:
-			selected_item = self.tree.tree.item(r)['values']
-			if selected_item[2] == 'clip':
-				clip_fname = selected_item[1]
-				if (len(clip_fname) > 0) and selected_item[1] in self.db.clips:
-					selected_clips.append(self.db.clips[clip_fname])
-					selected_ids.append(r)
-
-		if len(selected_ids) == 0:
-			return
-		elif len(selected_ids) == 1:
-			TagWin(self,selected_clips[0],gen_tag_callback(selected_ids[0]))
-		else:
-			AddTagWin(self,selected_clips,gen_tag_list_callback(selected_ids))
-
-
 	############
 	# CLIP STUFF
 
@@ -687,120 +660,80 @@ class ImportWizardGui:
 				del self.clip_queue[self.clip_queue.index(to_del)]
 				del self.fname_to_clip[clip_fname]
 
-	##########
-	# RENAMING
+	#####################
+	# NEATER SUBWIN FUNS
 
-	def rename_clip(self,event=None):
-		clip_fname, row_id = self.tree.get_selected_clip(event)
-		if clip_fname not in self.fname_to_clip:
-			return
-		actual_clip = self.fname_to_clip[clip_fname]
-		callback = self.gen_rename_callback(row_id)
-		RenameWin(self,actual_clip,callback)
-
-	def gen_rename_callback(self,item):
-		i = item
-		def gend_fun(clip,new_path,new_name):
-			hold_vals = self.tree.tree.item(i)['values']
-			old_path = hold_vals[1]
-			hold_vals[1] = new_path
-
-			# change row in the treeview
-			self.tree.tree.item(i,text=new_name)
-			self.tree.tree.item(i,values=hold_vals)
-
-			# update fname_to_clip..
-			if old_path in self.fname_to_clip:
-				del self.fname_to_clip[old_path]
-			self.fname_to_clip[new_path] = clip
-
-			def maybe_do_later():
-				if os.path.exists(old_path):
-					def rename_later():
-						try:
-							# actually rename the file?
-							os.rename(old_path,new_path)
-							# change clip's fname/name
-							clip.f_name = new_path
-							clip.name = new_name
-						except:
-							pass
-					self.parent.root.after(1000, rename_later)
-
-			if self.parent.last_selected_clip == clip:
-				self.parent.delayed_actions += [(clip,maybe_do_later)]
-			else:
-				maybe_do_later()
-
-		return gend_fun
-
-	##############
-	# MOVING
-
-	def move_clip(self,event=None):
-		clip_fname, row_id = self.tree.get_selected_clip(event)
-		if clip_fname not in self.fname_to_clip:
-			return
-		actual_clip = self.fname_to_clip[clip_fname]
-
-		callback = self.gen_move_callback(row_id)
-		MoveWin(self,actual_clip,callback)
-
-	def gen_move_callback(self,item):
-		i = item
-		def gend_fun(clip,new_path):
-			hold_vals = self.tree.tree.item(i)['values']
-			old_path = hold_vals[1]
-
-			new_fname = os.path.join(new_path,os.path.split(clip.f_name)[1])
-
-			hold_vals[1] = new_fname
-
-			# change row in the treeview
-			self.tree.tree.item(i,values=hold_vals)
-
-			# update fname_to_clip..
-			if old_path in self.fname_to_clip:
-				del self.fname_to_clip[old_path]
-			self.fname_to_clip[new_fname] = clip
-
-			def maybe_do_later():
-				if os.path.exists(old_path):
-					def rename_later():
-						try:
-							# actually rename the file?
-							os.rename(old_path,new_fname)
-							# change clip's fname/name
-							clip.f_name = new_fname
-							clip.name = new_name
-						except:
-							pass
-					self.parent.root.after(1000, rename_later)
-
-			if self.parent.last_selected_clip == clip:
-				self.parent.delayed_actions += [(clip,maybe_do_later)]
-			else:
-				maybe_do_later()
-
-		return gend_fun
-
-	##########
-	# TAGGING
-
-	def tag_clip(self,*args):
-
-		def gen_tag_callback(item):
-			i = item
-			def gend_fun(tag_list,clip):
-				self.db.tagdb.update_clip_tags(tag_list,clip)
-				self.db.tagdb.refresh()
-
-			return gend_fun
-
+	def get_clip_and_i(self):
 		clip_fname, row_id = self.tree.get_selected_clip()
 		if clip_fname not in self.fname_to_clip:
-			return
-		TagWin(self,self.fname_to_clip[clip_fname],gen_tag_callback(row_id))
+			return None, None
+		actual_clip = self.fname_to_clip[clip_fname]
+		return actual_clip, row_id
+
+	def callback_gen(self,clip,row_id,what_kind):
+			stor_clip = clip
+			i = row_id
+
+			if what_kind in ['move','rename']:
+				def callback(new_path,new_name=None):
+					hold_vals = self.tree.tree.item(i)['values']
+					old_path = hold_vals[1]
+					hold_vals[1] = new_path
+					self.tree.tree.item(i,values=hold_vals)
+					if new_name is not None:
+						self.tree.tree.item(i,text=new_name)
+
+					# update fname_to_clip..
+					if old_path in self.fname_to_clip:
+						del self.fname_to_clip[old_path]
+					self.fname_to_clip[new_path] = clip
+
+					def maybe_do_later():
+						if os.path.exists(old_path):
+							def rename_later():
+								try:
+									# actually rename the file?
+									os.rename(old_path,new_path)
+									# change clip's fname/name
+									stor_clip.f_name = new_path
+									if new_name is not None:
+										stor_clip.name = new_name
+								except:
+									pass
+							self.parent.root.after(1000, rename_later)
+
+					if self.parent.last_selected_clip == stor_clip:
+						self.parent.delayed_actions += [(stor_clip,maybe_do_later)]
+					else:
+						maybe_do_later()
+
+			else: # tag
+				def callback(new_tags):
+					self.db.tagdb.update_clip_tags(new_tags,stor_clip)
+					self.db.tagdb.refresh()
+
+			return callback
+
+	################
+	# ACTION PROMPTS
+
+	def rename_clip(self,*args):
+		clip, row_id = self.get_clip_and_i()
+		if clip is None: return
+		callback = self.callback_gen(clip,row_id,'rename')
+		RenameWin(self,clip,callback)
+
+	def move_clip(self,*args):
+		clip, row_id = self.get_clip_and_i()
+		if clip is None: return
+		callback = self.callback_gen(clip,row_id,'move')
+		MoveWin(self,clip,callback)
+
+	def tag_clip(self,*args):
+		clip, row_id = self.get_clip_and_i()
+		if clip is None: return
+		callback = self.callback_gen(clip,row_id,'tag')
+		TagWin(self,clip,callback)
 
 
 	##############
@@ -815,7 +748,6 @@ class ImportWizardGui:
 		self.root.destroy()
 		self.parent.add_clip_gui = None
 		self.parent.be_safe()
-		self.parent.parent.exit_lib_org_gui() # quit whole thing (((TEMP)))
 
 
 
@@ -846,6 +778,6 @@ if __name__ == '__main__':
 	fp = FakeParent(rootwin)
 	saliborg = LibraryOrgGui(tk.Toplevel(takefocus=True),fp,standalone=True)
 	fp.child = saliborg
-	saliborg.create_clip_gui()
-	saliborg.add_clip_gui.add_folder('C:\\VJ\\zzz_incoming_clips')
+	# saliborg.create_clip_gui()
+	# saliborg.add_clip_gui.add_folder('C:\\VJ\\zzz_incoming_clips')
 	rootwin.mainloop()
