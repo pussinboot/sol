@@ -4,7 +4,7 @@ import tkinter.messagebox as tkmb
 from tkinter import ttk
 
 try:
-	from sub_wins import RenameWin, MoveWin, Treeview
+	from sub_wins import RenameWin, MoveWin, TagWin, Treeview
 except:
 	from gui.lib_org.sub_wins import RenameWin, MoveWin, Treeview
 
@@ -44,6 +44,8 @@ class LibraryOrgGui:
 		self.standalone = standalone
 		self.folders = {}
 		self.all_folder_names = [] 
+		self.all_tags = []
+
 		self.delayed_actions = []
 		self.total_deleted_count = 0
 
@@ -129,7 +131,8 @@ class LibraryOrgGui:
 		self.root.bind("r",self.rename_prompt)
 		self.root.bind("<F2>",self.rename_prompt)
 
-		self.tag_but = tk.Button(self.bottom_bar,text='(T)ag',pady=y_pad,command=lambda: print('not done yet'))
+		self.tag_but = tk.Button(self.bottom_bar,text='(T)ag',pady=y_pad,command=self.tag_prompt)
+		self.root.bind("t",self.tag_prompt)
 
 		self.move_but = tk.Button(self.bottom_bar,text='(M)ove',pady=y_pad,command=self.move_prompt)
 		self.root.bind("m",self.move_prompt)
@@ -195,6 +198,7 @@ class LibraryOrgGui:
 				# change row in the treeview
 				self.tree.tree.item(i,text=new_name)
 				self.tree.tree.item(i,values=hold_vals)
+
 
 				def maybe_do_later():
 					if os.path.exists(old_path):
@@ -384,6 +388,37 @@ class LibraryOrgGui:
 		if clip_fname in self.db.clips:
 			move_win = MoveWin(self,self.db.clips[clip_fname],gen_move_callback(row_id))
 
+	##########
+	# TAGGING
+
+	def gen_all_tags(self):
+		self.all_tags = self.db.all_tags[:]
+
+	def add_a_tag(self,tag):
+		self.all_tags.append(tag)
+		self.all_tags.sort()
+	
+	def tag_prompt(self,*args):
+
+		def gen_tag_callback(item):
+			i = item
+			def gend_fun(tag_list,clip):
+				self.db.tagdb.update_clip_tags(tag_list,clip)
+				self.db.tagdb.refresh()
+
+				new_tags = clip.str_tags()
+				hold_vals = self.tree.tree.item(i)['values']
+				hold_vals[0] = new_tags
+
+				# change row in the treeview
+				self.tree.tree.item(i,values=hold_vals)
+			return gend_fun
+
+		clip_fname, row_id = self.tree.get_selected_clip()
+		if clip_fname is None or len(clip_fname) < 1: return
+		if clip_fname in self.db.clips:
+			move_win = TagWin(self,self.db.clips[clip_fname],gen_tag_callback(row_id))
+
 	############
 	# CLIP STUFF
 
@@ -462,8 +497,9 @@ class LibraryOrgGui:
 			self.clip_storage_dict = parsed_xml.find('clip_storage')
 			fio.update_last_save(filename)
 			if C.DEBUG: print('successfully loaded',fio.last_save)
-			# update all folders
+			# update all folders & tags
 			self.gen_all_folder_names()
+			self.gen_all_tags()
 			self.total_deleted_count = 0
 			return True
 		except Exception as e:
@@ -517,7 +553,9 @@ class ImportWizardGui:
 
 		self.all_folder_names = self.parent.all_folder_names
 		self.add_a_folder_name = self.parent.add_a_folder_name
-		# this is garbage and needs to be redone
+		self.all_tags = self.parent.all_tags
+		self.add_a_tag = self.parent.add_a_tag
+
 		# so i can keep track of which clip is selected 
 		self.clip_queue = []
 		self.fname_to_clip = {}

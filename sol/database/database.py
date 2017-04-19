@@ -88,6 +88,12 @@ class Database:
 	# 		tor += child.__str__(prefix+"\t")
 	# 	return tor
 
+	@property
+	def all_tags(self):
+		all_tags = list(self.tagdb.tags_to_clips.keys())
+		all_tags.sort()
+		return all_tags
+
 	def add_clip(self,clip):
 		self.init_a_clip(clip)		
 		self.clips[clip.f_name] = clip

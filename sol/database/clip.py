@@ -41,7 +41,9 @@ class Clip:
 			self.tags.append(tag)
 
 	def str_tags(self):
-		return ','.join(self.tags)
+		temp_tags = self.tags[:]
+		temp_tags.sort()
+		return ','.join(temp_tags)
 
 	def remove_tag(self,tag):
 		if tag in self.tags:
