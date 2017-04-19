@@ -1,9 +1,11 @@
 import tkinter as tk
 import tkinter.filedialog as tkfd
 import tkinter.messagebox as tkmb
+import tkinter.simpledialog as tksd
+
 from tkinter import ttk
 
-import os
+import os, string
 
 class ChildWin:
 	def __init__(self,parent,dict_key,width_percent=0.8,height_percent=0.5):
@@ -151,6 +153,56 @@ class MoveWin(ChildWin):
 	def close(self,*args):
 		super(MoveWin, self).close()
 
+class TagWin(ChildWin):
+	def __init__(self,parent, clip, callback):
+		super(TagWin, self).__init__(parent,'edit tags',0.75,0.5)
+		self.parent = parent
+		self.clip = clip
+		self.callback = callback # callback will update tags of the clip
+
+		self.invalid_chars = set(string.punctuation.replace("_", ""))
+
+		self.top_frame = tk.Frame(self.root_frame)
+		self.top_frame.pack(side=tk.TOP,expand=True,fill=tk.BOTH,anchor=tk.S)
+		self.setup_ok_cancel(True)
+		self.add_new_fun = self.add_new_tag # or can add new folder
+
+		clip_label = tk.Label(self.top_frame,text='editing tags for: {}'.format(clip.name))
+		clip_label.pack(side=tk.TOP)
+
+		self.mc_frame = tk.Frame(self.top_frame,relief='ridge',bd=2)
+		self.mc_frame.pack(side=tk.TOP,expand=True,fill=tk.BOTH)
+		instruction_text = tk.Label(self.mc_frame,text='select tags')
+		instruction_text.pack(side=tk.TOP)
+
+		starting_options = [(tag, tag in clip.tags) for tag in self.parent.all_tags]
+		self.mc_pane = MultiChoicePane(self,starting_options,False)
+
+	def ok(self,*args):
+		# construct the updated list of tags
+		updated_tag_list = [(k,bool(val_var.get())) for k, val_var in self.mc_pane.opt_to_val.items()]
+		self.callback(updated_tag_list,self.clip)
+		self.close()
+
+
+	def add_new_tag(self,*args):
+		new_tag = tksd.askstring("add new tag",'pls no special characters')
+		if new_tag and len(new_tag) > 0:
+			if any(c in self.invalid_chars for c in new_tag):
+				return
+			if new_tag in self.mc_pane.opt_to_val:
+				self.mc_pane.opt_to_val[new_tag].set(1)
+			else:
+				self.mc_pane.sub_frame_i = 0
+				self.mc_pane.add_opt((new_tag,True))
+				self.mc_pane.switch_tab(len(self.mc_pane.sub_frames)-1)
+				self.mc_pane.update_tab_selection()
+
+				self.parent.add_a_tag(new_tag)
+
+
+
+
 
 
 class MultiChoicePane:
@@ -171,6 +223,7 @@ class MultiChoicePane:
 		else:
 			self.actually_select_shortcut = self.select_check_shortcut
 			self.add_but_text = '(N)ew tag'
+			self.opt_to_val = {}
 
 
 
@@ -240,20 +293,21 @@ class MultiChoicePane:
 		if len(self.sub_frames) == 0: return None
 		return self.sub_frames[self.sub_frame_i]
 
-	def add_opt(self,option_text):
+	def add_opt(self,option_data):
 		if (len(self.sub_frames) > 0) and (self.sub_frames[-1].last_i + 1 < self.NUM_OPT_PER_PAGE):
 			selected_subpane = self.sub_frames[-1]
 		else:
 			# add a new subpane
-			selected_subpane = MultiChoiceSubPane(self.top_frame,self.radio_or_check,self.opt_keybinds)
+			selected_subpane = MultiChoiceSubPane(self)
 			self.sub_frames.append(selected_subpane)
 			self.notebook.add(selected_subpane.frame)
-		selected_subpane.add_but(option_text)
+		selected_subpane.add_but(option_data)
 
 	def switch_tab(self,diff):
-		self.sub_frame_i = (self.sub_frame_i + diff) % len(self.sub_frames)
-		self.notebook.select(self.sub_frame_i)
-		self.update_tab_selection()
+		if len(self.sub_frames) > 0:
+			self.sub_frame_i = (self.sub_frame_i + diff) % len(self.sub_frames)
+			self.notebook.select(self.sub_frame_i)
+			self.update_tab_selection()
 
 	def update_tab_selection(self):
 		if len(self.sub_frames) > 0:
@@ -284,12 +338,13 @@ class MultiChoicePane:
 
 
 class MultiChoiceSubPane:
-	def __init__(self, containing_frame,radio_or_check,kb_opts):
-		self.top_frame = containing_frame
-		self.radio_or_check = radio_or_check
+	def __init__(self, parent):
+		self.parent = parent
+		self.top_frame = self.parent.top_frame
+		self.radio_or_check = self.parent.radio_or_check
 		self.last_i = -1
 
-		self.opt_keybinds = kb_opts
+		self.opt_keybinds = self.parent.opt_keybinds
 
 		self.frame = tk.Frame(self.top_frame,relief='sunken',bd=2)
 		l_frame = tk.Frame(self.frame)
@@ -309,9 +364,6 @@ class MultiChoiceSubPane:
 			self.add_but = self.add_check_but
 			self.chosen_values = []
 
-
-
-
 	def add_radio_but(self,text_label):
 		self.last_i += 1
 		
@@ -327,14 +379,19 @@ class MultiChoiceSubPane:
 		shortcut_label.pack(side=tk.TOP,anchor='e')
 
 
-	def add_check_but(self,text_label):
-		self.chosen_values.append(tk.IntVar())
+	def add_check_but(self,tag_selected):
+		text_label = tag_selected[0]
+		new_var = tk.IntVar()
+		if tag_selected[1]:
+			new_var.set(1)
+		self.chosen_values.append(new_var)
+		self.parent.opt_to_val[text_label] = new_var
 		self.last_i += 1
 		col = 2*(self.last_i % 2)
 		shortcut_text = "({})".format(self.opt_keybinds[col//2][self.last_i//2].upper())
 
 		check_but = tk.Checkbutton(self.lr_frames[col],text=text_label,
-					variable=self.chosen_values[self.last_i])
+					variable=new_var)
 		check_but.pack(side=tk.TOP,anchor='w')
 
 		shortcut_label = tk.Label(self.lr_frames[col+1],text=shortcut_text,
