@@ -117,7 +117,7 @@ class LibraryOrgGui:
 		self.root.bind("<F5>",self.init_tree)
 
 		self.root.config(menu=self.menubar)
-		self.root.geometry('750x500+50+100') # temp.....
+		self.root.geometry('1000x500+50+100') # temp.....
 
 		# bottombar
 		y_pad = 5

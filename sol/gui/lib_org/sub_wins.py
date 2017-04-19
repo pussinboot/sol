@@ -436,7 +436,7 @@ class Treeview:
 		col_nos = ['#0','#1','#2']
 		col_headings = ['','tags','full path']
 		col_stretch = [1,0,0]
-		col_ws = [300,100,400]
+		col_ws = [300,300,400]
 
 		self.frame = containing_frame
 		self.bind_to = bind_to
