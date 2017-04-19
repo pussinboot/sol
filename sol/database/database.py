@@ -119,6 +119,7 @@ class Database:
 		if clip.f_name in self.clips:
 			del self.clips[clip.f_name]
 
+
 	def rename_clip(self,clip,new_name):
 		# gotta remove and readd for searcher to play nice
 		# and potentially tags etc too
@@ -136,8 +137,6 @@ class Database:
 	def clear(self):
 		self.clips = {}
 		self.searcher.clear()
-
-
 
 class Search:
 	"""
@@ -193,8 +192,6 @@ class Search:
 		tor.sort()
 		return tor
 
-
-
 class ClipSearch(Search):
 	def __init__(self,clips):
 		super().__init__()
@@ -221,6 +218,62 @@ class ClipSearch(Search):
 	def refresh(self):
 		super().refresh()
 
+class TagDB(Search):
+	def __init__(self):
+		super().__init__()
+		self.tags_to_clips = {}
+		self.needs_refresh = False
+		self.search_res = []
+
+	def add_clip(self,clip):
+		for tag in clip.tags:
+			self.add_tag(tag,clip)
+		self.refresh()
+
+	def add_tag(self,tag,clip):
+		if tag not in self.tags_to_clips:
+			self.tags_to_clips[tag] = [clip]
+			super().add_thing(tag,tag)
+			self.needs_refresh = True
+		else:
+			self.tags_to_clips[tag].append(clip)
+
+	def add_tag_to_clip(self,tag,clip):
+		clip.add_tag(tag)
+		self.add_tag(tag,clip)
+		self.refresh()
+
+	def remove_clip(self,clip):
+		for tag in clip.tags:
+			self.remove_tag(tag,clip)
+		self.refresh()
+
+	def remove_tag(self,tag,clip):
+		if tag in self.tags_to_clips:
+			if clip in self.tags_to_clips[tag]:
+				if len(self.tags_to_clips[tag]) == 1:
+					del self.tags_to_clips[tag]
+					super().remove_thing(tag,tag)
+					self.needs_refresh = True
+				else:
+					self.tags_to_clips[tag].remove(clip)
+		else:
+			super().remove_thing(tag,tag)
+			self.needs_refresh = True
+
+	def remove_tag_from_clip(self,tag,clip):
+		clip.remove_tag(tag)
+		self.remove_tag(tag,clip)
+		self.refresh()
+
+	def search(self,search_term):
+		self.search_res = super().search_by_prefix(search_term)
+		return self.search_res
+
+	def refresh(self):
+		if self.needs_refresh:
+			super().refresh()
+			self.needs_refresh = False
 
 
 class FileOPs:
