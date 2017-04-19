@@ -201,7 +201,36 @@ class TagWin(ChildWin):
 				self.parent.add_a_tag(new_tag)
 
 
+class AddTagWin(TagWin):
+	def __init__(self,parent, clips, callback):
+		super(TagWin, self).__init__(parent,'add tags',0.75,0.5)
+		self.parent = parent
+		self.clips = clips
+		self.callback = callback # callback will add tags to every clip
 
+		self.invalid_chars = set(string.punctuation.replace("_", ""))
+
+		self.top_frame = tk.Frame(self.root_frame)
+		self.top_frame.pack(side=tk.TOP,expand=True,fill=tk.BOTH,anchor=tk.S)
+		self.setup_ok_cancel(True)
+		self.add_new_fun = self.add_new_tag # or can add new folder
+
+		clip_label = tk.Label(self.top_frame,text='adding tags for {} clips'.format(len(self.clips)))
+		clip_label.pack(side=tk.TOP)
+
+		self.mc_frame = tk.Frame(self.top_frame,relief='ridge',bd=2)
+		self.mc_frame.pack(side=tk.TOP,expand=True,fill=tk.BOTH)
+		instruction_text = tk.Label(self.mc_frame,text='select tags to add')
+		instruction_text.pack(side=tk.TOP)
+
+		starting_options = [(tag, False) for tag in self.parent.all_tags]
+		self.mc_pane = MultiChoicePane(self,starting_options,False)
+
+	def ok(self,*args):
+		# construct the updated list of tags
+		updated_tag_list = [(k,True) for k, val_var in self.mc_pane.opt_to_val.items() if bool(val_var.get())]
+		self.callback(updated_tag_list,self.clips)
+		self.close()
 
 
 
