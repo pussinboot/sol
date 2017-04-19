@@ -4,7 +4,7 @@ import tkinter.messagebox as tkmb
 from tkinter import ttk
 
 try:
-	from sub_wins import RenameWin, MoveWin, TagWin, Treeview
+	from sub_wins import RenameWin, MoveWin, TagWin, AddTagWin, Treeview
 except:
 	from gui.lib_org.sub_wins import RenameWin, MoveWin, Treeview
 
@@ -353,14 +353,11 @@ class LibraryOrgGui:
 			def gend_fun(clip,new_path):
 				hold_vals = self.tree.tree.item(i)['values']
 				old_path = hold_vals[1]
-
 				new_fname = os.path.join(new_path,os.path.split(clip.f_name)[1])
-
 				hold_vals[1] = new_fname
 
 				# change row in the treeview
 				self.tree.tree.item(i,values=hold_vals)
-
 
 				def maybe_do_later():
 					if os.path.exists(old_path):
@@ -413,10 +410,39 @@ class LibraryOrgGui:
 				self.tree.tree.item(i,values=hold_vals)
 			return gend_fun
 
-		clip_fname, row_id = self.tree.get_selected_clip()
-		if clip_fname is None or len(clip_fname) < 1: return
-		if clip_fname in self.db.clips:
-			move_win = TagWin(self,self.db.clips[clip_fname],gen_tag_callback(row_id))
+		def gen_tag_list_callback(itemlist):
+			iz = itemlist
+			def gend_fun(tag_list,clips):
+				for i,clip in enumerate(clips):
+					self.db.tagdb.update_clip_tags(tag_list,clip)
+					new_tags = clip.str_tags()
+					hold_vals = self.tree.tree.item(iz[i])['values']
+					hold_vals[0] = new_tags
+
+					# change row in the treeview
+					self.tree.tree.item(iz[i],values=hold_vals)
+				self.db.tagdb.refresh()
+
+			return gend_fun
+
+		selected_rows = self.tree.tree.selection() 
+		selected_ids = []
+		selected_clips = []
+		for r in selected_rows:
+			selected_item = self.tree.tree.item(r)['values']
+			if selected_item[2] == 'clip':
+				clip_fname = selected_item[1]
+				if (len(clip_fname) > 0) and selected_item[1] in self.db.clips:
+					selected_clips.append(self.db.clips[clip_fname])
+					selected_ids.append(r)
+
+		if len(selected_ids) == 0:
+			return
+		elif len(selected_ids) == 1:
+			TagWin(self,selected_clips[0],gen_tag_callback(selected_ids[0]))
+		else:
+			AddTagWin(self,selected_clips,gen_tag_list_callback(selected_ids))
+
 
 	############
 	# CLIP STUFF
@@ -486,8 +512,7 @@ class LibraryOrgGui:
 			fio = self.db.file_ops
 			if filename is None:
 				filename = fio.last_save
-			# if filename is None:
-			# 	filename = 'C:/Users/leo/Documents/Code/sol/sol/savedata/lib_org_work.xml'
+
 			parsed_xml = fio.create_load(filename)
 			# load the database 
 			self.db.clear()
