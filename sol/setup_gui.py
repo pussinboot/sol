@@ -30,7 +30,8 @@ class SetupGui:
 		else:
 			def close_fun(*args):
 				self.close()
-				# maybe do something with parent
+				self.parent.setup_gui = None
+				# maybe do something else with parent
 
 		self.root_frame.protocol("WM_DELETE_WINDOW",close_fun)	
 
