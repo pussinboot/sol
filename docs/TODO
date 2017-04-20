@@ -15,6 +15,9 @@ config gui
 widths fixing ?
 	filename check config stuff
 
+# CONFIG REFACTOR
+thumbs needs to check config for the ffmpeg path
+
 # maybe
 support multiple midi devices
 resolume fx.. somehow?

@@ -3,7 +3,8 @@ from tkinter import ttk
 
 import os
 
-import config as C
+from config import GlobalConfig
+C = GlobalConfig()
 
 blank_midi_key  = '[-,-]'
 blank_midi_type = '----'

@@ -3,7 +3,8 @@ from PIL import ImageTk,Image
 import os
 import tkinter.simpledialog as tksimpledialog
 
-import config as C
+from config import GlobalConfig
+C = GlobalConfig()
 
 class ClipControl:
 	def __init__(self,root,backend,layer):
@@ -351,7 +352,7 @@ class ClipControl:
 				but.config(relief='flat')
 				self.loop_type_tk.set(self.loop_type_convert['d'])
 				self.loop_select_tk.set('-1')
-				
+
 			return
 		for but in control_buts:
 			but.config(state='active')

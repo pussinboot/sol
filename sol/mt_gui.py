@@ -2,7 +2,8 @@
 backend for gui made in vvvv 
 hosts magi and sends data to an osc_client
 """
-import config as C
+from config import GlobalConfig
+C = GlobalConfig()
 
 import os
 from shutil import copyfile

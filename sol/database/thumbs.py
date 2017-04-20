@@ -2,6 +2,13 @@
 import subprocess
 import os #, ntpath
 
+try:
+	from config import GlobalConfig
+	C = GlobalConfig()
+except:
+	from sol.config import GlobalConfig
+	C = GlobalConfig()
+	
 # import shlex
 
 from PIL import Image, ImageChops, ImageOps
