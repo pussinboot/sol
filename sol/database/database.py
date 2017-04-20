@@ -10,16 +10,19 @@ if __name__ == '__main__' and __package__ is None:
 	from pathlib import Path
 	root_path = str(Path(__file__).resolve().parents[2])
 	sys.path.append(root_path)
-	from sol import config as C
+	from sol.config import GlobalConfig
+	C = GlobalConfig()
 	from sol.database.clip import Clip
 	from sol.database.clip import ClipCollection
 else:
 	from .clip import Clip
 	from .clip import ClipCollection
 	try:
-		import config as C
+		from config import GlobalConfig
+		C = GlobalConfig()
 	except:
-		from sol import config as C
+		from sol.config import GlobalConfig
+		C = GlobalConfig()
 
 
 class Database:

@@ -3,7 +3,9 @@ from inputs import osc, midi
 from models.resolume import model as ResolumeModel
 from models.memepv import model as MPVModel
 from models.isadorabl import model as IsadoraModel
-import config as C
+
+from config import GlobalConfig
+C = GlobalConfig()
 
 class Magi:
 	"""

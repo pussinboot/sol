@@ -6,7 +6,8 @@ import tkinter.simpledialog as tksimpledialog
 from PIL import ImageTk,Image
 import os
 
-import config as C
+from config import GlobalConfig
+C = GlobalConfig()
 
 class ClipContainer:
 	# gui element that holds a single clip

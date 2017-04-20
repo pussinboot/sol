@@ -2,7 +2,8 @@
 test gui made with tkinter and re-using many parts 
 from past sol versions
 """
-import config as C
+from config import GlobalConfig
+C = GlobalConfig()
 
 import tkinter as tk
 import tkinter.filedialog as tkfd

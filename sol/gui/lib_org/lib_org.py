@@ -16,12 +16,14 @@ if __name__ == '__main__' and __package__ is None:
 	root_path = str(Path(__file__).resolve().parents[3])
 	sys.path.append(root_path)
 	from sol.database import database, clip
-	from sol import config as C
+	from sol.config import GlobalConfig
+	C = GlobalConfig()
 	from sol.inputs import osc
 
 else:
 	from database import database, clip
-	import config as C
+	from config import GlobalConfig
+	C = GlobalConfig()
 	from inputs import osc
 
 
