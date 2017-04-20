@@ -54,6 +54,7 @@ class SetupGui:
 		}
 
 		self.name_to_var = {}
+		self.name_to_frame = {}
 
 		# construction instructions
 
@@ -77,7 +78,7 @@ class SetupGui:
 		('folder_select', 'composition directory', 'RESOLUME_SAVE_DIR', []),
 		('list_enter', 'supported filetypes', 'SUPPORTED_FILETYPES', []),
 		('label_frame', 'external player config', '', []),
-		('list_choice', 'external player', 'EXTERNAL_PLAYER_SELECT', C.EXTERNAL_PLAYER_SELECT_OPTIONS),
+		('list_choice', 'external player', 'XTERNAL_PLAYER_SELECT', C.EXTERNAL_PLAYER_SELECT_OPTIONS),
 		('file_select', 'mpv script', 'MEMEPV_SCRIPT_PATH', []),
 		('str_enter', 'external command', 'EXTERNAL_PLAYER_COMMAND', []),
 		('label_frame', 'ffmpeg options', '', []),
@@ -107,6 +108,7 @@ class SetupGui:
 
 	def compile_config_page(self,instruction_set,parent_tab):
 		last_label_frame = None
+		starting_optionals = []
 		for instruction in instruction_set:
 			instr_type, instr_text, instr_varn, instr_extr = instruction
 
@@ -118,9 +120,18 @@ class SetupGui:
 				if instr_varn in C.dict: starting_choice = C.dict[instr_varn]
 					
 				if last_label_frame is not None:
-					new_var, var_type = self.instruction_to_fun[instr_type]\
-						(instr_text,last_label_frame,starting_choice,instr_extr)
+
+					new_var, var_type, new_frame = self.instruction_to_fun[instr_type]\
+							  (instr_text,last_label_frame,starting_choice,instr_extr)
 					self.name_to_var[instr_varn] = (new_var,var_type)
+					self.name_to_frame[instr_varn] = new_frame
+
+					if instr_type == 'list_choice':
+						starting_optionals.append((starting_choice,instr_extr))
+		for sop in starting_optionals:
+			# print(sop)
+			self.hide_unhide(*sop)
+
 
 
 	def add_label_frame(self,frame_name,parent_tab):
@@ -155,7 +166,7 @@ class SetupGui:
 		current_path_label = tk.Label(new_frame,textvar=new_var,anchor='w',relief='sunken')
 		current_path_label.pack(side=tk.RIGHT,fill=tk.X,anchor='e',expand=True)
 
-		return new_var, 'str'
+		return new_var, 'str', new_frame
 
 	def add_file_select(self,hint_text,parent_frame,starting_choice=None,extra_args=None):
 		new_frame = self.add_choice_row(parent_frame,hint_text)
@@ -177,7 +188,7 @@ class SetupGui:
 		current_path_label = tk.Label(new_frame,textvar=new_var,anchor='w',relief='sunken')
 		current_path_label.pack(side=tk.RIGHT,fill=tk.X,anchor='e',expand=True)
 
-		return new_var, 'str'
+		return new_var, 'str', new_frame
 
 	def add_int_choice(self,hint_text,parent_frame,starting_choice=None,extra_args=None):
 		new_frame = self.add_choice_row(parent_frame,hint_text)
@@ -189,7 +200,7 @@ class SetupGui:
 		no_entry = tk.Spinbox(new_frame,from_=0,to=999,textvariable=new_var,justify='left',width=3)
 		no_entry.pack(side=tk.RIGHT,anchor='e')
 
-		return new_var, 'int'
+		return new_var, 'int', new_frame
 
 	def add_float_choice(self,hint_text,parent_frame,starting_choice=None,extra_args=None):
 		new_frame = self.add_choice_row(parent_frame,hint_text)
@@ -202,7 +213,7 @@ class SetupGui:
 						textvariable=new_var,justify=tk.RIGHT,width=5)
 		no_entry.pack(side=tk.RIGHT,anchor='e')
 
-		return new_var, 'float'
+		return new_var, 'float', new_frame
 
 	def add_bool_choice(self,hint_text,parent_frame,starting_choice=None,extra_args=None):
 		new_frame = self.add_choice_row(parent_frame,hint_text)
@@ -214,7 +225,7 @@ class SetupGui:
 		check_but = tk.Checkbutton(new_frame,variable=new_var)
 		check_but.pack(side=tk.RIGHT,anchor='e')
 
-		return new_var, 'bool'
+		return new_var, 'bool', new_frame
 
 	def add_list_choice(self,hint_text,parent_frame,starting_choice=None,extra_args=None):
 		new_frame = self.add_choice_row(parent_frame,hint_text)
@@ -226,7 +237,19 @@ class SetupGui:
 		if starting_choice is not None:
 			new_var.set(str(starting_choice))
 
-		return new_var, 'str'
+		def gen_hide_callback():
+			dis_var = new_var
+			x_args = extra_args
+			def callback(*args):
+				self.hide_unhide(dis_var.get(),x_args)
+			return callback
+
+		hide_cb = gen_hide_callback()
+
+		new_var.trace("w", hide_cb)
+
+
+		return new_var, 'str', new_frame
 
 	def add_list_enter(self,hint_text,parent_frame,starting_choice=None,extra_args=None):
 		new_frame = self.add_choice_row(parent_frame,hint_text)
@@ -238,7 +261,7 @@ class SetupGui:
 			starting_text = ", ".join(starting_choice)
 			new_var.set(starting_text)
 
-		return new_var, 'list'
+		return new_var, 'list', new_frame
 
 	def add_str_enter(self,hint_text,parent_frame,starting_choice=None,extra_args=None):
 		new_frame = self.add_choice_row(parent_frame,hint_text)
@@ -250,7 +273,7 @@ class SetupGui:
 		str_entry = tk.Entry(new_frame,textvariable=new_var,justify="left")
 		str_entry.pack(side=tk.RIGHT,fill=tk.X,anchor='e',expand=True)
 
-		return new_var, 'str'
+		return new_var, 'str', new_frame
 
 #####################
 # end compiler stuff
@@ -263,6 +286,21 @@ class SetupGui:
 		char_widths = {}
 		for c in string.printable:
 			char_widths[c] = font.measure(c)
+
+	def hide_unhide(self,selection,var_names):
+		keys_we_want = []
+		for k in self.name_to_frame.keys():
+			if '_' in k:
+				if any([v in k for v in var_names]):
+					keys_we_want.append(k)
+
+		for k in keys_we_want:
+			if selection in k:
+				self.name_to_frame[k].pack(side=tk.TOP,expand=False,fill=tk.X,anchor='n')
+			else:
+				self.name_to_frame[k].pack_forget()
+
+		
 
 	def close(self):
 
