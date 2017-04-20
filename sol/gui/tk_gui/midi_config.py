@@ -1,7 +1,7 @@
 import tkinter as tk
 from tkinter import ttk
 
-import os, configparser
+import os
 
 import config as C
 

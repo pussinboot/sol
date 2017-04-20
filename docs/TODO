@@ -13,6 +13,10 @@ config gui
 
 widths fixing ?
 
+# maybe
+support multiple midi devices
+resolume fx.. somehow?
+
 #########################################
 ###         overview/features         ###
 #########################################
