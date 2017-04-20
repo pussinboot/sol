@@ -14,8 +14,10 @@ from gui.lib_org import lib_org
 from gui.tk_gui import clip_control
 from gui.tk_gui import clip_collections
 from gui.tk_gui import midi_config
+from setup_gui import SetupGui
 
 from mt_gui import MTGui
+
 
 BASE_ADDR = '/modvj/sol_mt/'
 
@@ -41,6 +43,7 @@ class MainGui:
 		self.magi = Magi(IP_ADDR_SERV)
 		self.magi.gui = self
 		self.mt_gui = MTGui(self.magi,ip=IP_ADDR_RECV)
+		self.setup_gui = None
 		self.clip_controls = []
 		self.clip_org = None
 		self.lib_org = None
@@ -127,6 +130,13 @@ class MainGui:
 
 	def configure_midi(self):
 		popup = midi_config.ConfigGui(tk.Toplevel(),self)
+
+	def edit_config(self):
+		if self.setup_gui is not None:
+			self.setup_gui.root_frame.focus_force()
+		else:
+			self.setup_gui = SetupGui(parent=self)
+		# if always on top disable it temporarily (mayb useful for other things too...)
 
 	def toggle_on_top(self,*args):
 		new_val = self.on_top_toggle.get()
@@ -228,6 +238,8 @@ class MainGui:
 		self.filemenu.add_command(label="generate thumbs",command=self.gen_thumbs)
 		# launch midi configurator
 		self.filemenu.add_command(label="config midi",command=self.configure_midi)
+		# launch the setup utility
+		self.filemenu.add_command(label="edit options",command=self.edit_config)
 		# quit
 		self.filemenu.add_command(label="quit",command=self.quit)
 
