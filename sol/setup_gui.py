@@ -99,7 +99,9 @@ class SetupGui:
 		self.compile_config_page(gui_tab_instr,self.gui_tab)
 
 		self.root_frame.update_idletasks()
-		self.root_frame.after_idle(lambda: self.root_frame.minsize(500, self.root_frame.winfo_height()))
+		self.root_frame.after_idle(\
+			lambda: self.root_frame.minsize(max(500,self.root_frame.winfo_width()),
+											 self.root_frame.winfo_height()))
 
 
 
@@ -113,9 +115,13 @@ class SetupGui:
 			if instr_type == 'label_frame':
 				last_label_frame = self.add_label_frame(instr_text,parent_tab)
 			elif instr_type in self.instruction_to_fun:
-				# starting_choice = C[instr_varn]
+				starting_choice = None
+				if instr_varn in C.dict:
+					starting_choice = C.dict[instr_varn]
+					
 				if last_label_frame is not None:
-					new_var, var_type = self.instruction_to_fun[instr_type](instr_text,last_label_frame,extra_args=instr_extr)
+					new_var, var_type = self.instruction_to_fun[instr_type]\
+						(instr_text,last_label_frame,starting_choice,instr_extr)
 					self.name_to_var[instr_varn] = (new_var,var_type)
 
 
@@ -135,6 +141,9 @@ class SetupGui:
 		new_frame = self.add_choice_row(parent_frame,hint_text)
 		new_var = tk.StringVar()
 
+		if starting_choice is not None:
+			new_var.set(str(starting_choice))
+
 		def change_folder():
 			ask_fun = tkfd.askdirectory
 			new_folder_path = ask_fun(parent=parent_frame,title='select folder', mustexist=True)
@@ -145,7 +154,7 @@ class SetupGui:
 		dot_but = tk.Button(new_frame,text='..',command=change_folder)
 		dot_but.pack(side=tk.RIGHT,anchor='e')
 
-		current_path_label = tk.Label(new_frame,textvar=new_var,anchor='e',relief='sunken')
+		current_path_label = tk.Label(new_frame,textvar=new_var,anchor='w',relief='sunken')
 		current_path_label.pack(side=tk.RIGHT,fill=tk.X,anchor='e',expand=True)
 
 		return new_var, 'str'
@@ -153,6 +162,9 @@ class SetupGui:
 	def add_file_select(self,hint_text,parent_frame,starting_choice=None,extra_args=None):
 		new_frame = self.add_choice_row(parent_frame,hint_text)
 		new_var = tk.StringVar()
+
+		if starting_choice is not None:
+			new_var.set(str(starting_choice))
 
 		def change_file():
 			ask_fun = tkfd.askopenfilename
@@ -164,7 +176,7 @@ class SetupGui:
 		dot_but = tk.Button(new_frame,text='..',command=change_file)
 		dot_but.pack(side=tk.RIGHT,anchor='e')
 
-		current_path_label = tk.Label(new_frame,textvar=new_var,anchor='e',relief='sunken')
+		current_path_label = tk.Label(new_frame,textvar=new_var,anchor='w',relief='sunken')
 		current_path_label.pack(side=tk.RIGHT,fill=tk.X,anchor='e',expand=True)
 
 		return new_var, 'str'
@@ -172,13 +184,21 @@ class SetupGui:
 	def add_int_choice(self,hint_text,parent_frame,starting_choice=None,extra_args=None):
 		new_frame = self.add_choice_row(parent_frame,hint_text)
 		new_var = tk.StringVar()
-		no_entry = tk.Spinbox(new_frame,from_=0,to=999,textvariable=new_var,justify=tk.RIGHT,width=3)
+
+		if starting_choice is not None:
+			new_var.set(str(starting_choice))
+
+		no_entry = tk.Spinbox(new_frame,from_=0,to=999,textvariable=new_var,justify='left',width=3)
 		no_entry.pack(side=tk.RIGHT,anchor='e')
 		return new_var, 'int'
 
 	def add_float_choice(self,hint_text,parent_frame,starting_choice=None,extra_args=None):
 		new_frame = self.add_choice_row(parent_frame,hint_text)
 		new_var = tk.StringVar()
+
+		if starting_choice is not None:
+			new_var.set(str(starting_choice))
+
 		no_entry = tk.Spinbox(new_frame,from_=0,to=2,increment=0.005,
 						textvariable=new_var,justify=tk.RIGHT,width=5)
 		no_entry.pack(side=tk.RIGHT,anchor='e')
@@ -187,6 +207,10 @@ class SetupGui:
 	def add_bool_choice(self,hint_text,parent_frame,starting_choice=None,extra_args=None):
 		new_frame = self.add_choice_row(parent_frame,hint_text)
 		new_var = tk.IntVar()
+
+		if starting_choice is not None:
+			new_var.set(int(starting_choice))
+
 		check_but = tk.Checkbutton(new_frame,variable=new_var)
 		check_but.pack(side=tk.RIGHT,anchor='e')
 		return new_var, 'bool'
@@ -194,8 +218,12 @@ class SetupGui:
 	def add_list_choice(self,hint_text,parent_frame,starting_choice=None,extra_args=None):
 		new_frame = self.add_choice_row(parent_frame,hint_text)
 		new_var = tk.StringVar()
+
 		selector = tk.OptionMenu(new_frame,new_var,*extra_args)
 		selector.pack(side=tk.RIGHT,anchor='e')
+
+		if starting_choice is not None:
+			new_var.set(str(starting_choice))
 
 		return new_var, 'str'
 
@@ -204,11 +232,20 @@ class SetupGui:
 		new_var = tk.StringVar()
 		list_entry = tk.Entry(new_frame,textvariable=new_var,justify="left")
 		list_entry.pack(side=tk.RIGHT,fill=tk.X,anchor='e',expand=True)
+
+		if starting_choice is not None:
+			starting_text = ", ".join(starting_choice)
+			new_var.set(starting_text)
+
 		return new_var, 'list'
 
 	def add_str_enter(self,hint_text,parent_frame,starting_choice=None,extra_args=None):
 		new_frame = self.add_choice_row(parent_frame,hint_text)
 		new_var = tk.StringVar()
+
+		if starting_choice is not None:
+			new_var.set(str(starting_choice))
+
 		str_entry = tk.Entry(new_frame,textvariable=new_var,justify="left")
 		str_entry.pack(side=tk.RIGHT,fill=tk.X,anchor='e',expand=True)
 		return new_var, 'str'

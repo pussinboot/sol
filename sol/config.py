@@ -8,7 +8,7 @@ import os, pickle
 
 class GlobalConfig:
 	"""docstring for GlobalConfig"""
-	def __init__(self,load_file=None):
+	def __init__(self,load_file=False):
 		self.dict = self.__dict__
 		self.default_options = {
 		# sol params
@@ -20,7 +20,7 @@ class GlobalConfig:
 		'NO_Q'					: 8,
 		'NO_LP'					: 8,
 		'DEFAULT_SENSITIVITY'	: 0.005, # control hacks
-		'IGNORED_DIRS'			: ['dxv','C:\\','C:/','VJ'],
+		'IGNORED_DIRS'			: ['C:\\','dxv','VJ'],
 
 		# model params
 		'MODEL_SELECT'						: 'RESOLUME',
@@ -44,17 +44,16 @@ class GlobalConfig:
 
 		self.default_options['RESOLUME_SAVE_DIR'] = os.path.expanduser(os.sep.join(['~','Documents','Resolume Arena 5','compositions']))
 
-		self.load(load_file)
+		if load_file:
+			self.load('')
+		else:
+			self.load()
 
-	def save(self,save_file=None):
+
+	def save(self):
 		pass
 
 	def load(self,load_file=None):
 		if load_file is None:
 			for k,v in self.default_options.items():
 				self.dict[k] = v
-
-
-
-
-
