@@ -5,7 +5,8 @@ import tkinter.filedialog as tkfd
 
 import os, string
 
-import config as C
+from config import GlobalConfig
+C = GlobalConfig()
 
 class SetupGui:
 	def __init__(self,rootwin=None,parent=None):
@@ -78,7 +79,7 @@ class SetupGui:
 		('label_frame', 'external player config', '', []),
 		('list_choice', 'external player', 'EXTERNAL_PLAYER_SELECT', C.EXTERNAL_PLAYER_SELECT_OPTIONS),
 		('file_select', 'mpv script', 'MEMEPV_SCRIPT_PATH', []),
-		('str_enter', 'external command', 'MEMEPV_SCRIPT_PATH', []),
+		('str_enter', 'external command', 'EXTERNAL_PLAYER_COMMAND', []),
 		('label_frame', 'ffmpeg options', '', []),
 		('folder_select', 'ffmpeg directory (leave blank if in path)', 'FFMPEG_PATH', []),
 		('int_choice','# of thumbnails to generate','NO_FRAMES', []),

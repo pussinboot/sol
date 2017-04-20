@@ -10,8 +10,10 @@ then make sure clip_collections' library adds a tag browser too
 	-> will determine what search looks like 
 
 config gui
+# i think i have to return the frame as well so can hide/unhide dynamically whoops
 
 widths fixing ?
+	filename check config stuff
 
 # maybe
 support multiple midi devices
