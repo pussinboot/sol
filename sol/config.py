@@ -1,15 +1,12 @@
 # defines global variables
 import os, pickle
-
-##### ##### ####  #####
-  #   #   # #   # #   #
-  #   ##### ####  #####
-
+import sys
+from pathlib import Path
 
 class GlobalConfig:
-	"""docstring for GlobalConfig"""
-	def __init__(self,load_file=False):
+	def __init__(self,load_defaults=False):
 		self.dict = self.__dict__
+		self.root_path = os.path.split(str(Path(__file__).resolve()))[0]
 		self.default_options = {
 		# sol params
 
@@ -43,17 +40,35 @@ class GlobalConfig:
 		}
 
 		self.default_options['RESOLUME_SAVE_DIR'] = os.path.expanduser(os.sep.join(['~','Documents','Resolume Arena 5','compositions']))
+		self.default_options['SAVEDATA_DIR'] = os.path.join(self.root_path,'savedata')
+		self.default_options['SCROT_DIR'] = os.path.join(self.root_path,'scrot')
 
-		if load_file:
-			self.load('')
-		else:
+		self.config_savefile = os.path.join(self.default_options['SAVEDATA_DIR'],'config.pickle')
+
+
+		if load_defaults:
 			self.load()
-
+		else:
+			self.load(self.config_savefile)
 
 	def save(self):
-		pass
+		try:
+			with open(self.config_savefile, 'wb') as save_handle:
+				pickle.dump(self.dict, save_handle, protocol=pickle.HIGHEST_PROTOCOL)
+			if self.DEBUG: print('saved',self.config_savefile)
+		except:
+			if self.DEBUG: print('failed to make config savedata')
+
 
 	def load(self,load_file=None):
-		if load_file is None:
-			for k,v in self.default_options.items():
-				self.dict[k] = v
+		if load_file is not None and os.path.exists(load_file):
+			try:
+				with open(load_file, 'rb') as save_handle:
+					load_dict = pickle.load(save_handle)
+				self.__dict__ = load_dict
+				return
+			except:
+				if self.DEBUG: print('failed to load config savedata\nloading defaults...')
+
+		for k,v in self.default_options.items():
+			self.dict[k] = v

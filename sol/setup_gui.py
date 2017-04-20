@@ -18,11 +18,11 @@ class SetupGui:
 		if self.rootwin is not None:
 			self.rootwin.withdraw()
 			def close_fun(*args):
-				self.root_frame.destroy()
+				self.close()
 				self.rootwin.destroy()
 		else:
 			def close_fun(*args):
-				self.root_frame.destroy()
+				self.close()
 				# maybe do something with parent
 
 		self.root_frame.protocol("WM_DELETE_WINDOW",close_fun)	
@@ -109,15 +109,13 @@ class SetupGui:
 		last_label_frame = None
 		for instruction in instruction_set:
 			instr_type, instr_text, instr_varn, instr_extr = instruction
-			 # = instruction[1]
-			 # = instruction[2]
-			 # = instruction[3]
+
 			if instr_type == 'label_frame':
 				last_label_frame = self.add_label_frame(instr_text,parent_tab)
+
 			elif instr_type in self.instruction_to_fun:
 				starting_choice = None
-				if instr_varn in C.dict:
-					starting_choice = C.dict[instr_varn]
+				if instr_varn in C.dict: starting_choice = C.dict[instr_varn]
 					
 				if last_label_frame is not None:
 					new_var, var_type = self.instruction_to_fun[instr_type]\
@@ -190,6 +188,7 @@ class SetupGui:
 
 		no_entry = tk.Spinbox(new_frame,from_=0,to=999,textvariable=new_var,justify='left',width=3)
 		no_entry.pack(side=tk.RIGHT,anchor='e')
+
 		return new_var, 'int'
 
 	def add_float_choice(self,hint_text,parent_frame,starting_choice=None,extra_args=None):
@@ -202,6 +201,7 @@ class SetupGui:
 		no_entry = tk.Spinbox(new_frame,from_=0,to=2,increment=0.005,
 						textvariable=new_var,justify=tk.RIGHT,width=5)
 		no_entry.pack(side=tk.RIGHT,anchor='e')
+
 		return new_var, 'float'
 
 	def add_bool_choice(self,hint_text,parent_frame,starting_choice=None,extra_args=None):
@@ -213,6 +213,7 @@ class SetupGui:
 
 		check_but = tk.Checkbutton(new_frame,variable=new_var)
 		check_but.pack(side=tk.RIGHT,anchor='e')
+
 		return new_var, 'bool'
 
 	def add_list_choice(self,hint_text,parent_frame,starting_choice=None,extra_args=None):
@@ -248,8 +249,11 @@ class SetupGui:
 
 		str_entry = tk.Entry(new_frame,textvariable=new_var,justify="left")
 		str_entry.pack(side=tk.RIGHT,fill=tk.X,anchor='e',expand=True)
+
 		return new_var, 'str'
 
+#####################
+# end compiler stuff
 
 	def generate_font_measurements(self):
 		font = tkFont.Font()
@@ -260,7 +264,24 @@ class SetupGui:
 		for c in string.printable:
 			char_widths[c] = font.measure(c)
 
+	def close(self):
 
+		type_to_fun = {
+			'int' : int,
+			'bool' : bool,
+			'str' : str,
+			'float' : float,
+			'list' : lambda sl: [s.strip() for s in sl.split(',')]
+		}
+
+		for k, (v_var,v_type) in self.name_to_var.items():
+			try:
+				C.dict[k] = type_to_fun[v_type](v_var.get())
+			except:
+				pass
+
+		C.save()
+		self.root_frame.destroy()
 
 
 if __name__ == '__main__':
