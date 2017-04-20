@@ -15,6 +15,13 @@ class SetupGui:
 		self.root_frame.title('setup')
 		self.root_frame.focus_force()
 
+		self.menubar = tk.Menu(self.root_frame)
+		self.menubar.add_command(label="undo all changes",command=self.undo_all)
+		self.menubar.add_command(label="load defaults",command=self.reset_default)
+
+		self.root_frame.config(menu=self.menubar)
+
+
 		if self.rootwin is not None:
 			self.rootwin.withdraw()
 			def close_fun(*args):
@@ -29,18 +36,6 @@ class SetupGui:
 
 		# self.generate_font_measurements()
 
-		self.config_book = ttk.Notebook(self.root_frame)
-		self.config_book.pack(expand=True,fill=tk.BOTH)
-
-		# tabs
-		self.param_tab = tk.Frame(self.root_frame,padx=5,pady=5)
-		self.video_tab = tk.Frame(self.root_frame,padx=5,pady=5)
-		self.gui_tab = tk.Frame(self.root_frame,padx=5,pady=5)
-
-		for tab_name in [(self.param_tab, 'sol config'),
-						 (self.video_tab, 'video player'), 
-						 (self.gui_tab  , 'gui config')]:
-			self.config_book.add(tab_name[0],text=tab_name[1])
 
 		self.instruction_to_fun = {
 			'folder_select' : self.add_folder_select,
@@ -55,6 +50,40 @@ class SetupGui:
 
 		self.name_to_var = {}
 		self.name_to_frame = {}
+
+		self.config_book = ttk.Notebook(self.root_frame)
+		self.config_book.pack(expand=True,fill=tk.BOTH)
+
+		# tabs
+		self.reset()
+
+
+	def reset(self,to_default=False):
+
+		if to_default:
+			C.load()
+
+		cur_no_tabs = len(self.config_book.tabs())
+		reopen_tab = -1
+
+		if cur_no_tabs > 0:
+			cur_tab_id = self.config_book.select()
+			reopen_tab = self.config_book.index(cur_tab_id)
+			for _ in range(cur_no_tabs):
+				self.config_book.forget(0)
+
+		self.param_tab = None
+		self.video_tab = None
+		self.gui_tab   = None
+
+		self.param_tab = tk.Frame(self.root_frame,padx=5,pady=5)
+		self.video_tab = tk.Frame(self.root_frame,padx=5,pady=5)
+		self.gui_tab   = tk.Frame(self.root_frame,padx=5,pady=5)
+
+		for tab_name in [(self.param_tab, 'sol config'),
+						 (self.video_tab, 'video player'), 
+						 (self.gui_tab  , 'gui config')]:
+			self.config_book.add(tab_name[0],text=tab_name[1])
 
 		# construction instructions
 
@@ -99,12 +128,60 @@ class SetupGui:
 		self.compile_config_page(video_tab_instr,self.video_tab)
 		self.compile_config_page(gui_tab_instr,self.gui_tab)
 
+		if reopen_tab >= 0:
+			self.config_book.select(self.config_book.tabs()[reopen_tab])
+
 		self.root_frame.update_idletasks()
 		self.root_frame.after_idle(\
 			lambda: self.root_frame.minsize(max(500,self.root_frame.winfo_width()),
 											 self.root_frame.winfo_height()))
 
+	def undo_all(self):
+		self.reset()
 
+	def reset_default(self):
+		self.reset(True)
+
+	def close(self):
+
+		type_to_fun = {
+			'int' : int,
+			'bool' : bool,
+			'str' : str,
+			'float' : float,
+			'list' : lambda sl: [s.strip() for s in sl.split(',')]
+		}
+
+		for k, (v_var,v_type) in self.name_to_var.items():
+			try:
+				C.dict[k] = type_to_fun[v_type](v_var.get())
+			except:
+				pass
+
+		C.save()
+		self.root_frame.destroy()
+
+	def generate_font_measurements(self):
+		font = tkFont.Font()
+		# height
+		font_height = font.metrics("linespace")
+		# measure font widths
+		char_widths = {}
+		for c in string.printable:
+			char_widths[c] = font.measure(c)
+
+	def hide_unhide(self,selection,var_names):
+		keys_we_want = []
+		for k in self.name_to_frame.keys():
+			if '_' in k:
+				if any([v in k for v in var_names]):
+					keys_we_want.append(k)
+
+		for k in keys_we_want:
+			if selection in k:
+				self.name_to_frame[k].pack(side=tk.TOP,expand=False,fill=tk.X,anchor='n')
+			else:
+				self.name_to_frame[k].pack_forget()
 
 	def compile_config_page(self,instruction_set,parent_tab):
 		last_label_frame = None
@@ -132,7 +209,8 @@ class SetupGui:
 			# print(sop)
 			self.hide_unhide(*sop)
 
-
+	#######################
+	# COMPILER HELPER FUNS
 
 	def add_label_frame(self,frame_name,parent_tab):
 		new_label_frame = tk.LabelFrame(parent_tab,text=frame_name,padx=5,pady=5)
@@ -245,9 +323,7 @@ class SetupGui:
 			return callback
 
 		hide_cb = gen_hide_callback()
-
 		new_var.trace("w", hide_cb)
-
 
 		return new_var, 'str', new_frame
 
@@ -274,53 +350,6 @@ class SetupGui:
 		str_entry.pack(side=tk.RIGHT,fill=tk.X,anchor='e',expand=True)
 
 		return new_var, 'str', new_frame
-
-#####################
-# end compiler stuff
-
-	def generate_font_measurements(self):
-		font = tkFont.Font()
-		# height
-		font_height = font.metrics("linespace")
-		# measure font widths
-		char_widths = {}
-		for c in string.printable:
-			char_widths[c] = font.measure(c)
-
-	def hide_unhide(self,selection,var_names):
-		keys_we_want = []
-		for k in self.name_to_frame.keys():
-			if '_' in k:
-				if any([v in k for v in var_names]):
-					keys_we_want.append(k)
-
-		for k in keys_we_want:
-			if selection in k:
-				self.name_to_frame[k].pack(side=tk.TOP,expand=False,fill=tk.X,anchor='n')
-			else:
-				self.name_to_frame[k].pack_forget()
-
-		
-
-	def close(self):
-
-		type_to_fun = {
-			'int' : int,
-			'bool' : bool,
-			'str' : str,
-			'float' : float,
-			'list' : lambda sl: [s.strip() for s in sl.split(',')]
-		}
-
-		for k, (v_var,v_type) in self.name_to_var.items():
-			try:
-				C.dict[k] = type_to_fun[v_type](v_var.get())
-			except:
-				pass
-
-		C.save()
-		self.root_frame.destroy()
-
 
 if __name__ == '__main__':
 	root = tk.Tk()
