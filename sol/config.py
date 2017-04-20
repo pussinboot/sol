@@ -5,7 +5,7 @@ import os
   #   #   # #   # #   #
   #   ##### ####  #####
 
-# give this a gui and save these things to a .ini
+# give this a gui and save these things to a pickle
 DEBUG = True 
 
 # actual magi params
@@ -23,16 +23,18 @@ REFRESH_INTERVAL = 166 # time in ms between frames
 NO_FRAMES = 5
 
 # model selection
-# options are RESOLUME, MPV, ISADORA
+MODEL_SELECT_OPTIONS = ['RESOLUME', 'MEMEPV', 'ISADORA']
 MODEL_SELECT = 'RESOLUME'
 
 # resomeme
 RESOLUME_SAVE_DIR = "{0}{1}".format(os.environ['USERPROFILE'],"\\Documents\\Resolume Arena 5\\compositions")
 
 # memepv
+EXTERNAL_PLAYER_SELECT_OPTIONS = ['MEMEPV','EXTERNAL_PLAYER']
+EXTERNAL_PLAYER_SELECT = 'MEMEPV'
 # MEMEPV_SCRIPT_PATH = 'C:\\code\\vj\\memepv\\test.js'
 MEMEPV_SCRIPT_PATH = 'C:\\Users\\leo\\Documents\\Code\\vj\\memepv\\test.js'
-
+EXTERNAL_PLAYER_COMMAND = ''
 
 # control hacks
 DEFAULT_SENSITIVITY = 0.005 # how many seconds the default control adjustment is
@@ -44,3 +46,12 @@ SUPPORTED_FILETYPES = ('.mov', '.webm', '.mp4','.avi')
 IGNORED_DIRS = ['dxv','C:\\','C:/','VJ']
 
 SAVEDATA_DIR = './savedata'
+
+# FFMPEG STUFF
+FFMPEG_PATH = ''
+# harcoded tk dimensions
+
+
+
+
+# i think i have to return the frame as well so can hide/unhide dynamically whoops
