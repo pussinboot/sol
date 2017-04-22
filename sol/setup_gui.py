@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk
 import tkinter.font as tkFont
 import tkinter.filedialog as tkfd
+import tkinter.messagebox as tkmb
 
 import os, string
 
@@ -11,9 +12,6 @@ except:
 	from sol.config import GlobalConfig
 C = GlobalConfig()
 
-
-###
-# if opened from the main gui then some things may change that require a reset..
 class SetupGui:
 	def __init__(self,rootwin=None,parent=None):
 		self.rootwin, self.parent = rootwin, parent
@@ -30,11 +28,14 @@ class SetupGui:
 
 		if self.rootwin is not None:
 			self.rootwin.withdraw()
+			self.major_changes = []
 			def close_fun(*args):
 				self.close()
 				self.rootwin.destroy()
 		else:
 			self.parent.root.call('wm', 'attributes', '.', '-topmost', '0')
+			# baddies
+			self.major_changes = ['NO_LAYERS', 'NO_Q', 'NO_LP', 'MODEL_SELECT',]
 			def close_fun(*args):
 				self.close()
 				self.parent.setup_gui = None
@@ -64,6 +65,9 @@ class SetupGui:
 
 		# tabs
 		self.reset()
+		self.generate_font_measurements()
+
+
 
 
 	def reset(self,to_default=False):
@@ -160,23 +164,32 @@ class SetupGui:
 			'list' : lambda sl: [s.strip() for s in sl.split(',')]
 		}
 
+		any_major = False
+
 		for k, (v_var,v_type) in self.name_to_var.items():
 			try:
-				C.dict[k] = type_to_fun[v_type](v_var.get())
+				new_val = type_to_fun[v_type](v_var.get())
+				if k in self.major_changes:
+					if C.dict[k] != new_val:
+						any_major = True
+				C.dict[k] = new_val
 			except:
 				pass
 
 		C.save()
+		if any_major:
+			tkmb.showwarning ('','you may have to restart sol\nfor your changes to take effect')
 		self.root_frame.destroy()
 
 	def generate_font_measurements(self):
 		font = tkFont.Font()
 		# height
-		font_height = font.metrics("linespace")
+		C.dict['font_height'] = font.metrics("linespace")
 		# measure font widths
 		char_widths = {}
 		for c in string.printable:
 			char_widths[c] = font.measure(c)
+		C.dict['font_widths'] = char_widths
 
 	def hide_unhide(self,selection,var_names):
 		keys_we_want = []
