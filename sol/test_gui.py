@@ -69,8 +69,6 @@ class MainGui:
 		# self.root	
 		self.root.resizable(0,0)
 
-
-
 	def start(self):
 		self.magi.start()
 
