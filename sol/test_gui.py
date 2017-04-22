@@ -285,8 +285,11 @@ class MainGui:
 
 	def update_clip_params(self,layer,clip,param):
 		# dispatch things according to param
-		self.clip_controls[layer].update_clip_params(clip,param)
-		self.mt_gui.update_clip_params(layer,clip,param)
+		try:
+			self.clip_controls[layer].update_clip_params(clip,param)
+			self.mt_gui.update_clip_params(layer,clip,param)
+		except:
+			pass
 
 	def update_cur_pos(self,layer,pos):
 		# pass along the current position

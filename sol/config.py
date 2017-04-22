@@ -47,6 +47,9 @@ class GlobalConfig:
 		'FFMPEG_PATH'		: '',
 		'NO_FRAMES'			: 5,
 		'THUMBNAIL_WIDTH'	: 192,
+		'FONT_WIDTHS'		: {},
+		'FONT_HEIGHT'		: 10,
+		'FONT_AVG_WIDTH'	: 5,
 		}
 
 		self.default_options['RESOLUME_SAVE_DIR'] = os.path.expanduser(os.sep.join(['~','Documents','Resolume Arena 5','compositions']))

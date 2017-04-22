@@ -1,7 +1,9 @@
 import tkinter as tk
-from PIL import ImageTk,Image
-import os
 import tkinter.simpledialog as tksimpledialog
+
+from PIL import ImageTk,Image
+import os, bisect
+from itertools import accumulate
 
 from config import GlobalConfig
 C = GlobalConfig()
@@ -39,9 +41,24 @@ class ClipControl:
 			self.update_clip_params(clip)
 			self.name_label.unbind("<Double-Button-1>")
 			return
-		self.name_var.set(clip.name)
+		self.change_name(clip.name)
 		self.update_clip_params(clip)
 		self.name_label.bind("<Double-Button-1>",self.change_name_dialog)
+
+	def change_name(self,new_name):
+		new_text = new_name
+		text_meas = []
+		for c in new_text:
+			if c in C.FONT_WIDTHS:
+				text_meas.append(C.FONT_WIDTHS[c])
+			else:
+				text_meas.append(C.FONT_AVG_WIDTH)
+
+		cumm_text_meas = list(accumulate(text_meas))
+		if cumm_text_meas[-1] > self.width-25:
+			to_i = bisect.bisect_left(cumm_text_meas,self.width-25 - 5*C.FONT_WIDTHS['.'])
+			new_text = new_text[:to_i].strip() + ".."
+		self.name_var.set(new_text)
 
 	def update_clip_params(self,clip,param=None):
 		if param in self.param_dispatch:
@@ -74,12 +91,12 @@ class ClipControl:
 		self.refresh_looping(clip)
 
 	def change_name_dialog(self,*args):
+		cur_clip = self.backend.clip_storage.current_clips[self.layer]
+		if cur_clip is None: return
 		new_name = tksimpledialog.askstring("rename clip",'',
-					initialvalue=self.name_var.get())
+					initialvalue=cur_clip.name)
 		if new_name:
 			# change name
-			cur_clip = self.backend.clip_storage.current_clips[self.layer]
-			if cur_clip is None: return
 			self.backend.rename_clip(cur_clip,new_name) # have to do this to update search properly etc
 
 	def resize(self,new_width):
@@ -350,8 +367,11 @@ class ClipControl:
 			for but in control_buts:
 				but.config(state='disabled')
 				but.config(relief='flat')
-				self.loop_type_tk.set(self.loop_type_convert['d'])
-				self.loop_select_tk.set('-1')
+				try:
+					self.loop_type_tk.set(self.loop_type_convert['d'])
+					self.loop_select_tk.set('-1')
+				except:
+					pass
 
 			return
 		for but in control_buts:
@@ -373,9 +393,6 @@ class ClipControl:
 			except:
 				pass
 				
-		
-
-
 	def update_cues(self,clip):
 		if clip is None:
 			for i in range(C.NO_Q):
