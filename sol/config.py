@@ -3,6 +3,16 @@ import os, pickle
 import sys
 from pathlib import Path
 
+class SingletonDecorator:
+	def __init__(self,klass):
+		self.klass = klass
+		self.instance = None
+	def __call__(self,*args,**kwds):
+		if self.instance == None:
+			self.instance = self.klass(*args,**kwds)
+		return self.instance
+
+@SingletonDecorator
 class GlobalConfig:
 	def __init__(self,load_defaults=False):
 		self.dict = self.__dict__
