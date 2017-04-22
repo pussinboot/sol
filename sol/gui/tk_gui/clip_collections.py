@@ -2,9 +2,11 @@ import tkinter as tk
 from tkinter import ttk
 from .tkdnd import dnd_start
 import tkinter.simpledialog as tksimpledialog
+import tkinter.font as tkFont
 
 from PIL import ImageTk,Image
-import os
+import os, bisect
+from itertools import accumulate
 
 from config import GlobalConfig
 C = GlobalConfig()
@@ -100,8 +102,21 @@ class ClipContainer:
 
 	def change_text(self,new_text):
 		new_text = str(new_text)
-		if len(new_text) > 25:
-			new_text = new_text[:24] + ".."
+		text_meas = []
+		for c in new_text:
+			if c in C.FONT_WIDTHS:
+				text_meas.append(C.FONT_WIDTHS[c])
+			else:
+				try:
+					new_meas = self.parent.font_checker.measure(c)
+					C.FONT_WIDTHS[c] = new_meas
+					text_meas.append(new_meas)
+				except:
+					text_meas.append(C.FONT_AVG_WIDTH)
+		cumm_text_meas = list(accumulate(text_meas))
+		if cumm_text_meas[-1] > C.THUMB_W:
+			to_i = bisect.bisect_left(cumm_text_meas,C.THUMB_W - 5*C.FONT_WIDTHS['.'])
+			new_text = new_text[:to_i].strip() + ".."
 		self.label.config(text=new_text)
 
 	def change_clip(self,clip):
@@ -202,6 +217,10 @@ class ContainerCollection:
 		self.frame = tk.Frame(parent_frame)
 		self.root = root
 		self.backend = backend
+		self.font_checker = tkFont.Font()
+
+		if '.' not in C.FONT_WIDTHS:
+			C.FONT_WIDTHS['.'] = self.font_checker.measure('.')
 
 		for i in range(C.NO_Q):
 			self.clip_conts.append(ClipContainer(self,i,select_cmd,self.clip_collection[i]))

@@ -184,12 +184,23 @@ class SetupGui:
 	def generate_font_measurements(self):
 		font = tkFont.Font()
 		# height
-		C.dict['font_height'] = font.metrics("linespace")
+		C.dict['FONT_HEIGHT'] = font.metrics("linespace")
 		# measure font widths
 		char_widths = {}
 		for c in string.printable:
 			char_widths[c] = font.measure(c)
-		C.dict['font_widths'] = char_widths
+
+		if 'FONT_WIDTHS' in C.dict:
+			for k, v in char_widths.items():
+				C.dict['FONT_WIDTHS'][k] = v
+		else:
+			C.dict['FONT_WIDTHS'] = char_widths
+
+		count, running_sum = 0,0
+		for _, v in C.dict['FONT_WIDTHS'].items():
+			count += 1
+			running_sum += v
+		C.dict['FONT_AVG_WIDTH'] = running_sum / count
 
 	def hide_unhide(self,selection,var_names):
 		keys_we_want = []
