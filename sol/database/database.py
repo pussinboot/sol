@@ -19,10 +19,9 @@ else:
 	from .clip import ClipCollection
 	try:
 		from config import GlobalConfig
-		C = GlobalConfig()
 	except:
 		from sol.config import GlobalConfig
-		C = GlobalConfig()
+	C = GlobalConfig()
 
 
 class Database:
