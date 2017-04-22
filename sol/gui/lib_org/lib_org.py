@@ -82,12 +82,18 @@ class LibraryOrgGui:
 		self.select_clip = clip_selector
 		self.clear_clip = clip_clearer
 
+
+
 		###############
 		# SETUP THE GUI
 
 		# main window
 		self.root = root
 		self.root.title('lib org')
+
+		if standalone:
+			self.root.call = self.parent.root.call
+
 		self.mainframe = tk.Frame(root,pady=0,padx=0)
 		self.mainframe.pack(fill=tk.BOTH,expand=tk.Y)
 
@@ -196,6 +202,10 @@ class LibraryOrgGui:
 			self.setup_gui.root_frame.focus_force()
 		else:
 			self.setup_gui = SetupGui(parent=self)
+
+	def toggle_on_top(self,*args):
+		# for config options..
+		pass
 
 	####################
 	# NEATER SUBWIN FUNS

@@ -34,10 +34,11 @@ class SetupGui:
 				self.close()
 				self.rootwin.destroy()
 		else:
+			self.parent.root.call('wm', 'attributes', '.', '-topmost', '0')
 			def close_fun(*args):
 				self.close()
 				self.parent.setup_gui = None
-				# maybe do something else with parent
+				self.parent.toggle_on_top()
 
 		self.root_frame.protocol("WM_DELETE_WINDOW",close_fun)	
 
