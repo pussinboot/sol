@@ -5,9 +5,15 @@ import tkinter.filedialog as tkfd
 
 import os, string
 
-from config import GlobalConfig
+try:
+	from config import GlobalConfig
+except:
+	from sol.config import GlobalConfig
 C = GlobalConfig()
 
+
+###
+# if opened from the main gui then some things may change that require a reset..
 class SetupGui:
 	def __init__(self,rootwin=None,parent=None):
 		self.rootwin, self.parent = rootwin, parent

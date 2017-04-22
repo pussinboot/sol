@@ -18,12 +18,14 @@ if __name__ == '__main__' and __package__ is None:
 	from sol.database import database, clip
 	from sol.config import GlobalConfig
 	C = GlobalConfig()
+	from sol.setup_gui import SetupGui
 	from sol.inputs import osc
 
 else:
 	from database import database, clip
 	from config import GlobalConfig
 	C = GlobalConfig()
+	from setup_gui import SetupGui
 	from inputs import osc
 
 
@@ -34,6 +36,7 @@ class LibraryOrgGui:
 		self.parent = parent # the big gui
 		self.child_wins = {}
 		self.add_clip_gui = None
+		self.setup_gui = None
 
 		# sol stuff
 		self.backend = self.parent.magi
@@ -113,6 +116,9 @@ class LibraryOrgGui:
 		self.filemenu.add_command(label="load",command=self.load_prompt)
 		self.root.bind("<Control-o>",lambda e:self.load_prompt())
 
+		if standalone:
+			self.filemenu.add_command(label="edit options",command=self.edit_config)
+
 		self.menubar.add_cascade(label='file',menu=self.filemenu)
 		self.menubar.add_command(label="import wizard",command=self.create_clip_gui)
 		self.menubar.add_command(label="refresh (f5)",command=self.init_tree)
@@ -176,7 +182,7 @@ class LibraryOrgGui:
 				self.tree.tree.insert(cur_folder, 'end', text=files[i][1],values=[tags,fname,'clip'])
 
 	###############
-	# IMPORT WIZARD
+	# other windows
 	
 	def create_clip_gui(self):
 		if self.add_clip_gui is None:
@@ -184,6 +190,12 @@ class LibraryOrgGui:
 		else:
 			self.add_clip_gui.root.lift()
 			self.add_clip_gui.root.focus_force()
+
+	def edit_config(self):
+		if self.setup_gui is not None:
+			self.setup_gui.root_frame.focus_force()
+		else:
+			self.setup_gui = SetupGui(parent=self)
 
 	####################
 	# NEATER SUBWIN FUNS
