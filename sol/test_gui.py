@@ -65,8 +65,7 @@ class MainGui:
 		self.setup_menubar()
 		# quit behavior
 		self.root.protocol("WM_DELETE_WINDOW",self.quit)	
-		# move it to nice place
-		# self.root	
+
 		self.root.resizable(0,0)
 
 	def start(self):
@@ -86,13 +85,13 @@ class MainGui:
 
 	def save_as(self):
 		ask_fun = tkfd.asksaveasfilename
-		filename = ask_fun(parent=self.root,title='Save as..',initialdir='./savedata')
+		filename = ask_fun(parent=self.root,title='Save as..',initialdir=C.SAVEDATA_DIR)
 		if filename:
 			self.save(filename)
 
 	def load(self):
 		ask_fun = tkfd.askopenfilename
-		filename = ask_fun(parent=self.root,title='Load',initialdir='./savedata')
+		filename = ask_fun(parent=self.root,title='Load',initialdir=C.SAVEDATA_DIR)
 		if filename:
 			if self.magi.load(filename):
 				self.refresh_after_load()
@@ -139,7 +138,7 @@ class MainGui:
 	def toggle_on_top(self,*args):
 		new_val = self.on_top_toggle.get()
 		new_val = str(int(new_val))
-		root.call('wm', 'attributes', '.', '-topmost', new_val)
+		self.root.call('wm', 'attributes', '.', '-topmost', new_val)
 
 	def enter_clip_org_gui(self):
 		# only want 1 clip control =)
@@ -163,6 +162,7 @@ class MainGui:
 			self.cc_frames[i].pack(side=tk.LEFT)
 		# library browser
 		self.clip_conts.search_frame.pack(side=tk.LEFT,fill=tk.Y)
+		self.cur_view.set('full')
 
 	def enter_lib_org_gui(self):
 		# close clip_org if it isn't closed yet
@@ -174,7 +174,7 @@ class MainGui:
 			self.cc_frames[i].pack_forget()
 		
 		# resize the 1 clip control
-		self.root.geometry('750x567+50+50') # TEMP!!
+		# self.root.geometry('750x567+50+50') # TEMP!!
 		self.clip_controls[0].resize(575)
 		# we want different library browser sry
 		self.clip_conts.search_frame.pack_forget()
@@ -192,6 +192,8 @@ class MainGui:
 			self.cc_frames[i].pack(side=tk.LEFT)
 		# library browser
 		self.clip_conts.search_frame.pack(side=tk.LEFT,fill=tk.Y)
+		self.toggle_on_top()
+		self.cur_view.set('full')
 
 
 
@@ -245,10 +247,10 @@ class MainGui:
 		self.on_top_toggle = tk.BooleanVar()
 		self.on_top_toggle.trace('w',self.toggle_on_top)
 		self.on_top_toggle.set(C.ALWAYS_ON_TOP)
+
 		self.cur_view = tk.StringVar()
 		self.last_view = ''
 		self.cur_view.trace('w',self.change_views)
-
 
 		# toggle always on top behavior
 		self.viewmenu.add_checkbutton(label="always on top", onvalue=True, offvalue=False, variable=self.on_top_toggle)
