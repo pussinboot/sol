@@ -147,7 +147,7 @@ class MainGui:
 			self.cc_frames[i].pack_forget()
 		
 		# resize the 1 clip control
-		self.clip_controls[0].resize(575)
+		self.clip_controls[0].resize(4*C.THUMB_W)
 		# we want different library browser sry
 		self.clip_conts.search_frame.pack_forget()
 		self.clip_org = clip_collections.ClipOrg(tk.Toplevel(),self)
@@ -158,7 +158,7 @@ class MainGui:
 			self.clip_org.close()
 			self.clip_org = None
 		# resize the 1st clip control back to normal
-		self.clip_controls[0].resize(300)
+		self.clip_controls[0].resize(330)
 		for i in range(1,len(self.cc_frames)):
 			self.cc_frames[i].pack(side=tk.LEFT)
 		# library browser
@@ -176,7 +176,7 @@ class MainGui:
 		
 		# resize the 1 clip control
 		# self.root.geometry('750x567+50+50') # TEMP!!
-		self.clip_controls[0].resize(575)
+		self.clip_controls[0].resize(4*C.THUMB_W)
 		# we want different library browser sry
 		self.clip_conts.search_frame.pack_forget()
 		self.lib_org = lib_org.LibraryOrgGui(tk.Toplevel(),self)
@@ -188,7 +188,7 @@ class MainGui:
 			self.lib_org.close()
 			self.lib_org = None
 		# resize the 1st clip control back to normal
-		self.clip_controls[0].resize(300)
+		self.clip_controls[0].resize(330)
 		for i in range(1,len(self.cc_frames)):
 			self.cc_frames[i].pack(side=tk.LEFT)
 		# library browser
