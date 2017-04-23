@@ -7,6 +7,7 @@ C = GlobalConfig()
 
 import tkinter as tk
 import tkinter.filedialog as tkfd
+import tkinter.messagebox as tkmb
 
 from magi import Magi
 from gui.lib_org import lib_org
@@ -336,32 +337,22 @@ class MainGui:
 
 
 if __name__ == '__main__':
+
+	import os
+
 	root = tk.Tk()
 	root.title('sol')
-	# open on privacy screen =)
-	# x, y = -1250, 900
-	# root.geometry('+{}+{}'.format(x, y))
 
-	testgui = MainGui(root)
-	# for k,v in testgui.magi.fun_store.items():
-	# 	print(k)#,v)
-	# testgui.magi.load('./test_save.xml')
-	# for i in range(len(testgui.magi.clip_storage.clip_col)):
-	# 	print(testgui.magi.clip_storage.clip_col[i])
-	testgui.refresh_after_load()
-	# testgui.magi.db.search('gundam')
-	# testgui.magi.debug_search_res()
-	# for i in range(len(testgui.magi.clip_storage.clip_col)):
-	# 	testgui.magi.clip_storage.clip_col[i] = testgui.magi.db.last_search[i]
-	# print(testgui.magi.clip_storage.clip_col[0])
-	testgui.start()
+	if not os.path.exists(C.config_savefile):
+		tkmb.showinfo ('','no config found!\n you need to run initial setup first')
+		SetupGui(root)
 
-	# testgui.clip_controls[0].resize(575)
-	# testgui.configure_midi()
-	# testgui.enter_clip_org_gui()
-	# testgui.enter_lib_org_gui()
+	else:
+		testgui = MainGui(root)
+
+		testgui.refresh_after_load()
+		
+		testgui.start()
+
 	root.mainloop()
-	# testgui.magi.gui = None
-	# testgui.magi.fun_store['/magi/layer0/playback/clear']('',True)
-	# testgui.magi.fun_store['/magi/layer1/playback/clear']('',True)
-	# testgui.magi.save_to_file('./test_save.xml')
+	
