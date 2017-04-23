@@ -269,7 +269,19 @@ class CollectionsHolder:
 		self.frame = parent_frame
 		self.col_frame = tk.Frame(self.frame)
 		self.collections_frame = tk.Frame(self.col_frame)
-		self.collections_labels_frame = tk.Frame(self.col_frame,height=15,width=300)
+
+		self.collections_bottom_frame = tk.Frame(self.col_frame)
+		self.collection_label_canvas = tk.Canvas(self.collections_bottom_frame, borderwidth=0, background="#ffffff",width=(4*C.THUMB_W-50),height=C.FONT_HEIGHT+2)
+		self.collections_labels_frame = tk.Frame(self.collection_label_canvas)
+		self.collection_label_canvas.create_window((0,0), window=self.collections_labels_frame , anchor="nw")
+		
+		self.xsb = tk.Scrollbar(self.collections_bottom_frame, orient="horizontal", command=self.collection_label_canvas.xview,width=C.FONT_HEIGHT)
+		self.collection_label_canvas.configure(xscrollcommand=self.xsb.set)
+
+
+		self.collections_labels_frame.bind("<Configure>", lambda event: self.canvas_scroll_update())
+
+		# self.collections_labels_frame = tk.Frame(self.col_frame,height=15,width=(4*C.THUMB_W+20))
 		self.search_frame = tk.Frame(self.frame)
 
 		self.library_browse = LibraryBrowser(self.backend,self.search_frame)
@@ -277,23 +289,31 @@ class CollectionsHolder:
 		self.containers = []
 		self.container_labels = []
 
-		self.setup_labels()
+		self.add_col_but = tk.Button(self.collections_bottom_frame,text='+',command=self.add_collection)
+		self.add_col_but.pack(side=tk.RIGHT)
 
 		self.collections_frame.pack(side=tk.TOP)
-		self.collections_labels_frame.pack(side=tk.TOP,fill=tk.Y,expand=True)
-		self.collections_labels_frame.pack_propagate(0)
-		self.col_frame.pack(side=tk.LEFT,expand=True)
+		self.collections_bottom_frame.pack(side=tk.TOP,fill=tk.X,expand=True)
+		self.collection_label_canvas.pack(side=tk.LEFT,fill=tk.Y,expand=True)
+		self.xsb.pack(side=tk.RIGHT,fill=tk.X,expand=True)
+		self.col_frame.pack(side=tk.LEFT,fill=tk.X,expand=True)
 		self.search_frame.pack(side=tk.LEFT,fill=tk.Y,anchor='e')
 
-	def setup_labels(self):
-		self.add_col_but = tk.Button(self.collections_labels_frame,text='+',command=self.add_collection)
-		self.go_l_but = tk.Button(self.collections_labels_frame,text='<',command=self.go_left)
-		self.go_l_but.bind("<Button-3>",self.swap_left)
-		self.go_r_but = tk.Button(self.collections_labels_frame,text='>',command=self.go_right)
-		self.go_r_but.bind("<Button-3>",self.swap_right)
-		self.add_col_but.pack(side=tk.RIGHT)
-		self.go_r_but.pack(side=tk.RIGHT)
-		self.go_l_but.pack(side=tk.RIGHT)
+		self.xsb.bind('<Button-3>',self.xsb_hax)
+
+	def canvas_scroll_update(self):
+		self.collection_label_canvas.configure(scrollregion=self.collection_label_canvas.bbox("all"))
+
+	def canvas_scroll_mouse(self,event):
+		self.collection_label_canvas.xview('scroll',-1*int(event.delta//120),'units')
+
+	def xsb_hax(self,event):
+		click_what = self.xsb.identify(event.x,event.y)
+		if click_what == 'arrow1':
+			self.swap_left()
+		elif click_what == 'arrow2':
+			self.swap_right()
+
 
 	def refresh_after_load(self):
 		# clip collections
@@ -337,7 +357,7 @@ class CollectionsHolder:
 		self.containers[ij[0]],self.containers[ij[1]] = self.containers[ij[1]],self.containers[ij[0]]
 		self.highlight_col()
 
-	def highlight_col(self,index=-1):
+	def highlight_col(self,index=-1,do_scroll=True):
 		if index < 0:
 			index = self.clip_storage.cur_clip_col
 		try:
@@ -347,8 +367,14 @@ class CollectionsHolder:
 			self.container_labels[index].configure(relief=tk.SUNKEN)
 			if index != self.clip_storage.cur_clip_col:
 				self.clip_storage.select_collection(index)
+			# scroll into view
+			if do_scroll:
+				left_x, wid_width = self.container_labels[index].winfo_x(), self.container_labels[index].winfo_width()
+				scroll_to = (left_x - wid_width) / self.collection_label_canvas.winfo_width()
+				self.collection_label_canvas.xview('moveto',scroll_to)
 		except:
 			pass
+
 
 	def add_collection(self):
 		self.clip_storage.add_collection()
@@ -370,9 +396,13 @@ class CollectionsHolder:
 	def add_collection_label(self,collection):
 		index = len(self.container_labels)
 		newlabel = tk.Label(self.collections_labels_frame,text=collection.name,bd=4)
-		newlabel.bind('<ButtonPress-1>',lambda *args: self.highlight_col(self.container_labels.index(newlabel)))
+		newlabel.bind('<ButtonPress-1>',lambda *args: self.highlight_col(self.container_labels.index(newlabel),False))
 		newlabel.bind("<Double-1>",lambda *args: self.change_name_dialog(self.container_labels.index(newlabel)))
 		newlabel.bind('<ButtonPress-2>',lambda *args: self.remove_collection(self.container_labels.index(newlabel)))
+		newlabel.bind("<Double-3>",lambda *args: self.remove_collection(self.container_labels.index(newlabel)))
+		newlabel.bind("<MouseWheel>", self.canvas_scroll_mouse)
+		newlabel.bind("<Button-4>", self.canvas_scroll_mouse)
+		newlabel.bind("<Button-5>", self.canvas_scroll_mouse)
 		newlabel.pack(side=tk.LEFT)
 		self.container_labels.append(newlabel)
 
