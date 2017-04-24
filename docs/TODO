@@ -2,11 +2,6 @@
 ###         actual to-do list         ###
 #########################################
 
-consistent filenaming/paths
-
-# CONFIG REFACTOR
-need to add server/client ips/ports
-
 - mpv shit interface for quick extractz
 - package it up
 	- proper importing for dev + build, etc.

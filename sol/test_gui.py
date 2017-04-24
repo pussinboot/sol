@@ -61,7 +61,12 @@ class MainGui:
 		self.root.resizable(0,0)
 
 	def start(self):
-		self.magi.start()
+		try:
+			self.magi.start()
+		except Exception as e:
+			print(e)
+			tkmb.showerror('fatal error',e)
+			self.quit()
 
 	def new_save(self):
 		self.magi.reset()
