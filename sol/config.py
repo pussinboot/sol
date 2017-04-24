@@ -39,7 +39,7 @@ class GlobalConfig:
 		'MODEL_SELECT_OPTIONS'				: ['RESOLUME', 'MPV', 'ISADORA'],
 		'RESOLUME_SAVE_DIR'					: '',
 		'SUPPORTED_FILETYPES'				: ['.mov', '.webm', '.mp4','.avi'],
-		'XTERNAL_PLAYER_SELECT'				: 'MEMEPV',
+		'XTERNAL_PLAYER_SELECT'				: 'EXTERNAL_PLAYER',
 		'EXTERNAL_PLAYER_SELECT_OPTIONS'	: ['MEMEPV','EXTERNAL_PLAYER'],
 		# 'MEMEPV_SCRIPT_PATH'				: 'C:\\code\\vj\\memepv\\test.js',
 		'MEMEPV_SCRIPT_PATH'				: 'C:\\Users\\leo\\Documents\\Code\\vj\\memepv\\test.js',
