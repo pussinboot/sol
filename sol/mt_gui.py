@@ -5,7 +5,7 @@ hosts magi and sends data to an osc_client
 from config import GlobalConfig
 C = GlobalConfig()
 
-import os
+import os, time
 from shutil import copyfile
 
 from magi import Magi
@@ -23,6 +23,10 @@ class MTGui:
 		self.magi = magi
 		self.osc_client = osc.OscClient(ip,port)
 		self.update_all()
+
+	@property
+	def to_copy_dir(self):
+		return os.path.join(C.SCROT_DIR,'TO_COPY')
 
 	def update_all(self):
 		self.update_cols('start')
@@ -175,14 +179,14 @@ class MTGui:
 
 		def copy_file(src_file,new_hash):
 			# src_file = clip.t_names[0]
-			new_file = './scrot_to_move/{}.png'.format(new_hash)
+			new_file = os.path.join(self.to_copy_dir,'{}.png'.format(new_hash))
 			try:
 				copyfile(src_file,new_file)
 			except:
 				pass
 
-		if not os.path.exists('./scrot_to_move'):
-			os.makedirs('./scrot_to_move')
+		if not os.path.exists(self.to_copy_dir):
+			os.makedirs(self.to_copy_dir)
 		thumbz = {}
 		for clip in self.magi.db.clips.values():
 			test_str = clip.t_names[0]
@@ -208,11 +212,9 @@ class MTGui:
 			else:
 				thumbz[thumb_no] = test_str
 			copy_file(test_str,thumb_no)
-		# next i need to rename (aka move) to fixed hash
-		# make sure to get cur_clip.params['loop_points'][i][3]
-		# save the db w/ updated thumbnails
-		# then copy to new dir : ) (with just the hash as filename)
-	### printing current state ### 
+		print('done copying your thumbnails, find them at')
+		print(self.to_copy_dir)
+
 
 	def print_current_state(self):
 		to_print = "*-"*36+"*\n" + \
@@ -328,26 +330,38 @@ class MTGui:
 	def print_a_line(self):
 		return "=" * 73
 
-
-
-if __name__ == '__main__':
+def main(gen_thumbs_flag=False):
 	testit = Magi()
 	testit.gui = MTGui(testit)
-	# testit.load('./test_save.xml')
-	testit.start()
-	# testit.gui.gen_thumbs_for_me()
-
-	import time
-	while True:
-		try:
-			time.sleep(1)
-			testit.gui.print_current_state()
-		except (KeyboardInterrupt, SystemExit):
-			print("exiting...")
-			testit.stop()
-			# testit.save_to_file('./test_save.xml')
-			break
-	
+	if gen_thumbs_flag:
+		testit.gui.gen_thumbs_for_me()
+	else:
+		testit.start()
+		while True:
+			try:
+				time.sleep(1)
+				testit.gui.print_current_state()
+			except (KeyboardInterrupt, SystemExit):
+				print("exiting...")
+				testit.stop()
+				break
+		
 	testit.save_to_file(testit.db.file_ops.last_save)
+
+if __name__ == '__main__':
+	import sys 
+	if len(sys.argv) > 1:
+		if sys.argv[1] in ['help','-h','-help']:
+			print("""this is the standalone multitouch gui for sol
+don't use any flags to run sol in commandline mode with a multitouch client
+use -g to generate thumbs to copy to your multitouch client
+use -h to get this help screen""")
+		elif sys.argv[1] in ['thumbs','-g']:
+			main(True)
+		else:
+			print('unknown command "{}"'.format(" ".join(sys.argv[1:])))
+	else:
+		main()
+
+
 	
-	testit.stop()
