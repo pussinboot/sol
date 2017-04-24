@@ -480,7 +480,7 @@ class LibraryBrowser:
 		# tags tree setup
 		self.tag_query = tk.StringVar()
 		self.tag_field = tk.Entry(self.tag_frame,textvariable=self.tag_query,width=5)
-		self.tag_query.trace('w',self.search)
+		self.tag_query.trace('w',self.tag_search)
 		self.tag_inner_frame = tk.Frame(self.tag_frame)
 		self.tag_tree = ttk.Treeview(self.tag_inner_frame,selectmode='extended', show='tree', height = 11)
 		self.tag_tree.bind('<ButtonPress>',self.make_drag_clip, add="+")
@@ -490,15 +490,15 @@ class LibraryBrowser:
 		self.tag_field.pack(side=tk.TOP,anchor=tk.N,fill=tk.X,pady=2)
 		self.tag_tree.pack(side=tk.LEFT,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)
 		self.ysbbb = ttk.Scrollbar(self.tag_frame, orient='vertical', command=self.tag_tree.yview)
-		self.tag_tree.configure(yscrollcommand=self.ysb.set)
+		self.tag_tree.configure(yscrollcommand=self.ysbbb.set)
 		self.ysbbb.pack(side=tk.RIGHT,anchor=tk.N,fill=tk.Y)
 		self.tag_inner_frame.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=True)
 		
 
 		# pack everything
 		self.browsers.add(self.search_frame,text='search')
-		self.browsers.add(self.browse_frame,text='browse')
 		self.browsers.add(self.tag_frame,text='tags')
+		self.browsers.add(self.browse_frame,text='browse')
 
 		self.frame.pack(fill=tk.BOTH,expand=tk.Y)
 		self.browsers.pack(expand=True,fill=tk.BOTH)
@@ -507,7 +507,6 @@ class LibraryBrowser:
 		self.tree_reset()
 
 
-		
 
 	def search(self,*args):
 		# print(self.search_query.get())
@@ -524,6 +523,25 @@ class LibraryBrowser:
 			if self.search_tree.exists("search"):
 				self.search_tree.delete("search")
 			self.search_tree.item("root",open=True)
+
+	def tag_search(self,*args):
+		# print(self.search_query.get())
+		search_term = self.tag_query.get()
+		if search_term != "":
+			self.tag_tree.item("root",open=False)
+			if self.tag_tree.exists("search"):
+				self.tag_tree.delete("search")
+			search_res = self.tag_tree.insert('', 'end',iid="search", text='Search Results',open=True,values=['nop',0])
+			res_tags = self.db.tagdb.search(search_term)
+			for tag, clips in res_tags:
+				tag_folder = self.tag_tree.insert(search_res, 'end', text=tag,values=["tag",0])
+				for clip in clips:
+					self.tag_tree.insert(tag_folder, 'end', text=clip.name,values=["clip",clip.f_name])
+			
+		else:
+			if self.tag_tree.exists("search"):
+				self.tag_tree.delete("search")
+			self.tag_tree.item("root",open=True)
 
 	def last_search(self,*args):
 		res = self.db.last_search
@@ -587,9 +605,20 @@ class LibraryBrowser:
 					top_folder = self.folders[node[2]]
 					self.browse_tree.item(top_folder,open=True)
 				self.folders[node[1]] = cur_folder = self.browse_tree.insert(top_folder,'end',text=node[1],open=False,values=['folder'])
-
 			else:
 				self.browse_tree.insert(cur_folder, 'end', text=files[i][1],values=["clip",files[i][2]])
+		# tags
+		if self.tag_tree.exists("root"):
+			self.tag_tree.delete("root")
+		self.t_tree_root = self.tag_tree.insert('', 'end',iid="root", text='All',open=True,values=['nah',0])
+
+		all_tags = self.db.tagdb.search("")
+		for tag, clips in all_tags:
+			tag_folder = self.tag_tree.insert('root', 'end', text=tag,values=["tag",0])
+			for clip in clips:
+				self.tag_tree.insert(tag_folder, 'end', text=clip.name,values=["clip",clip.f_name])
+
+
 
 
 class ClipOrg:
