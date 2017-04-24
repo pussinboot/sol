@@ -288,7 +288,8 @@ class TagDB(Search):
 
 	def search(self,search_term):
 		self.search_res = super().search_by_prefix(search_term)
-		return self.search_res
+		to_return = [(tag, self.tags_to_clips[tag]) for tag in self.search_res]
+		return to_return
 
 	def refresh(self):
 		if self.needs_refresh:
