@@ -5,7 +5,6 @@
 consistent filenaming/paths
 
 # CONFIG REFACTOR
-thumbs needs to check config for the ffmpeg path
 need to add server/client ips/ports
 
 - mpv shit interface for quick extractz
