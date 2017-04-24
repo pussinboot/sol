@@ -6,7 +6,7 @@ from tkinter import ttk
 try:
 	from sub_wins import RenameWin, MoveWin, TagWin, AddTagWin, Treeview
 except:
-	from gui.lib_org.sub_wins import RenameWin, MoveWin, Treeview
+	from gui.lib_org.sub_wins import RenameWin, MoveWin, TagWin, AddTagWin, Treeview
 
 import os
 
