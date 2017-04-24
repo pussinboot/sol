@@ -19,18 +19,6 @@ from setup_gui import SetupGui
 
 from mt_gui import MTGui
 
-
-BASE_ADDR = '/modvj/sol_mt/'
-
-# IP_ADDR_SERV = "192.168.2.36" # home
-# IP_ADDR_SERV = "192.168.29.157" # laptop
-# IP_ADDR_SERV = "192.168.0.123" # appt
-IP_ADDR_SERV = None
-
-
-IP_ADDR_RECV = "192.168.0.156" 
-# IP_ADDR_RECV = "127.0.0.1" 
-
 class MainGui:
 	def __init__(self,root):
 		# tk
@@ -41,9 +29,12 @@ class MainGui:
 		self.clip_col_frame = tk.Frame(self.mainframe,pady=0,padx=0)
 
 		# sol
-		self.magi = Magi(IP_ADDR_SERV)
+		self.magi = Magi()
 		self.magi.gui = self
-		self.mt_gui = MTGui(self.magi,ip=IP_ADDR_RECV)
+		if C.MTGUI_ENABLED:
+			self.mt_gui = MTGui(self.magi,ip=C.MTGUI_IP_ADDR)
+		else:
+			self.mt_gui = None
 		self.setup_gui = None
 		self.clip_controls = []
 		self.clip_org = None
@@ -282,25 +273,25 @@ class MainGui:
 	def update_clip(self,layer,clip):
 		# if clip is none.. clear
 		self.clip_controls[layer].update_clip(clip)
-		self.mt_gui.update_clip(layer,clip)
+		if self.mt_gui is not None: self.mt_gui.update_clip(layer,clip)
 
 	def update_clip_params(self,layer,clip,param):
 		# dispatch things according to param
 		try:
 			self.clip_controls[layer].update_clip_params(clip,param)
-			self.mt_gui.update_clip_params(layer,clip,param)
+			if self.mt_gui is not None: self.mt_gui.update_clip_params(layer,clip,param)
 		except:
 			pass
 
 	def update_cur_pos(self,layer,pos):
 		# pass along the current position
 		self.clip_controls[layer].update_cur_pos(pos)
-		self.mt_gui.update_cur_pos(layer,pos)
+		if self.mt_gui is not None: self.mt_gui.update_cur_pos(layer,pos)
 
 	def update_search(self):
 		# display search results
 		self.clip_conts.library_browse.last_search()
-		self.mt_gui.update_search() # doesn't do anything yet
+		if self.mt_gui is not None: self.mt_gui.update_search() # doesn't do anything yet
 
 	def update_cols(self,what,ij=None):
 		# what - select, add, remove, swap
@@ -318,7 +309,7 @@ class MainGui:
 			else:
 				what_to_do[what](ij)
 
-		self.mt_gui.update_cols(what,ij)
+		if self.mt_gui is not None: self.mt_gui.update_cols(what,ij)
 
 	def update_clip_names(self):
 		for i in range(C.NO_LAYERS):
@@ -333,7 +324,7 @@ class MainGui:
 					self.clip_conts.containers[c_i]\
 					.clip_conts[i].change_text(active_col[i].name)
 
-		self.mt_gui.update_clip_names() # also doesn't do anything
+		if self.mt_gui is not None: self.mt_gui.update_clip_names() # also doesn't do anything
 
 
 if __name__ == '__main__':

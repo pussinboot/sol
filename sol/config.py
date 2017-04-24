@@ -29,6 +29,11 @@ class GlobalConfig:
 		'DEFAULT_SENSITIVITY'	: 0.005, # control hacks
 		'IGNORED_DIRS'			: ['C:\\','dxv','VJ'],
 
+		# network params
+		'OSC_PORT'			: 7001,
+		'MTGUI_ENABLED'		: True,
+		'MTGUI_IP_ADDR'		: '127.0.0.1',
+
 		# model params
 		'MODEL_SELECT'						: 'RESOLUME',
 		'MODEL_SELECT_OPTIONS'				: ['RESOLUME', 'MPV', 'ISADORA'],

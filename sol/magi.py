@@ -24,13 +24,15 @@ class Magi:
 
 
 	"""
-	def __init__(self,ip_addr_serv=None):
+	def __init__(self,ip_addr_serv=None,serv_port=None):
 		# database
 		self.db = database.Database()
 		# thumbnail generator
 		self.thumb_maker = thumbs.ThumbMaker(C.THUMBNAIL_WIDTH)
 		# inputs
-		self.osc_server = osc.OscServer(ip=ip_addr_serv)
+		if serv_port is None:
+			serv_port = C.OSC_PORT
+		self.osc_server = osc.OscServer(ip=ip_addr_serv,port=serv_port)
 		self.midi_controller = midi.MidiController()
 		self.fun_store = {} # dictionary containing address to function
 							# duplicating osc_server (allows for guis to do things)

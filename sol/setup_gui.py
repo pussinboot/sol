@@ -89,10 +89,12 @@ class SetupGui:
 		self.gui_tab   = None
 
 		self.param_tab = tk.Frame(self.root_frame,padx=5,pady=5)
+		self.network_tab = tk.Frame(self.root_frame,padx=5,pady=5)
 		self.video_tab = tk.Frame(self.root_frame,padx=5,pady=5)
 		self.gui_tab   = tk.Frame(self.root_frame,padx=5,pady=5)
 
 		for tab_name in [(self.param_tab, 'sol config'),
+						 (self.network_tab, 'network config'),
 						 (self.video_tab, 'video player'), 
 						 (self.gui_tab  , 'gui config')]:
 			self.config_book.add(tab_name[0],text=tab_name[1])
@@ -111,6 +113,14 @@ class SetupGui:
 		('float_choice','default sensitivity','DEFAULT_SENSITIVITY', []),
 		('list_enter', 'ignored directories', 'IGNORED_DIRS', []),
 		('bool_choice','print debug info','DEBUG', [])
+		]
+
+		network_tab_instr = [
+		('label_frame', 'server config', '', []),
+		('int_choice','osc port','OSC_PORT', []),
+		('label_frame', 'multitouch client', '', []),
+		('bool_choice','enabled','MTGUI_ENABLED', []),
+		('str_enter', 'receiving ip', 'MTGUI_IP_ADDR', [])
 		]
 
 		video_tab_instr = [
@@ -137,6 +147,7 @@ class SetupGui:
 		]
 
 		self.compile_config_page(param_tab_instr,self.param_tab)
+		self.compile_config_page(network_tab_instr,self.network_tab)
 		self.compile_config_page(video_tab_instr,self.video_tab)
 		self.compile_config_page(gui_tab_instr,self.gui_tab)
 
@@ -307,7 +318,7 @@ class SetupGui:
 		if starting_choice is not None:
 			new_var.set(str(starting_choice))
 
-		no_entry = tk.Spinbox(new_frame,from_=0,to=999,textvariable=new_var,justify='left',width=3)
+		no_entry = tk.Spinbox(new_frame,from_=0,to=9999,textvariable=new_var,justify='left',width=5)
 		no_entry.pack(side=tk.RIGHT,anchor='e')
 
 		return new_var, 'int', new_frame
