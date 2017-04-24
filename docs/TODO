@@ -4,20 +4,18 @@
 
 consistent filenaming/paths
 
-TAGS
-
-then make sure clip_collections' library adds a tag browser too 
-	-> will determine what search looks like 
-
-config gui
-
-widths fixing ?
-	filename check config stuff
-
 # CONFIG REFACTOR
 thumbs needs to check config for the ffmpeg path
+need to add server/client ips/ports
+
+- mpv shit interface for quick extractz
+- package it up
+	- proper importing for dev + build, etc.
+	- make sure werks with osx
 
 # maybe
+- need to autogen muh resolume savefile
+
 support multiple midi devices
 resolume fx.. somehow?
 
