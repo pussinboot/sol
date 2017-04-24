@@ -35,7 +35,7 @@ class SetupGui:
 		else:
 			self.parent.root.call('wm', 'attributes', '.', '-topmost', '0')
 			# baddies
-			self.major_changes = ['NO_LAYERS', 'NO_Q', 'NO_LP', 'MODEL_SELECT',]
+			self.major_changes = ['NO_LAYERS', 'NO_Q', 'NO_LP', 'MODEL_SELECT','OSC_PORT','MTGUI_ENABLED','MTGUI_IP_ADDR','XTERNAL_PLAYER_SELECT']
 			def close_fun(*args):
 				self.close()
 				self.parent.setup_gui = None

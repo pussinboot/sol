@@ -9,6 +9,7 @@ except:
 	from gui.lib_org.sub_wins import RenameWin, MoveWin, TagWin, AddTagWin, Treeview
 
 import os
+from subprocess import Popen
 
 if __name__ == '__main__' and __package__ is None:
 	import sys
@@ -54,9 +55,20 @@ class LibraryOrgGui:
 		self.delayed_actions = []
 		self.total_deleted_count = 0
 
+		self.sub_process = None
 
-		if standalone or C.MODEL_SELECT != 'MPV' and os.path.exists(C.MEMEPV_SCRIPT_PATH):
-			from subprocess import Popen
+		if C.MODEL_SELECT == 'MPV':
+			self.last_selected_clip = self.backend.clip_storage.current_clips[0]
+
+			def clip_selector(clip,layer):
+				self.backend.select_clip(clip,layer)
+				self.perform_delayed_actions(clip)
+
+			def clip_clearer(*args):
+				self.backend.clear_clip(0)
+				self.last_selected_clip = None
+
+		elif C.XTERNAL_PLAYER_SELECT =='MEMEPV' and os.path.exists(C.MEMEPV_SCRIPT_PATH):
 			Popen(['node',C.MEMEPV_SCRIPT_PATH, '1', '6999'])
 			self.osc_client = osc.OscClient(port=6999)
 
@@ -69,15 +81,24 @@ class LibraryOrgGui:
 				self.last_selected_clip = None
 
 		else:
-			self.last_selected_clip = self.backend.clip_storage.current_clips[0]
-
-			def clip_selector(clip,layer):
-				self.backend.select_clip(clip,layer)
+			def clip_selector(clip,layer=0):
+				if '{}' in C.EXTERNAL_PLAYER_COMMAND:
+					command = C.EXTERNAL_PLAYER_COMMAND.format(clip.f_name)
+				else:
+					command = C.EXTERNAL_PLAYER_COMMAND + ' "{}"'.format(clip.f_name)
+				try:
+					self.sub_process = Popen(command)
+				except:
+					if C.DEBUG: print('your external command doesnt work gg')
+					return
 				self.perform_delayed_actions(clip)
 
 			def clip_clearer(*args):
-				self.backend.clear_clip(0)
-				self.last_selected_clip = None
+				if self.sub_process is not None:
+					self.sub_process.kill()
+					self.sub_process = None
+
+		
 
 		self.select_clip = clip_selector
 		self.clear_clip = clip_clearer
