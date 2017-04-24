@@ -870,7 +870,10 @@ class Magi:
 		self.osc_server.start()
 
 	def stop(self):
-		self.osc_server.stop()
+		try:
+			self.osc_server.stop()
+		except:
+			pass
 		self.thumb_maker.quit()
 
 	def generate_save_data(self):
