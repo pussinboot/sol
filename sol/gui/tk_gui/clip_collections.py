@@ -264,6 +264,7 @@ class CollectionsHolder:
 		self.clip_storage = backend.clip_storage
 		self.select_cmd = backend.select_clip
 
+		self.last_do_scroll = False
 
 		self.root = root
 		self.frame = parent_frame
@@ -368,12 +369,13 @@ class CollectionsHolder:
 			if index != self.clip_storage.cur_clip_col:
 				self.clip_storage.select_collection(index)
 			# scroll into view
-			if do_scroll:
+			if do_scroll and self.last_do_scroll:
 				left_x, wid_width = self.container_labels[index].winfo_x(), self.container_labels[index].winfo_width()
 				scroll_to = (left_x - wid_width) / self.collection_label_canvas.winfo_width()
 				self.collection_label_canvas.xview('moveto',scroll_to)
 		except:
 			pass
+		self.last_do_scroll = do_scroll
 
 
 	def add_collection(self):
@@ -439,32 +441,16 @@ class LibraryBrowser:
 		self.db = self.backend.db
 		self.folders = {}
 
-		self.search_query = tk.StringVar()
-
 		self.parent_frame = parent_frame
 		self.frame = tk.Frame(self.parent_frame)
-		self.tree_frames = tk.Frame(self.frame)
-		self.tree_buts = tk.Frame(self.frame)
-		self.search_frame = tk.Frame(self.tree_frames)
-		self.browse_frame = tk.Frame(self.tree_frames)
+		self.browsers = ttk.Notebook(self.frame)
 
-		self.search_but = tk.Label(self.tree_buts,text='search',relief=tk.GROOVE,width=13,pady=2)
-		self.browse_but = tk.Label(self.tree_buts,text='browse', width=13,pady=2)
+		self.search_frame = tk.Frame(self.parent_frame)
+		self.browse_frame = tk.Frame(self.parent_frame)
+		self.tag_frame = tk.Frame(self.parent_frame)
 
-		def search_select(*args):
-			self.search_frame.tkraise()
-			self.search_but.config(relief=tk.GROOVE)
-			self.browse_but.config(relief=tk.FLAT)
-
-		def browse_select(*args):
-			self.browse_frame.tkraise()
-			self.search_but.config(relief=tk.FLAT)
-			self.browse_but.config(relief=tk.GROOVE)
-
-		self.search_but.bind('<ButtonPress>',search_select)
-		self.browse_but.bind('<ButtonPress>',browse_select)
-
-		# setup the search tree
+		# search tree setup
+		self.search_query = tk.StringVar()
 		self.search_field = tk.Entry(self.search_frame,textvariable=self.search_query,width=5)
 		self.search_query.trace('w',self.search)
 		self.search_inner_frame = tk.Frame(self.search_frame)
@@ -472,39 +458,56 @@ class LibraryBrowser:
 		self.search_tree.bind('<ButtonPress>',self.make_drag_clip, add="+")
 		self.search_tree.bind('<Double-1>',lambda e: self.activate_clip_to_layer(e,0))
 		self.search_tree.bind('<Double-3>',lambda e: self.activate_clip_to_layer(e,1))
-		
-		# setup the browse tree
+
+		self.search_field.pack(side=tk.TOP,anchor=tk.N,fill=tk.X,pady=2)
+		self.search_tree.pack(side=tk.LEFT,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)
+		self.ysb = ttk.Scrollbar(self.search_frame, orient='vertical', command=self.search_tree.yview)
+		self.search_tree.configure(yscrollcommand=self.ysb.set)
+		self.ysb.pack(side=tk.RIGHT,anchor=tk.N,fill=tk.Y)
+		self.search_inner_frame.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=True)
+
+		# browse tree setup
 		self.browse_tree = ttk.Treeview(self.browse_frame,selectmode='extended', show='tree', height = 13)
 		self.browse_tree.bind('<ButtonPress>',self.make_drag_clip, add="+")
 		self.browse_tree.bind('<Double-1>',lambda e: self.activate_clip_to_layer(e,0))
 		self.browse_tree.bind('<Double-3>',lambda e: self.activate_clip_to_layer(e,1))
 
-		self.tree_reset()
-		# srch tree
-		self.search_field.pack(side=tk.TOP,anchor=tk.N,fill=tk.X,pady=2)#.grid(row=1,column=1,sticky=tk.N)
-		self.search_tree.pack(side=tk.LEFT,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)#.grid(row=2,column=1,sticky=tk.N) 
-		self.ysb = ttk.Scrollbar(self.search_frame, orient='vertical', command=self.search_tree.yview)
-		self.search_tree.configure(yscrollcommand=self.ysb.set)
-		self.ysb.pack(side=tk.RIGHT,anchor=tk.N,fill=tk.Y)
-		self.search_inner_frame.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=True)
-		# brwse tree
 		self.browse_tree.pack(side=tk.LEFT,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)
 		self.ysbb = ttk.Scrollbar(self.browse_frame, orient='vertical', command=self.browse_tree.yview)
 		self.browse_tree.configure(yscrollcommand=self.ysbb.set)
 		self.ysbb.pack(side=tk.RIGHT,anchor=tk.N,fill=tk.Y)
+		
+		# tags tree setup
+		self.tag_query = tk.StringVar()
+		self.tag_field = tk.Entry(self.tag_frame,textvariable=self.tag_query,width=5)
+		self.tag_query.trace('w',self.search)
+		self.tag_inner_frame = tk.Frame(self.tag_frame)
+		self.tag_tree = ttk.Treeview(self.tag_inner_frame,selectmode='extended', show='tree', height = 11)
+		self.tag_tree.bind('<ButtonPress>',self.make_drag_clip, add="+")
+		self.tag_tree.bind('<Double-1>',lambda e: self.activate_clip_to_layer(e,0))
+		self.tag_tree.bind('<Double-3>',lambda e: self.activate_clip_to_layer(e,1))
 
+		self.tag_field.pack(side=tk.TOP,anchor=tk.N,fill=tk.X,pady=2)
+		self.tag_tree.pack(side=tk.LEFT,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)
+		self.ysbbb = ttk.Scrollbar(self.tag_frame, orient='vertical', command=self.tag_tree.yview)
+		self.tag_tree.configure(yscrollcommand=self.ysb.set)
+		self.ysbbb.pack(side=tk.RIGHT,anchor=tk.N,fill=tk.Y)
+		self.tag_inner_frame.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=True)
+		
 
-		self.tree_frames.pack(side=tk.TOP,fill=tk.BOTH,expand=True)
-		self.tree_buts.pack(side=tk.TOP)
-
-		self.search_frame.grid(row=0, column=0, sticky='news')
-		self.browse_frame.grid(row=0, column=0, sticky='news')
-
-		self.search_but.pack(side=tk.LEFT)
-		self.browse_but.pack(side=tk.LEFT)
+		# pack everything
+		self.browsers.add(self.search_frame,text='search')
+		self.browsers.add(self.browse_frame,text='browse')
+		self.browsers.add(self.tag_frame,text='tags')
 
 		self.frame.pack(fill=tk.BOTH,expand=tk.Y)
-		self.search_frame.tkraise()
+		self.browsers.pack(expand=True,fill=tk.BOTH)
+
+		# finally populate the trees
+		self.tree_reset()
+
+
+		
 
 	def search(self,*args):
 		# print(self.search_query.get())
