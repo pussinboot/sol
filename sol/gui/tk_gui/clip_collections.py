@@ -267,12 +267,13 @@ class CollectionsHolder:
 		self.last_do_scroll = False
 
 		self.root = root
+		defaultbg = self.root.cget('bg')
 		self.frame = parent_frame
 		self.col_frame = tk.Frame(self.frame)
 		self.collections_frame = tk.Frame(self.col_frame)
 
 		self.collections_bottom_frame = tk.Frame(self.col_frame)
-		self.collection_label_canvas = tk.Canvas(self.collections_bottom_frame, borderwidth=0, background="#ffffff",width=(4*C.THUMB_W-50),height=C.FONT_HEIGHT+2)
+		self.collection_label_canvas = tk.Canvas(self.collections_bottom_frame, borderwidth=0, background=defaultbg,width=(4*C.THUMB_W-50),height=C.FONT_HEIGHT+2)
 		self.collections_labels_frame = tk.Frame(self.collection_label_canvas)
 		self.collection_label_canvas.create_window((0,0), window=self.collections_labels_frame , anchor="nw")
 		
