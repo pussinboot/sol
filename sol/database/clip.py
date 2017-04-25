@@ -67,10 +67,7 @@ class ClipCollection:
 	"""
 	def __init__(self,n=8,name='new_col'):
 		self.name = name
-		self.clips = [None] * n #C.NO_Q until i figure out how 
-								# i will do system wide config
-		# may be better to just set it from MAGI whenever instantiate
-		# a clipcollection
+		self.clips = [None] * n 
 
 	def __getitem__(self,i):
 		return self.clips[i]

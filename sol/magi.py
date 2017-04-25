@@ -25,8 +25,6 @@ class Magi:
 
 	"""
 	def __init__(self,ip_addr_serv=None,serv_port=None):
-		# database
-		self.db = database.Database()
 		# thumbnail generator
 		self.thumb_maker = thumbs.ThumbMaker(C.THUMBNAIL_WIDTH)
 		# inputs
@@ -66,11 +64,6 @@ class Magi:
 
 		# clip storage 
 		self.clip_storage = ClipStorage(self)
-		if self.db.file_ops.last_save is None or not self.load(self.db.file_ops.last_save):
-			# if nothing loaded
-			if C.DEBUG: print('starting new save')
-			self.clip_storage.add_collection()
-			self.clip_storage.select_collection(0)
 
 		self.track_vars()
 		self.map_pb_funs()
@@ -102,6 +95,13 @@ class Magi:
 			def external_loop_fun(layer):
 				return
 		self.send_loop = external_loop_fun
+		# database
+		self.db = database.Database()
+		if self.db.file_ops.last_save is None or not self.load(self.db.file_ops.last_save):
+			# if nothing loaded
+			if C.DEBUG: print('starting new save')
+			self.clip_storage.add_collection()
+			self.clip_storage.select_collection(0)
 		self.load_midi()
 
 	###
@@ -912,16 +912,26 @@ class Magi:
 			if C.DEBUG: print('successfully loaded',filename)
 			self.db.file_ops.update_last_save(filename)
 			return True
-		except:
+		except Exception as e:
+			print(e)
 			return False
 
 	def load_resolume_comp(self,filename):
 		from models.resolume import load_avc
-		comp = load_avc.ResolumeLoader(filename)
+		comp = load_avc.ResolumeLoader()
+		load_avc.import_xml(filename)
 		for parsed_clip_vals in comp.clips.values():
 			new_clip = clip.Clip(*parsed_clip_vals)
 			self.db.add_clip(new_clip)
 		self.db.searcher.refresh()
+
+	def export_resolume_comp(self,filename,filename_out):
+		from models.resolume import load_avc
+		comp = load_avc.ResolumeLoader()
+		all_col_clips = [clip for clip_col in self.clip_storage.clip_cols for clip in clip_col]
+		all_col_fnames = [clip.f_name for clip in all_col_clips if clip is not None]
+		comp.export_subset(filename,filename_out,all_col_fnames)
+	
 
 	def load_isadora_comp(self,path):
 		if self.loader is None:

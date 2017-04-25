@@ -103,6 +103,14 @@ class MainGui:
 			self.gen_thumbs()
 			self.refresh_after_load()
 
+	def export_resolume(self):
+		ask_fun = tkfd.askopenfilename
+		filename = ask_fun(parent=self.root,title='Starting Resolume Composition',initialdir=C.RESOLUME_SAVE_DIR)
+		ask_fun = tkfd.asksaveasfilename
+		filename_out = ask_fun(parent=self.root,title='Save as..',initialdir=C.RESOLUME_SAVE_DIR)
+		if filename:
+			self.magi.export_resolume_comp(filename,filename_out)
+
 	def load_isadora(self):
 		ask_fun = tkfd.askdirectory
 		foldername = ask_fun(parent=self.root,title='Add Folder', mustexist=True)
@@ -229,6 +237,8 @@ class MainGui:
 		self.filemenu.add_command(label="load",command=self.load)
 		if C.MODEL_SELECT == 'RESOLUME':
 			self.filemenu.add_command(label="load resolume comp",command=self.load_resolume)
+			self.filemenu.add_command(label="export resolume comp",command=self.export_resolume)
+
 		elif C.MODEL_SELECT == 'ISADORA':
 			self.filemenu.add_command(label="add folder (isadora)",command=self.load_isadora)
 		# create thumbnails
