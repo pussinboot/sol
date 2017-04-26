@@ -8,6 +8,8 @@ from itertools import accumulate
 from config import GlobalConfig
 C = GlobalConfig()
 
+EMPTY_THUMB = os.path.join(os.path.dirname(__file__), 'sample_thumb.png')
+
 class ClipControl:
 	def __init__(self,root,backend,layer):
 
@@ -685,7 +687,7 @@ class LoopScreen:
 		self.canvas.bind("<Leave>",self.unhover)
 
 		#thumbs n buts ha
-		self.default_img = self.current_img = ImageTk.PhotoImage(Image.open('./gui/tk_gui/sample_thumb.png'))
+		self.default_img = self.current_img = ImageTk.PhotoImage(Image.open(EMPTY_THUMB))
 		self.loop_thumbs = [self.default_img]*C.NO_LP
 		self.thumb_label = tk.Label(self.thumb_frame,image=self.current_img,width=self.thumb_w)
 

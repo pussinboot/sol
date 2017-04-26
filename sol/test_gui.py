@@ -5,6 +5,8 @@ from past sol versions
 from config import GlobalConfig
 C = GlobalConfig()
 
+import os
+
 import tkinter as tk
 import tkinter.filedialog as tkfd
 import tkinter.messagebox as tkmb
@@ -342,10 +344,7 @@ class MainGui:
 		if self.mt_gui is not None: self.mt_gui.update_clip_names() # also doesn't do anything
 
 
-if __name__ == '__main__':
-
-	import os
-
+def main():
 	root = tk.Tk()
 	root.title('sol')
 
@@ -361,4 +360,10 @@ if __name__ == '__main__':
 		testgui.start()
 
 	root.mainloop()
+
+if __name__ == '__main__':
+
+	main()
+
+	
 	
