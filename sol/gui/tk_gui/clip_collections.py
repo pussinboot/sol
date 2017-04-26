@@ -11,6 +11,8 @@ from itertools import accumulate
 from config import GlobalConfig
 C = GlobalConfig()
 
+EMPTY_CLIP = os.path.join(os.path.dirname(__file__), 'sample_clip.png')
+
 class ClipContainer:
 	# gui element that holds a single clip
 	def __init__(self,parent,index,selectfun=None,clip=None):
@@ -25,7 +27,7 @@ class ClipContainer:
 		self.grid = self.frame.grid
 
 		self.imgs = []
-		self.default_img = self.current_img = ImageTk.PhotoImage(Image.open('./gui/tk_gui/sample_clip.png'))
+		self.default_img = self.current_img = ImageTk.PhotoImage(Image.open(EMPTY_CLIP))
 		self.current_img_i = 0
 		self.hovered = False
 
@@ -747,7 +749,7 @@ class ClipOrgClip(ClipContainer):
 		self.grid_forget = self.frame.grid_forget
 
 		self.imgs = []
-		self.default_img = self.current_img = ImageTk.PhotoImage(Image.open('./gui/tk_gui/sample_clip.png'))
+		self.default_img = self.current_img = ImageTk.PhotoImage(Image.open(EMPTY_CLIP))
 		self.current_img_i = 0
 		self.hovered = False
 
@@ -785,7 +787,7 @@ class ClipOrgClip(ClipContainer):
 		if len(f_names) > 0:
 			f_name = f_names[0]
 		else:
-			f_name = './gui/tk_gui/sample_clip.png'
+			f_name = EMPTY_CLIP
 		self.imgs = [ImageTk.PhotoImage(Image.open(f_name))]
 		if len(self.imgs) == 0: return
 		self.current_img_i = 0
