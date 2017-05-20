@@ -2,8 +2,8 @@ import os
 import time
 from shutil import copyfile
 
-from magi import Magi
-from inputs import osc
+from sol.magi import Magi
+from sol.inputs import osc
 
 """
 backend for gui made in vvvv
