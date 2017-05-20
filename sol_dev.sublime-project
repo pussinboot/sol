@@ -5,7 +5,7 @@
 			"file_regex": "^[ ]*File \"(...*?)\", line ([0-9]*)",
 			"name": "Anaconda Python Builder",
 			"selector": "source.python",
-			"shell_cmd": "\"C:\\Users\\leo/Envs/sol_dev/Scripts/python\" -u stupid_build.py \"$file\""
+			"shell_cmd": "\"C:\\Users\\leo/Envs/sol_dev/Scripts/python\" -u \"$project_path\\stupid_build.py\" \"$file\""
 		}
 	],
 	"folders":
