@@ -246,9 +246,8 @@ class SetupGui:
                     starting_choice = C.dict[instr_varn]
 
                 if last_label_frame is not None:
-
-                    new_var, var_type, new_frame = self.instruction_to_fun[instr_type]\
-                        (instr_text, last_label_frame, starting_choice, instr_extr)
+                    new_var, var_type, new_frame = self.instruction_to_fun[instr_type](
+                        instr_text, last_label_frame, starting_choice, instr_extr)
                     self.name_to_var[instr_varn] = (new_var, var_type)
                     self.name_to_frame[instr_varn] = new_frame
 
@@ -376,6 +375,7 @@ class SetupGui:
         def gen_hide_callback():
             dis_var = new_var
             x_args = extra_args
+
             def callback(*args):
                 self.hide_unhide(dis_var.get(), x_args)
             return callback
@@ -408,6 +408,7 @@ class SetupGui:
         str_entry.pack(side=tk.RIGHT, fill=tk.X, anchor='e', expand=True)
 
         return new_var, 'str', new_frame
+
 
 if __name__ == '__main__':
     root = tk.Tk()

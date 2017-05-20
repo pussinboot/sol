@@ -4,25 +4,26 @@ import tkinter as tk
 import tkinter.filedialog as tkfd
 import tkinter.messagebox as tkmb
 
-from magi import Magi
+from sol.magi import Magi
 from sol.gui.lib_org import lib_org
 
 from sol.gui.tk_gui import clip_control
 from sol.gui.tk_gui import clip_collections
 from sol.gui.tk_gui import midi_config
-from setup_gui import SetupGui
+from sol.setup_gui import SetupGui
 
-from mt_gui import MTGui
+from sol.mt_gui import MTGui
 
-"""
-test gui made with tkinter and re-using many parts
-of past sol versions
-"""
 from sol.config import GlobalConfig
 C = GlobalConfig()
 
 
 class MainGui:
+    """
+    test gui made with tkinter and re-using many parts
+    of past sol versions
+    """
+
     def __init__(self, root):
         # tk
         self.root = root
@@ -143,7 +144,7 @@ class MainGui:
         # print([0],self.magi.clip_storage.current_clips[1])
 
     def configure_midi(self):
-        popup = midi_config.ConfigGui(tk.Toplevel(), self)
+        midi_config.ConfigGui(tk.Toplevel(), self)
 
     def edit_config(self):
         if self.setup_gui is not None:
@@ -386,6 +387,7 @@ def main():
         testgui.start()
 
     root.mainloop()
+
 
 if __name__ == '__main__':
 

@@ -35,8 +35,8 @@ config = {
     'keywords': 'vj, resolume, video',
     'entry_points': {
         'console_scripts': [
-            # 'sol = sol.test_gui:main',
-            # 'sol_mt = sol.mt_gui',
+            'sol = sol.test_gui:main',
+            'sol_mt = sol.mt_gui',
             'sol_cl = sol.magi'
         ],
     },
