@@ -19,7 +19,11 @@ class SingletonDecorator:
 class GlobalConfig:
     def __init__(self, load_defaults=False):
         self.dict = self.__dict__
-        self.root_path = os.path.split(str(Path(__file__).resolve()))[0]
+
+        self.root_path = os.path.expanduser("~/sol")
+        if not os.path.exists(self.root_path):
+            os.mkdir(self.root_path)
+
         self.default_options = {
             # sol params
 
@@ -74,6 +78,12 @@ class GlobalConfig:
             self.load()
         else:
             self.load(self.config_savefile)
+
+        check_folders = ['SAVEDATA_DIR', 'SCROT_DIR']
+        for cf in check_folders:
+            folder = self.__dict__[cf]
+            if not os.path.exists(folder):
+                os.mkdir(folder)
 
     def save(self):
         try:

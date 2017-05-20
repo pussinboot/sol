@@ -1,5 +1,7 @@
 import os
 import time
+import sys
+
 from shutil import copyfile
 
 from sol.magi import Magi
@@ -343,7 +345,21 @@ class MTGui:
         return "=" * 73
 
 
-def main(gen_thumbs_flag=False):
+def main():
+    gen_thumbs_flag = False
+    if len(sys.argv) > 1:
+        if sys.argv[1] in ['help', '-h', '-help']:
+            print("""this is the standalone multitouch gui for sol
+don't use any flags to run sol in commandline mode with a multitouch client
+use -g to generate thumbs to copy to your multitouch client
+use -h to get this help screen""")
+            sys.exit()
+        elif sys.argv[1] in ['thumbs', '-g']:
+            gen_thumbs_flag = True
+        else:
+            print('unknown command "{}"'.format(" ".join(sys.argv[1:])))
+            sys.exit()
+
     testit = Magi()
     testit.gui = MTGui(testit)
     if gen_thumbs_flag:
@@ -360,19 +376,3 @@ def main(gen_thumbs_flag=False):
                 break
 
     testit.save_to_file(testit.db.file_ops.last_save)
-
-
-if __name__ == '__main__':
-    import sys
-    if len(sys.argv) > 1:
-        if sys.argv[1] in ['help', '-h', '-help']:
-            print("""this is the standalone multitouch gui for sol
-don't use any flags to run sol in commandline mode with a multitouch client
-use -g to generate thumbs to copy to your multitouch client
-use -h to get this help screen""")
-        elif sys.argv[1] in ['thumbs', '-g']:
-            main(True)
-        else:
-            print('unknown command "{}"'.format(" ".join(sys.argv[1:])))
-    else:
-        main()

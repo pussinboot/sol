@@ -1,4 +1,4 @@
-from sol.database.database import database, clip, thumbs
+from sol.database import database, clip, thumbs
 from sol.inputs import osc, midi
 from sol.models.resolume import model as ResolumeModel
 from sol.models.memepv import model as MPVModel
@@ -882,6 +882,7 @@ class Magi:
         return fio.pretty_print(root)
 
     def save_to_file(self,filename):
+        if filename is None: return
         with open(filename,'wb') as f:
             f.write(self.generate_save_data())
         self.db.file_ops.update_last_save(filename)
@@ -1175,26 +1176,12 @@ class TerminalGui:
     def update_clip_names(self):
         pass
 
-if __name__ == '__main__':
+
+def main():
     testit = Magi()
     testit.gui = TerminalGui(testit)
-
-    # ### load and save test resolume library
-    # testfile = "C:/Users/shapil/Documents/Resolume Arena 5/compositions/vjcomp.avc"
-    # testit.load_resolume_comp(testfile)
-    # testit.gen_thumbs(192,5)
-    # clipz = testit.db.search('gundam')
-    # # testit.debug_search_res()
-    # testit.select_clip(clipz[0],0)
-    # testit.select_clip(clipz[1],1)
-    # for i in range(8):
-    #   testit.clip_storage.set_clip_in_col(clipz[i+2],i)
-    # testit.gui.print_current_state()
-
-    # testit.save_to_file('./test_save.xml')
-
-    # testit.load('./test_save.xml')
     testit.start()
+
     import time
     while True:
         try:
@@ -1203,5 +1190,4 @@ if __name__ == '__main__':
         except (KeyboardInterrupt, SystemExit):
             print("exiting...")
             testit.stop()
-            testit.save_to_file('./test_save.xml')
             break
