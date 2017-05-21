@@ -20,7 +20,7 @@ class GlobalConfig:
     def __init__(self, load_defaults=False):
         self.dict = self.__dict__
 
-        self.root_path = os.path.expanduser("~/sol")
+        self.root_path = os.path.expanduser("~/.sol")
         if not os.path.exists(self.root_path):
             os.mkdir(self.root_path)
 

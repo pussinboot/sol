@@ -224,8 +224,12 @@ class ContainerCollection:
         if '.' not in C.FONT_WIDTHS:
             C.FONT_WIDTHS['.'] = self.font_checker.measure('.')
 
+        cc_len = len(self.clip_collection)
         for i in range(C.NO_Q):
-            self.clip_conts.append(ClipContainer(self,i,select_cmd,self.clip_collection[i]))
+            start_clip = None
+            if i < cc_len:
+                start_clip = self.clip_collection[i]
+            self.clip_conts.append(ClipContainer(self,i,select_cmd,start_clip))
 
         n_buts = C.NO_Q
         n_rows = 1

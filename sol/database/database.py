@@ -357,7 +357,7 @@ class FileOPs:
         
         return clip_element
 
-    def load_clip(self,clip_element):
+    def load_clip(self, clip_element):
         # fail gracefully :v)
         if clip_element.get('filename') is None:
             return
@@ -367,6 +367,14 @@ class FileOPs:
             parsed_rep[child.tag] = child
         # build dict out of params
         parsed_params = self.load_settings(parsed_rep['params'])
+
+        fix_things = [('cue_points', C.NO_Q), ('loop_points', C.NO_LP)]
+        for k, c in fix_things:
+            len_diff = c - len(parsed_params[k])
+            if len_diff > 0:
+                parsed_params[k].extend([None] * len_diff)
+
+        parsed_params['cue_points']
         parsed_thumbs = parsed_rep['thumbnails'].text
         if parsed_thumbs is None:
             thumbs = None
@@ -379,9 +387,9 @@ class FileOPs:
             tags = []
         else:
             tags = parsed_tags.split(',')
-        clip_tor = Clip(filename,parsed_rep['activate'].text,
-                        parsed_rep['name'].text,thumbs,
-                        params=parsed_params,tags=tags)
+        clip_tor = Clip(filename, parsed_rep['activate'].text,
+                        parsed_rep['name'].text, thumbs,
+                        params=parsed_params, tags=tags)
         return clip_tor
         
     def save_clip_col(self,clip_col):
