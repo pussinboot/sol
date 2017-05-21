@@ -61,6 +61,6 @@ MIT licensed
 
 you will need `ffmpeg` and its associated `ffprobe`
 
-either `pip install sol` or `pip install -r requirements.txt` followed by `python setup.py install`
+either `pip install sol_vj` or clone this repo then `pip install -r requirements.txt` followed by `python setup.py install`
 
 to use with resolume, see `/docs/templates` for a base composition

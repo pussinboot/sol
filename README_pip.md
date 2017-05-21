@@ -10,6 +10,6 @@ MIT licensed
 
 you will need `ffmpeg` and its associated `ffprobe`
 
-`pip install sol`
+`pip install sol_vj`
 
 to use with resolume, see `/docs/templates` for a base composition
