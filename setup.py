@@ -16,6 +16,7 @@ config = {
     'description': 'sol - fixes for resolume',
     'long_description': read('README_pip.md'),
     'author': 'pussinboots',
+    'author_email': 'mkaynospam@gmail.com',
     'url': 'https://github.com/pussinboot/sol',
     'license': 'MIT',
     'version': '2.0.0',
@@ -25,7 +26,7 @@ config = {
         'sol.gui.tk_gui': ['sample_clip.png', 'sample_thumb.png'],
     },
     'classifiers': [
-        "Development Status :: 5 - Beta",
+        "Development Status :: 4 - Beta",
         'Intended Audience :: Developers',
         "Topic :: Utilities",
         "License :: OSI Approved :: MIT License",
