@@ -1,71 +1,12 @@
-#########################################
-###         actual to-do list         ###
-#########################################
+#####  ###  ####   ###
+  #   #   # #   # #   #
+  #    ###  ####   ###
 
-- mpv shit interface for quick extractz
+- mpv interface for quick extractz
 - package it up
-	- proper importing for dev + build, etc.
 	- make sure werks with osx
 
-# maybe
+# someday/maybe
 
 support multiple midi devices
-resolume fx.. somehow?
-
-#########################################
-###         overview/features         ###
-#########################################
-
-database of clips
-	w/ saved parameters, queue points, loop points, thumbnails and tags
-organize and search for clips
-control playback and add missing features of resolume, maybe mpv 
-
-#########################################
-###      new design / refactor        ###
-#########################################
-
-            database
-              ^ |
-              | v
- inputs ->  control -> gui
-(midi/osc)  (magi)  <- 
-              | ^   
-              v |
-            model (resolume or other)
-
-#########################################
-###             the parts             ###
-#########################################
-
-- control aka MAGI -
-	>the brains<
-	gets input from
-		inputs - midi or osc
-		its own state (for example, when to loop)
-		the gui
-	interfaces with database to get/update info
-	and passes said info to the model
-
-- database -
-	>the data<
-	abstractions of clips
-	collections to store clips
-	methods to update or query database
-	save/load 
-
-- inputs -
-	self-explanatory
-
-- gui -
-	whats happening right now
-	what can be changed
-	2 or 3 different guis
-		1 - organizing collections
-		2 - performance
-		3 - recordings (nah)
-
-- models -
-	provide compatible api
-	translate info coming in so that it can go out
-		for example correcting clip commands
+fx as Another Layer?
