@@ -26,7 +26,6 @@ class GlobalConfig:
 
         self.default_options = {
             # sol params
-
             'DEBUG'					: True,
             'SAVEDATA_DIR'			: './savedata',
             'SCROT_DIR'				: './scrot',
@@ -38,7 +37,7 @@ class GlobalConfig:
 
             # network params
             'OSC_PORT'			: 7001,
-            'MTGUI_ENABLED'		: True,
+            'MTGUI_ENABLED'		: False,
             'MTGUI_IP_ADDR'		: '127.0.0.1',
 
             # model params
@@ -48,14 +47,13 @@ class GlobalConfig:
             'SUPPORTED_FILETYPES'				: ['.mov', '.webm', '.mp4', '.avi'],
             'XTERNAL_PLAYER_SELECT'				: 'EXTERNAL_PLAYER',
             'EXTERNAL_PLAYER_SELECT_OPTIONS'	: ['MEMEPV', 'EXTERNAL_PLAYER'],
-            # 'MEMEPV_SCRIPT_PATH'				: 'C:\\code\\vj\\memepv\\test.js',
-            'MEMEPV_SCRIPT_PATH'				: 'C:\\Users\\leo\\Documents\\Code\\vj\\memepv\\test.js',
+            'MEMEPV_SCRIPT_PATH'				: 'C:\\code\\vj\\memepv\\test.js',
             'EXTERNAL_PLAYER_COMMAND'			: '',
 
             # gui params
             'ALWAYS_ON_TOP' 	: True,
             'THUMB_W' 			: 160,
-            'REFRESH_INTERVAL': 166,
+            'REFRESH_INTERVAL'  : 166,
             'FFMPEG_PATH'		: '',
             'NO_FRAMES'			: 5,
             'THUMBNAIL_WIDTH'	: 192,

@@ -8,6 +8,7 @@ def rebuild(top_dir):
     subprocess.call([sys.executable, 'setup.py', 'install'], shell=True)
 
 
+# nothing important
 fname_to_do_what = {
 }
 
@@ -21,4 +22,5 @@ if __name__ == '__main__':
             fname_to_do_what[fname]()
         else:
             pass
-            # subprocess.call(["sol"], shell=True) # not quite.. need to exec inside virtualenv
+            # doesn't work
+            # subprocess.call(["sol"], shell=True, env=os.environ.copy())
