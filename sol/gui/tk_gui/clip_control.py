@@ -786,7 +786,7 @@ class LoopScreen:
         self.set_b_but.config(state='active')
 
         d_y = self.height / C.NO_LP
-        for i in range(len(cur_lp['loop_points'])):
+        for i in range(C.NO_LP):
             self.canvas.itemconfig(self.loop_lines[i],stipple='')
             start_y = i * d_y
             end_y = start_y + d_y

@@ -76,6 +76,7 @@ class ClipCollection:
         return self.clips[i]
 
     def __setitem__(self, i, clip):
+        self.safe_extend(i)
         self.clips[i] = clip
 
     def __len__(self):
@@ -83,3 +84,9 @@ class ClipCollection:
 
     def index(self, what):
         return self.clips.index(what)
+
+    def safe_extend(self, i):
+        i_diff = i - self.__len__()
+        if i_diff >= 0:
+            add_none = [None] * (4 * ((i_diff // 4) + 1))
+            self.clips.extend(add_none)
