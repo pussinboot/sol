@@ -12,7 +12,7 @@ def read(fname):
 
 
 config = {
-    'name': 'sol',
+    'name': 'sol_vj',
     'description': 'sol - fixes for resolume',
     'long_description': read('README_pip.md'),
     'author': 'pussinboots',
