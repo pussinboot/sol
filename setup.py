@@ -14,7 +14,7 @@ def read(fname):
 config = {
     'name': 'sol',
     'description': 'sol - fixes for resolume',
-    'long_description': read('README.md'),
+    'long_description': read('README_pip.md'),
     'author': 'pussinboots',
     'url': 'https://github.com/pussinboot/sol',
     'license': 'MIT',
