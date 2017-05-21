@@ -130,10 +130,8 @@ __pycache__
 urwid/
 pythonosc/
 pygame/
-new/*.wav
-new/scrot/
-new/savedata/
-new/savedata/last_save
-new/savedata/last_rec_save
-new/savedata/last_rec
-old/sample_clip.PNG
+sol/sol/scrot
+scrot/
+savedata/
+scrot_to_move/
+sol_dev.sublime-workspace
