@@ -5,10 +5,10 @@
 - mpv interface for quick extractz
 - package it up
 	- make sure werks with osx
-                - im not sure it does.. control doesn't actually do anything??? can activate clips but nothing else does anything :(
+                - no that's just example.avc that acts funny
                 - getting issues if bundling enabled
                 `WARNING:root:Could not identify content type of dgram b'\x00\x00\x00,/activeclip/audio/position/values\x00\x00\x00,f\x00\x00>\xa0\x9c\x87?x\x88\xcf'`
-- scrot making doesnt do much?
+- scrot making doesnt do much of anything?
 
 # someday/maybe
 

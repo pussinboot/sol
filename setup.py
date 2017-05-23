@@ -1,22 +1,30 @@
 from setuptools import setup, find_packages
-import os
 
 packages = find_packages()
 
+READMEME = """sol is an interactive database of clips
 
-def read(fname):
-    return open(os.path.join(os.path.dirname(__file__), fname)).read()
+it lets you organize and search for clips plus keep associated parameters, cue points, loop points, thumbnails and tags
 
+it controls playback and adds some missing features to re[sol]ume
+
+MIT licensed
+
+# setup instructions
+
+you will need `ffmpeg` and its associated `ffprobe`
+
+`pip install sol_vj`"""
 
 config = {
     'name': 'sol_vj',
     'description': 'sol - fixes for resolume',
-    'long_description': read('README_pip.md'),
+    'long_description': READMEME,
     'author': 'pussinboots',
     'author_email': 'mkaynospam@gmail.com',
     'url': 'https://github.com/pussinboot/sol',
     'license': 'MIT',
-    'version': '2.0.0',
+    'version': '2.0.2',
     'install_requires': [
         'python-osc>=1.6',
         'lxml>=3.6.0',
