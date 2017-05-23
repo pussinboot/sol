@@ -12,7 +12,7 @@ class ResolumeLoader:
     def __init__(self):
         self.clips = {}
     
-    def import_xml(xmlfile):
+    def import_xml(self,xmlfile):
         tree = ET.parse(xmlfile)
         root = tree.getroot()
         

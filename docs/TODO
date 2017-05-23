@@ -5,6 +5,9 @@
 - mpv interface for quick extractz
 - package it up
 	- make sure werks with osx
+                - im not sure it does.. control doesn't actually do anything??? can activate clips but nothing else does anything :(
+                - getting issues if bundling enabled
+- scrot making doesnt do much?
 
 # someday/maybe
 

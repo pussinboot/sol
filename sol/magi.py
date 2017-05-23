@@ -918,7 +918,7 @@ class Magi:
     def load_resolume_comp(self,filename):
         from sol.models.resolume import load_avc
         comp = load_avc.ResolumeLoader()
-        load_avc.import_xml(filename)
+        comp.import_xml(filename)
         for parsed_clip_vals in comp.clips.values():
             new_clip = clip.Clip(*parsed_clip_vals)
             self.db.add_clip(new_clip)
