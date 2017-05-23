@@ -32,18 +32,23 @@ class OscServer:
         print("starting osc server",self.ip,':',self.port,'\n\tand on localhost :',self.port)
         local_ip = '127.0.0.1'
         self.server = osc_server.ThreadingOSCUDPServer((self.ip, self.port), self.dispatcher)
-        self.local_server = osc_server.ThreadingOSCUDPServer((local_ip, self.port), self.dispatcher)
         self.server_thread = threading.Thread(target=self.server.serve_forever)
         self.server_thread.start()
-        self.local_server_thread = threading.Thread(target=self.local_server.serve_forever)
-        self.local_server_thread.start()
+
+        if self.ip != local_ip:
+            self.local_server = osc_server.ThreadingOSCUDPServer((local_ip, self.port), self.dispatcher)
+            self.local_server_thread = threading.Thread(target=self.local_server.serve_forever)
+            self.local_server_thread.start()
+        else:
+            self.local_server = None
 
     def stop(self):
         self.running = 0
         self.server.shutdown()
         self.server_thread.join()
-        self.local_server.shutdown()
-        self.local_server_thread.join()
+        if self.local_server is not None:
+            self.local_server.shutdown()
+            self.local_server_thread.join()
 
     def osc_value(self,msg):
         # returns the value of the osc msg
@@ -67,34 +72,17 @@ class OscServer:
         self.map(addr,fun)
 
     def get_ip_addr(self):
-        # modified from http://stackoverflow.com/questions/11735821/python-get-localhost-ip
-        if os.name != "nt":
-            import fcntl
-            import struct
-            def get_interface_ip(ifname):
-                s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-                return socket.inet_ntoa(fcntl.ioctl(s.fileno(), 0x8915, struct.pack('256s',ifname[:15]))[20:24])
-
-        ip = socket.gethostbyname(socket.gethostname())
-        if ip.startswith("127.") and os.name != "nt":
-            interfaces = [
-                "eth0",
-                "eth1",
-                "eth2",
-                "wlan0",
-                "wlan1",
-                "wifi0",
-                "ath0",
-                "ath1",
-                "ppp0",
-                ]
-            for ifname in interfaces:
-                try:
-                    ip = get_interface_ip(ifname)
-                    break
-                except IOError:
-                    pass
-        return ip
+        #  from https://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib/
+        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        try:
+            # doesn't even have to be reachable
+            s.connect(('10.255.255.255', 1))
+            IP = s.getsockname()[0]
+        except:
+            IP = '127.0.0.1'
+        finally:
+            s.close()
+        return IP
 
 
 class OscClient:
