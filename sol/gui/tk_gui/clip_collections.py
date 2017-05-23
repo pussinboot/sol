@@ -43,8 +43,8 @@ class ClipContainer:
 
         self.clip = None
         self.change_clip(clip)
-        
-        
+
+
     def activate(self,*args,layer=-1):
         if self.clip is None or self.selectfun is None: return
         self.selectfun(self.clip,layer)
@@ -96,7 +96,7 @@ class ClipContainer:
         self.hovered = False
 
     def setup_imgs(self):
-        f_names = [t_name for t_name in self.clip.t_names if os.path.exists(t_name)]
+        f_names = [os.path.join(C.SCROT_DIR,t_name) for t_name in self.clip.t_names if os.path.exists(os.path.join(C.SCROT_DIR,t_name))]
         self.imgs = [ImageTk.PhotoImage(Image.open(f_name)) for f_name in f_names]
         if len(self.imgs) == 0: return
         self.current_img_i = 0
@@ -261,7 +261,7 @@ class ContainerCollection:
         if self.clip_collection in self.backend.clip_storage.clip_cols:
             return self.backend.clip_storage.clip_cols.index(self.clip_collection)
         return -1
-    
+
 
 class CollectionsHolder:
     # gui element that holds multiple containercollections
@@ -282,7 +282,7 @@ class CollectionsHolder:
         self.collection_label_canvas = tk.Canvas(self.collections_bottom_frame, borderwidth=0, background=defaultbg,width=(4*C.THUMB_W-50),height=C.FONT_HEIGHT+2)
         self.collections_labels_frame = tk.Frame(self.collection_label_canvas)
         self.collection_label_canvas.create_window((0,0), window=self.collections_labels_frame , anchor="nw")
-        
+
         self.xsb = tk.Scrollbar(self.collections_bottom_frame, orient="horizontal", command=self.collection_label_canvas.xview,width=C.FONT_HEIGHT)
         self.collection_label_canvas.configure(xscrollcommand=self.xsb.set)
 
@@ -483,7 +483,7 @@ class LibraryBrowser:
         self.ysbb = ttk.Scrollbar(self.browse_frame, orient='vertical', command=self.browse_tree.yview)
         self.browse_tree.configure(yscrollcommand=self.ysbb.set)
         self.ysbb.pack(side=tk.RIGHT,anchor=tk.N,fill=tk.Y)
-        
+
         # tags tree setup
         self.tag_query = tk.StringVar()
         self.tag_field = tk.Entry(self.tag_frame,textvariable=self.tag_query,width=5)
@@ -500,7 +500,7 @@ class LibraryBrowser:
         self.tag_tree.configure(yscrollcommand=self.ysbbb.set)
         self.ysbbb.pack(side=tk.RIGHT,anchor=tk.N,fill=tk.Y)
         self.tag_inner_frame.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=True)
-        
+
 
         # pack everything
         self.browsers.add(self.search_frame,text='search')
@@ -544,7 +544,7 @@ class LibraryBrowser:
                 tag_folder = self.tag_tree.insert(search_res, 'end', text=tag,values=["tag",0])
                 for clip in clips:
                     self.tag_tree.insert(tag_folder, 'end', text=clip.name,values=["clip",clip.f_name])
-            
+
         else:
             if self.tag_tree.exists("search"):
                 self.tag_tree.delete("search")
@@ -566,7 +566,7 @@ class LibraryBrowser:
                 return
         tv = event.widget
         if tv.identify_row(event.y) not in tv.selection():
-            tv.selection_set(tv.identify_row(event.y))    
+            tv.selection_set(tv.identify_row(event.y))
         if not tv.selection():
             return
         item = tv.selection()[0]
@@ -638,7 +638,7 @@ class ClipOrg:
         self.root.title('clip org')
         self.parent.root.call('wm', 'attributes', '.', '-topmost', '0')
         self.root.geometry('{}x{}'.format(C.THUMB_W * 4 + 100,400))
-        self.root.protocol("WM_DELETE_WINDOW",self.parent.exit_clip_org_gui)        
+        self.root.protocol("WM_DELETE_WINDOW",self.parent.exit_clip_org_gui)
         self.index = -1
 
         self.mainframe = tk.Frame(root)
@@ -685,7 +685,7 @@ class ClipOrg:
     def initialize_all_clips(self):
         # first sort by filename : )
         all_clips = self.backend.db.alphabetical_listing#[:50] # speedup for testing..
-        
+
         for i, cc in enumerate(all_clips):
             new_clip_cont = ClipOrgClip(self,self.all_clip_inner_frame,self.backend.select_clip,cc[1])
             r,c = i//4, i%4
@@ -787,7 +787,7 @@ class ClipOrgClip(ClipContainer):
         self.toggle_dnd()
 
     def setup_imgs(self):
-        f_names = [t_name for t_name in self.clip.t_names if os.path.exists(t_name)]
+        f_names = [os.path.join(C.SCROT_DIR,t_name) for t_name in self.clip.t_names if os.path.exists(os.path.join(C.SCROT_DIR,t_name))]
         if len(f_names) > 0:
             f_name = f_names[0]
         else:
