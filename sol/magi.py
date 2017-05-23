@@ -916,7 +916,7 @@ class Magi:
             return False
 
     def load_resolume_comp(self,filename):
-        from models.resolume import load_avc
+        from sol.models.resolume import load_avc
         comp = load_avc.ResolumeLoader()
         load_avc.import_xml(filename)
         for parsed_clip_vals in comp.clips.values():
@@ -925,7 +925,7 @@ class Magi:
         self.db.searcher.refresh()
 
     def export_resolume_comp(self,filename,filename_out):
-        from models.resolume import load_avc
+        from sol.models.resolume import load_avc
         comp = load_avc.ResolumeLoader()
         all_col_clips = [clip for clip_col in self.clip_storage.clip_cols for clip in clip_col]
         all_col_fnames = [clip.f_name for clip in all_col_clips if clip is not None]
@@ -934,7 +934,7 @@ class Magi:
 
     def load_isadora_comp(self,path):
         if self.loader is None:
-            from models.isadorabl import loader
+            from sol.models.isadorabl import loader
             self.loader = loader.IsadoraLoader(len(self.db.clips.values()))
         if C.DEBUG: print('adding folder', path)
         self.loader.add_folder(path)
