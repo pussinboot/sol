@@ -1,9 +1,6 @@
 from setuptools import setup, find_packages
 import os
 
-from pip.req import parse_requirements
-install_reqs = parse_requirements('./requirements.txt', session=False)
-reqs = [str(ir.req) for ir in install_reqs]
 packages = find_packages()
 
 
@@ -20,7 +17,11 @@ config = {
     'url': 'https://github.com/pussinboot/sol',
     'license': 'MIT',
     'version': '2.0.0',
-    'install_requires': reqs,
+    'install_requires': [
+        'python-osc>=1.6',
+        'lxml>=3.6.0',
+        'Pillow>=4.1.0'
+    ],
     'packages': packages,
     'package_data': {
         'sol.gui.tk_gui': ['sample_clip.png', 'sample_thumb.png'],
