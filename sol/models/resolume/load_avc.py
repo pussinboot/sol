@@ -25,9 +25,13 @@ class ResolumeLoader:
             print("incorrect setup! please use only 1 deck")
 
         # lets get to the clips 
-        decks = [deck for deck in \
-                 [d for d in root.iter('decks')][0].iter('deck')]
-        xml_clips = decks[0].findall('clip')
+        try:
+            decks = [deck for deck in \
+                     [d for d in root.iter('decks')][0].iter('deck')]
+            xml_clips = decks[0].findall('clip')
+        except:
+            print('no clips found :(')
+            return
 
         for xml_clip in xml_clips:
             # layer/clip are 0 indexed in xml file but osc command

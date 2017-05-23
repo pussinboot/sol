@@ -109,7 +109,7 @@ class MainGui:
             parent=self.root, title='Open Resolume Composition', initialdir=C.RESOLUME_SAVE_DIR)
         if filename:
             self.magi.load_resolume_comp(filename)
-            self.gen_thumbs()
+            # self.gen_thumbs() # don't do this by default actually
             self.refresh_after_load()
 
     def export_resolume(self):
@@ -128,7 +128,7 @@ class MainGui:
             parent=self.root, title='Add Folder', mustexist=True)
         if foldername:
             self.magi.load_isadora_comp(foldername)
-            self.gen_thumbs()
+            # self.gen_thumbs()
             self.refresh_after_load()
 
     def gen_thumbs(self):
