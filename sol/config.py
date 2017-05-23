@@ -53,7 +53,7 @@ class GlobalConfig:
             # gui params
             'ALWAYS_ON_TOP' 	: True,
             'THUMB_W' 			: 160,
-            'REFRESH_INTERVAL'  : 166,
+            'REFRESH_INTERVAL'  : 200,
             'FFMPEG_PATH'		: '',
             'NO_FRAMES'			: 5,
             'THUMBNAIL_WIDTH'	: 192,
