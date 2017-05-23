@@ -137,6 +137,7 @@ class ThumbMaker:
                 if os.path.exists(self.tempfile):
                     self.make_thumbnail(self.tempfile, i_output_name,
                                         new_size=(self.desired_width, self.desired_height))
+                    i_output_name = os.path.split(i_output_name)[1]
                     tor += [i_output_name]
                 else:
                     break
