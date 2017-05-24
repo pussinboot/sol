@@ -644,7 +644,7 @@ class ImportWizardGui:
             for item in os.listdir(folder):
                 full_path = os.path.join(folder,item)
                 if not os.path.isdir(full_path):
-                    if full_path.lower().endswith(C.SUPPORTED_FILETYPES):
+                    if any([full_path.lower().endswith(f_ext) for f_ext in C.SUPPORTED_FILETYPES]):
                         new_clips += [full_path]
         for c in new_clips:
             new_clip = clip.Clip(c,'0')
