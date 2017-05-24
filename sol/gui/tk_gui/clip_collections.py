@@ -774,7 +774,7 @@ class ClipOrgClip(ClipContainer):
             self.frame.bind(b, parent.mouse_wheel)
 
     def change_clip(self,clip):
-        if clip is None: 
+        if clip is None:
             self.remove_clip()
             return
         self.last_clip = self.clip

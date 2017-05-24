@@ -829,7 +829,7 @@ class LoopScreen:
     def unhover(self,*args):
         cur_lp = self.cur_clip_lp
         self.current_img = self.default_img
-        if cur_lp is None: 
+        if cur_lp is None:
             i = -1
         else:
             i = cur_lp['loop_selection']
@@ -855,7 +855,7 @@ class LoopScreen:
         cur_loc = self.backend.model.current_clip_pos[self.layer]
         if cur_loc is None: return
         split_f_name = os.path.split(os.path.splitext(cur_clip.f_name)[0])
-        output_base_name = './scrot/' + split_f_name[1]
+        output_base_name = os.path.join(C.SCROT_DIR, split_f_name[1])
         bad_hash = self.backend.thumb_maker.nice_num(split_f_name[0]) * self.backend.thumb_maker.nice_num(split_f_name[1])
         while True:
             output_name = output_base_name + "_" + str(bad_hash) + "_lp_{}.png".format(i)
