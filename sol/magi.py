@@ -7,6 +7,8 @@ from sol.models.isadorabl import model as IsadoraModel
 from sol.config import GlobalConfig
 C = GlobalConfig()
 
+import copy
+
 class Magi:
     """
     keep track of library, current collection, etc
@@ -62,7 +64,7 @@ class Magi:
         #   select, add, remove, go left, go right, swap
         # update_clip_names - =)
 
-        # clip storage 
+        # clip storage
         self.clip_storage = ClipStorage(self)
 
         self.track_vars()
@@ -72,24 +74,31 @@ class Magi:
         self.map_loop_funs()
         self.last_sent_loop = None
         if self.model.external_looping:
+            def dont_resend(cl):
+                if self.last_sent_loop is None or cl is None:
+                    return False
+                if cl[0] == self.last_sent_loop[0]:
+                    if cl[1] == self.last_sent_loop[1]:
+                        return True
+                return False
             def external_loop_fun(layer):
                 cl = self.loop_get(layer)
-                if cl == self.last_sent_loop:
+                if dont_resend(cl):
                     return
                 if cl is not None and cl[0]:
-                    a,b = cl[1][0], cl[1][1]
+                    a, b = cl[1][0], cl[1][1]
                     lt = cl[1][2]
                 else:
                     a, b = 0, 1
                     lt = 'd'
                 cur_clip = self.clip_storage.current_clips[layer]
-                a_addr, a_msg = self.model.set_loop_a(layer,cur_clip,a,b)
-                b_addr, b_msg = self.model.set_loop_b(layer,cur_clip,a,b)
-                lt_addr, lt_msg = self.model.set_loop_type(layer,lt)
+                a_addr, a_msg = self.model.set_loop_a(layer, cur_clip, a, b)
+                b_addr, b_msg = self.model.set_loop_b(layer, cur_clip, a, b)
+                lt_addr, lt_msg = self.model.set_loop_type(layer, lt)
                 self.osc_client.build_n_send(a_addr, a_msg)
                 self.osc_client.build_n_send(b_addr, b_msg)
                 self.osc_client.build_n_send(lt_addr, lt_msg)
-                self.last_sent_loop = cl
+                self.last_sent_loop = copy.deepcopy(cl)
                 return
         else:
             def external_loop_fun(layer):
@@ -115,7 +124,7 @@ class Magi:
         # gna need to think about how i want to do this
         # because the way i did it was very hacky
         # maybe just duplicate resomeme's control scheme myself
-        # everything will change anyways since i'm going with 
+        # everything will change anyways since i'm going with
         # a different controller style..
 
         def gen_update_fun(layer):
