@@ -174,7 +174,7 @@ class ClipControl:
         self.timeline.drag_release_action = set_cue
         self.timeline.seek_action = seek
         self.timeline.check_cur_range = lambda: self.backend.loop_get(self.layer)
-        self.timeline.set_loop_funs = loop_set_funs[:2]
+        self.timeline.set_loop_funs = loop_set_funs[:2] # set/a, set/b, on_off
         self.timeline.cue_fun = cue_funs[0]
 
         # controls
@@ -190,7 +190,7 @@ class ClipControl:
         # top loop
 
         # left loop
-        self.setup_left_looping(loop_set_funs[2:])
+        self.setup_left_looping(loop_set_funs[2:]) # on/off, type, select, select/move, clear
         # self.looping_controls = []
         # self.looping_vars = {}
         # self.setup_looping()
@@ -230,7 +230,7 @@ class ClipControl:
         clearbut = tk.Button(self.control_button_frame,text="X",padx=pad_x,pady=pad_y,
             command=lambda: pb_funs[4]())
 
-        for but in [playbut, pausebut, rvrsbut, clearbut]: #rndbut,
+        for but in [rvrsbut, pausebut, playbut, clearbut]: #rndbut,
             but.pack(side=tk.LEFT)
 
     def setup_speed_control(self,speedfun):
@@ -716,18 +716,18 @@ class LoopScreen:
     def set_loop_a(self,*args):
         cur_loc = self.backend.model.current_clip_pos[self.layer]
         if cur_loc is None: return
-        self.loop_set_funs[0]('',cur_loc)
+        self.loop_set_funs[0]('',cur_loc) # set/a
         self.set_cur_loop_line()
 
     def set_loop_b(self,*args):
         cur_loc = self.backend.model.current_clip_pos[self.layer]
         if cur_loc is None: return
-        self.loop_set_funs[1]('',cur_loc)
+        self.loop_set_funs[1]('',cur_loc) # set/b
         # print(self.cur_clip_lp)
         self.set_cur_loop_line()
 
     def move_loop_sel(self,n):
-        self.loop_set_funs[5]('',n)
+        self.loop_set_funs[5]('',n) # select/move
 
     @property
     def cur_clip_lp(self):
@@ -814,12 +814,12 @@ class LoopScreen:
     def pick_loop_line(self,event):
         i = self.find_loop_line(event)
         if i is None: return
-        self.loop_set_funs[4]('',i)
+        self.loop_set_funs[4]('',i) # '/loop/select'
 
     def clear_loop_line(self,event):
         i = self.find_loop_line(event)
         if i is None: return
-        self.loop_set_funs[6]('',i)     
+        self.loop_set_funs[6]('',i) # '/loop/clear'
 
     def hover_loop_line(self,event):
         i = self.find_loop_line(event)
