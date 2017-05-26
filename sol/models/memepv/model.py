@@ -2,10 +2,10 @@ class MemePV:
     """
     defines the memepv api
     """
-    def __init__(self,no_layers):
-        # not currently implemented lol
-        self.no_layers = 2 #no_layers
 
+    def __init__(self, no_layers):
+
+        self.no_layers = 2
         # for updating current clip positions
         self.current_clip_pos = [None] * no_layers
         # index current_clip_pos by layer
@@ -14,43 +14,47 @@ class MemePV:
         for n in range(no_layers):
             self.clip_pos_addr[n] = "/{}/time".format(n)
         self.external_looping = True
+        self.lt_lu = {'d': 0, 'b': 1}
 
-
-    def play(self,layer):
+    def play(self, layer):
         return ('/{}/play'.format(layer), 1)
-    def pause(self,layer):
+
+    def pause(self, layer):
         return ('/{}/pause'.format(layer), 1)
 
-    # not implemented
-    def reverse(self,layer):
-        return ('/{}/reverse'.format(layer),1)
-    def random(self,layer):
-        return ('/{}/random'.format(layer),1)
+    def reverse(self, layer):
+        return ('/{}/reverse'.format(layer), 1)
 
-    def set_clip_pos(self,layer,pos):
+    def random(self, layer):
+        return ('/{}/random'.format(layer), 1)
+
+    def set_clip_pos(self, layer, pos):
         return ('/{}/seek'.format(layer), pos)
 
-    def select_clip(self,layer,clip):
+    def select_clip(self, layer, clip):
         return ('/{}/load'.format(layer), clip.f_name)
 
-    def clear_clip(self,layer):
-        return ('/{}/clear'.format(layer),1)
+    def clear_clip(self, layer):
+        return ('/{}/clear'.format(layer), 1)
 
-    def set_playback_speed(self,layer,speed):
-        return ('/{}/speed'.format(layer), speed) # have to map 0 - 10.0 to 0 - 1.0
+    def set_playback_speed(self, layer, speed):
+        return ('/{}/speed'.format(layer), speed)
 
-    ### looping
-    # because mpv doesnt allow for a percentage in looping have to reference clip
-    # now memepv keeps track of duration for us?
-    def set_loop_a(self,layer,clip,a=0,b=1):
-        # if clip is not None:
-        #   a = clip.params['duration'] * a
+    # looping
+
+    def set_loop_a(self, layer, clip, a=0, b=1):
+        if a is None:
+            a = 0
         return ('/{}/loop_a'.format(layer), a)
 
-    def set_loop_b(self,layer,clip,a=0,b=1):
-        # if clip is not None:
-        #   b = clip.params['duration'] * b
+    def set_loop_b(self, layer, clip, a=0, b=1):
+        if b is None:
+            b = 1
         return ('/{}/loop_b'.format(layer), b)
-    # not implemented in mpv
-    def set_loop_type(self,layer,lt):
-        return ('/{}/loop_type'.format(layer),lt)
+
+    def set_loop_type(self, layer, lt):
+        if lt in self.lt_lu:
+            lt = self.lt_lu[lt]
+        else:
+            lt = 0
+        return ('/{}/loop_type'.format(layer), lt)
