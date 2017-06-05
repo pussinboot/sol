@@ -16,3 +16,7 @@ the key things to keep in mind
 	a. OSC Preferences
 		i. Input Port 7000 
 		ii. Output Port matches what is in sol's network config for osc port (default: 7001)
+
+`isadoraBL.izz`
+
+has an initial template for a 2 layer setup using isadora
