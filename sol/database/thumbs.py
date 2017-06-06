@@ -51,7 +51,7 @@ class ThumbMaker:
                 file_info = e.output
             file_info = float(file_info.decode('utf-8'))
             ss_param = seek_time * file_info
-            command = '{0} -ss {1:.3f} -y -i "{2}" -vf "thumbnail" -q:v 2 -vframes 1 "{3}" -hide_banner -loglevel panic'\
+            command = '{0} -ss {1:.3f} -y -i "{2}" -q:v 2 -vframes 1 "{3}" -hide_banner -loglevel panic'\
                 .format(self.correct_ff_path('ffmpeg'), ss_param, f_in, self.tempfile)
             print(command)
             print('#' * 40)
