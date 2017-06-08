@@ -15,3 +15,7 @@ you will need `ffmpeg` and its associated `ffprobe`
 either `pip install sol_vj` or clone this repo then `python setup.py install`
 
 to use with resolume, see `/docs/templates` for a base composition
+
+## tutorial vid
+
+[![](https://raw.githubusercontent.com/pussinboot/sol/master/docs/wiki/screens/vimeo_preview.png)](https://vimeo.com/220742126/0b27d24945)
