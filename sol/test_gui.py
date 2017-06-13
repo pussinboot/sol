@@ -55,9 +55,9 @@ class MainGui:
         # pack it
         self.mainframe.pack()
         self.cc_frame.pack(side=tk.TOP, fill=tk.X, expand=True)
-        self.clip_col_frame.pack(side=tk.TOP, fill=tk.BOTH)
         for frame in self.cc_frames:
             frame.pack(side=tk.LEFT)
+        self.clip_col_frame.pack(side=tk.TOP, fill=tk.BOTH)
 
         # menu
         self.setup_menubar()

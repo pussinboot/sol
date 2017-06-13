@@ -304,8 +304,8 @@ class CollectionsHolder:
         self.collections_bottom_frame.pack(side=tk.TOP,fill=tk.X,expand=True)
         self.collection_label_canvas.pack(side=tk.LEFT,fill=tk.Y,expand=True)
         self.xsb.pack(side=tk.RIGHT,fill=tk.X,expand=True)
-        self.col_frame.pack(side=tk.LEFT,fill=tk.X,expand=True)
         self.search_frame.pack(side=tk.LEFT,fill=tk.Y,anchor='e')
+        self.col_frame.pack(side=tk.LEFT,fill=tk.X,expand=True)
 
         self.xsb.bind('<Button-3>',self.xsb_hax)
 

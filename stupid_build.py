@@ -24,3 +24,6 @@ if __name__ == '__main__':
             pass
             # doesn't work
             # subprocess.call(["sol"], shell=True, env=os.environ.copy())
+    else:
+        top_dir = os.path.split(sys.argv[0])[0]
+        rebuild(top_dir)
