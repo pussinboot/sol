@@ -2,13 +2,11 @@
   #   #   # #   # #   #
   #    ###  ####   ###
 
-- mpv interface for quick extractz
-- package it up
-	- make sure werks with osx
-                - no that's just example.avc that acts funny
-                - getting issues if bundling enabled
-                `WARNING:root:Could not identify content type of dgram b'\x00\x00\x00,/activeclip/audio/position/values\x00\x00\x00,f\x00\x00>\xa0\x9c\x87?x\x88\xcf'`
-- scrot making doesnt do much of anything?
+# to fix gui 
+    - difference between doing something from the gui and actually doing it
+    - doing something from the gui should ONLY tell magi what it did
+    - magi handles the actual updating..
+    - otherwise you get asked to do things multiple times...
 
 # someday/maybe
 

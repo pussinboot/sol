@@ -4,8 +4,9 @@ from .tkdnd import dnd_start
 import tkinter.simpledialog as tksimpledialog
 import tkinter.font as tkFont
 
-from PIL import ImageTk,Image
-import os, bisect
+from PIL import ImageTk, Image
+import os
+import bisect
 from itertools import accumulate
 
 from sol.config import GlobalConfig
@@ -211,7 +212,7 @@ class DragClip:
 class ContainerCollection:
     # gui element that holds multiple clips
     # mayb i need to be able to save/load as clipcollections (would add to sol_backend)
-    def __init__(self,root,parent_frame,clipcol,select_cmd,backend):
+    def __init__(self, root, parent_frame, clipcol, select_cmd, backend):
         # for i in range(len(clipcol)):
         #   print(clipcol[i])
         self.clip_conts = []
@@ -229,23 +230,24 @@ class ContainerCollection:
             start_clip = None
             if i < cc_len:
                 start_clip = self.clip_collection[i]
-            self.clip_conts.append(ClipContainer(self,i,select_cmd,start_clip))
+            self.clip_conts.append(ClipContainer(self, i, select_cmd, start_clip))
 
         n_buts = C.NO_Q
         n_rows = 1
         if n_buts > 4:
             n_rows = n_buts // 4
-            if n_buts % 4 != 0: n_rows += 1 # yuck
+            if n_buts % 4 != 0:
+                n_rows += 1
 
         for r in range(n_rows):
             for c in range(4):
-                i = r*4 + c
-                self.clip_conts[i].grid(row=r,column=c)
+                i = r * 4 + c
+                self.clip_conts[i].grid(row=r, column=c)
 
         self.frame.grid(row=0, column=0, sticky='news')
         self.frame.tkraise()
 
-    def update_clip_col(self,clip_col):
+    def update_clip_col(self, clip_col):
         self.clip_collection = clip_col
         for i in range(C.NO_Q):
             self.clip_conts[i].change_clip(clip_col[i])
@@ -265,63 +267,60 @@ class ContainerCollection:
 
 class CollectionsHolder:
     # gui element that holds multiple containercollections
-    def __init__(self,root,parent_frame,backend):
+    def __init__(self, root, parent_frame, backend):
         self.backend = backend
         self.clip_storage = backend.clip_storage
         self.select_cmd = backend.select_clip
 
-        self.last_do_scroll = False
-
         self.root = root
         defaultbg = self.root.cget('bg')
         self.frame = parent_frame
-        self.col_frame = tk.Frame(self.frame)
-        self.collections_frame = tk.Frame(self.col_frame)
+        self.col_frame = ttk.Frame(self.frame)
+        self.collections_frame = ttk.Frame(self.col_frame)
 
-        self.collections_bottom_frame = tk.Frame(self.col_frame)
-        self.collection_label_canvas = tk.Canvas(self.collections_bottom_frame, borderwidth=0, background=defaultbg,width=(4*C.THUMB_W-50),height=C.FONT_HEIGHT+2)
-        self.collections_labels_frame = tk.Frame(self.collection_label_canvas)
-        self.collection_label_canvas.create_window((0,0), window=self.collections_labels_frame , anchor="nw")
+        self.collections_bottom_frame = ttk.Frame(self.col_frame, padding='0 1 0 1')
+        self.collection_label_canvas = tk.Canvas(self.collections_bottom_frame, borderwidth=0,
+                                                 background=defaultbg, width=(4 * C.THUMB_W - 75), height=C.FONT_HEIGHT + 2)
+        self.collections_labels_frame = ttk.Frame(self.collection_label_canvas, padding='0')
+        self.collection_label_canvas.create_window((0, 0), window=self.collections_labels_frame, anchor="nw")
 
-        self.xsb = tk.Scrollbar(self.collections_bottom_frame, orient="horizontal", command=self.collection_label_canvas.xview,width=C.FONT_HEIGHT)
+        self.xsb = tk.Scrollbar(self.collections_bottom_frame, orient="horizontal", command=self.collection_label_canvas.xview, width=C.FONT_HEIGHT)
         self.collection_label_canvas.configure(xscrollcommand=self.xsb.set)
-
 
         self.collections_labels_frame.bind("<Configure>", lambda event: self.canvas_scroll_update())
 
         # self.collections_labels_frame = tk.Frame(self.col_frame,height=15,width=(4*C.THUMB_W+20))
-        self.search_frame = tk.Frame(self.frame)
+        self.search_frame = ttk.Frame(self.frame)
 
-        self.library_browse = LibraryBrowser(self.backend,self.search_frame)
+        self.library_browse = LibraryBrowser(self.backend, self.search_frame)
 
         self.containers = []
         self.container_labels = []
 
-        self.add_col_but = tk.Button(self.collections_bottom_frame,text='+',command=self.add_collection)
+        self.add_col_but = ttk.Button(self.collections_bottom_frame, text='+', command=self.add_collection, width=1)
         self.add_col_but.pack(side=tk.RIGHT)
 
         self.collections_frame.pack(side=tk.TOP)
-        self.collections_bottom_frame.pack(side=tk.TOP,fill=tk.X,expand=True)
-        self.collection_label_canvas.pack(side=tk.LEFT,fill=tk.Y,expand=True)
-        self.xsb.pack(side=tk.RIGHT,fill=tk.X,expand=True)
-        self.search_frame.pack(side=tk.LEFT,fill=tk.Y,anchor='e')
-        self.col_frame.pack(side=tk.LEFT,fill=tk.X,expand=True)
+        self.collections_bottom_frame.pack(side=tk.TOP, fill=tk.X, expand=True)
+        self.collection_label_canvas.pack(side=tk.LEFT, fill=tk.Y, expand=True)
+        self.xsb.pack(side=tk.RIGHT, fill=tk.X, expand=True)
+        self.search_frame.pack(side=tk.LEFT, fill=tk.Y, anchor='e')
+        self.col_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
 
-        self.xsb.bind('<Button-3>',self.xsb_hax)
+        self.xsb.bind('<Button-3>', self.xsb_hax)
 
     def canvas_scroll_update(self):
         self.collection_label_canvas.configure(scrollregion=self.collection_label_canvas.bbox("all"))
 
-    def canvas_scroll_mouse(self,event):
-        self.collection_label_canvas.xview('scroll',-1*int(event.delta//120),'units')
+    def canvas_scroll_mouse(self, event):
+        self.collection_label_canvas.xview('scroll', -1 * int(event.delta // 120), 'units')
 
-    def xsb_hax(self,event):
-        click_what = self.xsb.identify(event.x,event.y)
+    def xsb_hax(self, event):
+        click_what = self.xsb.identify(event.x, event.y)
         if click_what == 'arrow1':
             self.swap_left()
         elif click_what == 'arrow2':
             self.swap_right()
-
 
     def refresh_after_load(self):
         # clip collections
@@ -354,94 +353,94 @@ class CollectionsHolder:
     def swap_right(self, *args):
         self.clip_storage.swap_right()
 
-    def swap(self,ij):
-        if len(ij) != 2: return
+    def swap(self, ij):
+        if len(ij) != 2:
+            return
         # labels
         text_i = self.container_labels[ij[0]].cget('text')
         text_j = self.container_labels[ij[1]].cget('text')
         self.container_labels[ij[0]].config(text=text_j)
         self.container_labels[ij[1]].config(text=text_i)
         # do the swap
-        self.containers[ij[0]],self.containers[ij[1]] = self.containers[ij[1]],self.containers[ij[0]]
+        self.containers[ij[0]], self.containers[ij[1]] = self.containers[ij[1]], self.containers[ij[0]]
         self.highlight_col()
 
-    def highlight_col(self,index=-1,do_scroll=True):
+    def highlight_col(self, index=-1, do_scroll=True):
         if index < 0:
             index = self.clip_storage.cur_clip_col
         try:
             self.containers[index].frame.tkraise()
             for cl in self.container_labels:
-                cl.configure(relief=tk.FLAT)
+                cl.configure(relief=tk.RIDGE)
             self.container_labels[index].configure(relief=tk.SUNKEN)
             if index != self.clip_storage.cur_clip_col:
                 self.clip_storage.select_collection(index)
             # scroll into view
-            if do_scroll and self.last_do_scroll:
+            if do_scroll:
                 left_x, wid_width = self.container_labels[index].winfo_x(), self.container_labels[index].winfo_width()
-                scroll_to = (left_x - wid_width) / self.collection_label_canvas.winfo_width()
-                self.collection_label_canvas.xview('moveto',scroll_to)
+                total_width = self.collection_label_canvas.bbox("all")[2]
+                scroll_to = (left_x - wid_width) / total_width
+                self.collection_label_canvas.xview('moveto', scroll_to)
         except:
             pass
-        self.last_do_scroll = do_scroll
-
 
     def add_collection(self):
         self.clip_storage.add_collection()
         # self.add_collection_frame(self.clip_storage.clip_cols[-1])
-        self.highlight_col(len(self.clip_storage.clip_cols)-1)
+        self.highlight_col(len(self.clip_storage.clip_cols) - 1)
         # # for debugging purposes
         # for col in self.backend.clip_storage.clip_cols:
         #   print("="*10,col.name,"="*10)
         #   for i in range(len(col)):
         #       print(col[i])
 
-    def add_collection_frame(self,collection=None):
+    def add_collection_frame(self, collection=None):
         if collection is None:
             collection = self.clip_storage.clip_cols[-1]
-        new_cont = ContainerCollection(self.root,self.collections_frame,collection,self.select_cmd,self.backend)
+        new_cont = ContainerCollection(self.root, self.collections_frame, collection, self.select_cmd, self.backend)
         self.containers.append(new_cont)
         self.add_collection_label(collection)
 
-    def add_collection_label(self,collection):
-        index = len(self.container_labels)
-        newlabel = tk.Label(self.collections_labels_frame,text=collection.name,bd=4)
-        newlabel.bind('<ButtonPress-1>',lambda *args: self.highlight_col(self.container_labels.index(newlabel),False))
-        newlabel.bind("<Double-1>",lambda *args: self.change_name_dialog(self.container_labels.index(newlabel)))
-        newlabel.bind('<ButtonPress-2>',lambda *args: self.remove_collection(self.container_labels.index(newlabel)))
-        newlabel.bind("<Double-3>",lambda *args: self.remove_collection(self.container_labels.index(newlabel)))
+    def add_collection_label(self, collection):
+        newlabel = ttk.Label(self.collections_labels_frame, text=collection.name, justify=tk.CENTER, padding='4 2 4 1', borderwidth='2', width=-4)
+        newlabel.bind('<ButtonPress-1>', lambda *args: self.highlight_col(self.container_labels.index(newlabel), False))
+        newlabel.bind("<Double-1>", lambda *args: self.change_name_dialog(self.container_labels.index(newlabel)))
+        newlabel.bind('<ButtonPress-2>', lambda *args: self.remove_collection(self.container_labels.index(newlabel)))
+        newlabel.bind("<Double-3>", lambda *args: self.remove_collection(self.container_labels.index(newlabel)))
         newlabel.bind("<MouseWheel>", self.canvas_scroll_mouse)
         newlabel.bind("<Button-4>", self.canvas_scroll_mouse)
         newlabel.bind("<Button-5>", self.canvas_scroll_mouse)
         newlabel.pack(side=tk.LEFT)
         self.container_labels.append(newlabel)
 
-    def remove_collection(self,index):
+    def remove_collection(self, index):
         if len(self.containers) <= 1:
             self.containers[0].clear()
             return
         self.clip_storage.remove_collection(index)
 
-    def remove_collection_frame(self,index):
+    def remove_collection_frame(self, index):
         self.containers[index].frame.destroy()
         del self.containers[index]
         self.container_labels[index].destroy()
         del self.container_labels[index]
 
-    def change_name_dialog(self,index):
-        new_name = tksimpledialog.askstring("rename collection",'',
-                    initialvalue=self.containers[index].clip_collection.name)
+    def change_name_dialog(self, index):
+        new_name = tksimpledialog.askstring("rename collection", '',
+                                            initialvalue=self.containers[index].clip_collection.name)
         if new_name and new_name != self.containers[index].clip_collection.name:
             # change name
             self.containers[index].clip_collection.name = new_name
             self.container_labels[index].configure(text=new_name)
 
+
 class LibraryBrowser:
-    def __init__(self,backend,parent_frame):
+    def __init__(self, backend, parent_frame):
         style = ttk.Style()
         style.layout("Treeview", [
             ('Treeview.treearea', {'sticky': 'nswe'})
         ])
-        style.configure('Treeview',indent=2)
+        style.configure('Treeview', indent=2)
 
         self.backend = backend
         # db (has searcher & search fun)

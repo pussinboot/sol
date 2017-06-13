@@ -21,18 +21,17 @@ class ClipControl:
         self.root = root
         self.width = 330
 
-
         self.setup_gui()
 
         # clip parameter to update function
         self.param_dispatch = {
-            'cue_points' : self.update_cues,
-            'loop_points' : self.update_loop,
-            'loop_on' : self.update_loop,
-            'loop_type' : self.update_loop,
-            'loop_selection' : self.update_loop,
-            'playback_speed' : self.update_speed,
-            'control_sens' : self.update_sens
+            'cue_points': self.update_cues,
+            'loop_points': self.update_loop,
+            'loop_on': self.update_loop,
+            'loop_type': self.update_loop,
+            'loop_selection': self.update_loop,
+            'playback_speed': self.update_speed,
+            'control_sens': self.update_sens
         }
 
         self.refresh_looping()
