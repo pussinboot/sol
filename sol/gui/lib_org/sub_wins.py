@@ -274,9 +274,9 @@ class MultiChoicePane:
         self.notebook.pack(expand=True, fill=tk.BOTH)
 
         # bottombar
-        self.go_l_but = ttk.Button(self.bot_frame, text='<', command=lambda: self.switch_tab(-1))
+        self.go_l_but = ttk.Button(self.bot_frame, text='<', command=lambda: self.switch_tab(-1), width=1)
         self.parent.root_frame.bind(',', lambda e: self.switch_tab(-1))
-        self.go_r_but = ttk.Button(self.bot_frame, text='>', command=lambda: self.switch_tab(+1))
+        self.go_r_but = ttk.Button(self.bot_frame, text='>', command=lambda: self.switch_tab(+1), width=1)
         self.parent.root_frame.bind('.', lambda e: self.switch_tab(+1))
         self.bot_text = ttk.Label(self.bot_frame, textvariable=self.pane_selection_text)
 
@@ -297,6 +297,7 @@ class MultiChoicePane:
 
             def curry(e):
                 self.select_shortcut(ind)
+
             return curry
 
         # keybinds
