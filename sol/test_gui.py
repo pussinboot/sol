@@ -4,6 +4,8 @@ import tkinter as tk
 import tkinter.filedialog as tkfd
 import tkinter.messagebox as tkmb
 
+from tkinter import ttk
+
 from sol.magi import Magi
 from sol.gui.lib_org import lib_org
 
@@ -25,12 +27,15 @@ class MainGui:
     """
 
     def __init__(self, root):
+        # theme
+        ttk.Style().theme_use('alt')
+
         # tk
         self.root = root
-        self.mainframe = tk.Frame(root, pady=0, padx=0)
-        self.cc_frame = tk.Frame(self.mainframe, pady=0, padx=0)
+        self.mainframe = ttk.Frame(root, padding='0')
+        self.cc_frame = ttk.Frame(self.mainframe, padding='0')
         self.cc_frames = []
-        self.clip_col_frame = tk.Frame(self.mainframe, pady=0, padx=0)
+        self.clip_col_frame = ttk.Frame(self.mainframe, padding='0')
 
         # sol
         self.magi = Magi()
@@ -45,7 +50,7 @@ class MainGui:
         self.lib_org = None
 
         for i in range(C.NO_LAYERS):
-            new_frame = tk.Frame(self.cc_frame, pady=0, padx=0)
+            new_frame = ttk.Frame(self.cc_frame, padding='0')
             self.clip_controls.append(
                 clip_control.ClipControl(new_frame, self.magi, i))
             self.cc_frames.append(new_frame)
