@@ -83,7 +83,6 @@ class LibraryOrgGui:
                     self.sub_process.kill()
                     self.sub_process = None
 
-        
 
         self.select_clip = clip_selector
         self.clear_clip = clip_clearer
@@ -100,7 +99,7 @@ class LibraryOrgGui:
         if standalone:
             self.root.call = self.parent.root.call
 
-        self.mainframe = tk.Frame(root,pady=0,padx=0)
+        self.mainframe = ttk.Frame(root, padding='0')
         self.mainframe.pack(fill=tk.BOTH,expand=tk.Y)
 
         self.parent.root.call('wm', 'attributes', '.', '-topmost', '0')
@@ -109,7 +108,7 @@ class LibraryOrgGui:
         self.root.focus_force()
 
         # treeview
-        self.tree_frame = tk.Frame(self.mainframe)
+        self.tree_frame = ttk.Frame(self.mainframe)
         self.tree_frame.pack(side=tk.TOP,fill=tk.BOTH,expand=True)
         self.tree = Treeview(self.tree_frame,self.root)
         self.tree.tree.bind('<Double-1>',self.activate_clip)
@@ -141,7 +140,7 @@ class LibraryOrgGui:
 
         # bottombar
         y_pad = 5
-        self.bottom_bar = tk.Frame(self.root)
+        self.bottom_bar = ttk.Frame(self.root)
         self.bottom_bar.pack(side=tk.BOTTOM,anchor=tk.S,fill=tk.X,expand=True)
 
         self.delete_but = tk.Button(self.bottom_bar,text='(DEL)ete',pady=y_pad,command=self.delete_prompt)
@@ -165,6 +164,8 @@ class LibraryOrgGui:
 
         if standalone:
             self.load()
+        else:
+            self.gen_all_folder_names()
         self.init_tree()
 
 
@@ -607,7 +608,7 @@ class ImportWizardGui:
         self.root.protocol("WM_DELETE_WINDOW",self.quit)        
 
         y_pad = 5
-        self.bottom_bar = tk.Frame(self.root)
+        self.bottom_bar = ttk.Frame(self.root)
         self.bottom_bar.pack(side=tk.BOTTOM,anchor=tk.S,fill=tk.X,expand=True)
 
         self.root.bind("<Delete>",self.delete_clip)
@@ -700,18 +701,18 @@ class ImportWizardGui:
         actual_clip = self.fname_to_clip[clip_fname]
         return actual_clip, row_id
 
-    def callback_gen(self,clip,row_id,what_kind):
+    def callback_gen(self, clip, row_id, what_kind):
             stor_clip = clip
             i = row_id
 
-            if what_kind in ['move','rename']:
-                def callback(new_path,new_name=None):
+            if what_kind in ['move', 'rename']:
+                def callback(new_path, new_name=None):
                     hold_vals = self.tree.tree.item(i)['values']
                     old_path = hold_vals[1]
                     hold_vals[1] = new_path
-                    self.tree.tree.item(i,values=hold_vals)
+                    self.tree.tree.item(i, values=hold_vals)
                     if new_name is not None:
-                        self.tree.tree.item(i,text=new_name)
+                        self.tree.tree.item(i, text=new_name)
 
                     # update fname_to_clip..
                     if old_path in self.fname_to_clip:
@@ -723,7 +724,7 @@ class ImportWizardGui:
                             def rename_later():
                                 try:
                                     # actually rename the file?
-                                    os.rename(old_path,new_path)
+                                    os.rename(old_path, new_path)
                                     # change clip's fname/name
                                     stor_clip.f_name = new_path
                                     if new_name is not None:
@@ -733,13 +734,13 @@ class ImportWizardGui:
                             self.parent.root.after(1000, rename_later)
 
                     if self.parent.last_selected_clip == stor_clip:
-                        self.parent.delayed_actions += [(stor_clip,maybe_do_later)]
+                        self.parent.delayed_actions += [(stor_clip, maybe_do_later)]
                     else:
                         maybe_do_later()
 
             else: # tag
                 def callback(new_tags):
-                    self.db.tagdb.update_clip_tags(new_tags,stor_clip)
+                    self.db.tagdb.update_clip_tags(new_tags, stor_clip)
                     self.db.tagdb.refresh()
 
             return callback
