@@ -4,7 +4,7 @@ import tkinter.messagebox as tkmb
 from tkinter import ttk
 
 # not sure about this one
-from sol.gui.lib_org.sub_wins import RenameWin, MoveWin, TagWin, AddTagWin, Treeview
+from .sub_wins import RenameWin, MoveWin, TagWin, AddTagWin, Treeview
 
 import os
 from subprocess import Popen
