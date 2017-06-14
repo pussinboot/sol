@@ -201,7 +201,7 @@ class ScrollTab():
         self.canvas.yview_moveto(0)
 
         # create a frame inside the canvas which will be scrolled with it
-        self.interior = tk.Frame(self.canvas)
+        self.interior = ttk.Frame(self.canvas)
         self.interior_id = self.canvas.create_window(0, 0, window=self.interior,
                                                      anchor=tk.NW)
 
