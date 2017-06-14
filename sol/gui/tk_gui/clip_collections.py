@@ -5,6 +5,7 @@ import tkinter.simpledialog as tksimpledialog
 import tkinter.font as tkFont
 
 from PIL import ImageTk, Image
+
 import os
 import bisect
 from itertools import accumulate
@@ -14,17 +15,18 @@ C = GlobalConfig()
 
 EMPTY_CLIP = os.path.join(os.path.dirname(__file__), 'sample_clip.png')
 
+
 class ClipContainer:
     # gui element that holds a single clip
-    def __init__(self,parent,index,selectfun=None,clip=None):
-        self.index = index # index in parent collection
+    def __init__(self, parent, index, selectfun=None, clip=None):
+        self.index = index  # index in parent collection
         self.selectfun = selectfun
         self.last_clip = None
 
         self.parent = parent
         self.backend = parent.backend
         self.root = parent.root
-        self.frame = tk.Frame(self.parent.frame,padx=5,pady=0)
+        self.frame = ttk.Frame(self.parent.frame, padding='5 0 5 0')
         self.grid = self.frame.grid
 
         self.imgs = []
@@ -32,11 +34,11 @@ class ClipContainer:
         self.current_img_i = 0
         self.hovered = False
 
-        self.label = tk.Label(self.frame,image=self.current_img,text='test',compound='top',width=C.THUMB_W,bd=2) # width of clip preview
+        self.label = tk.Label(self.frame, image=self.current_img, text='test', compound='top', width=C.THUMB_W, borderwidth='2')  # width of clip preview
         self.label.image = self.current_img
         self.label.pack()
-        self.label.bind('<Double-1>',self.activate_l)
-        self.label.bind('<Double-3>',self.activate_r)
+        self.label.bind('<Double-1>', self.activate_l)
+        self.label.bind('<Double-3>', self.activate_r)
         self.label.bind("<Enter>", self.start_hover)
         self.label.bind("<Leave>", self.end_hover)
 
@@ -45,65 +47,19 @@ class ClipContainer:
         self.clip = None
         self.change_clip(clip)
 
-
-    def activate(self,*args,layer=-1):
-        if self.clip is None or self.selectfun is None: return
-        self.selectfun(self.clip,layer)
-
-    def activate_l(self,*args):
-        self.activate(*args,layer=0)
-
-    def activate_r(self,*args):
-        self.activate(*args,layer=1)
-
-    def change_img_from_file(self,new_img):
-        self.current_img = ImageTk.PhotoImage(Image.open(new_img))
-        self.label.config(image=self.current_img) # necessary to do twice to preserve image across garbage collection
-        self.label.image = self.current_img
-
-    def change_img_from_img(self,new_img):
-        self.current_img = new_img
-        self.label.config(image=self.current_img)
-        self.label.image = self.current_img
-
-    def next_img(self):
-        if len(self.imgs) == 0: return
-        self.current_img_i = (self.current_img_i + 1) % len(self.imgs)
-        self.change_img_from_img(self.imgs[self.current_img_i])
-
-    def regen_imgs(self,*args):
-        if self.clip is None: return
-        new_pix = self.parent.backend.thumb_maker.\
-                  gen_thumbnail(self.clip.f_name, n_frames=C.NO_FRAMES)
-        if len(new_pix) == 0: return
-        self.clip.t_names = new_pix
-        self.setup_imgs()
-
-
-    def hover_animate(self,*args):
-        if len(self.imgs) == 0: return
-        if not self.hovered: 
-            self.current_img_i = 0
-            self.change_img_from_img(self.imgs[self.current_img_i])
+    # things to do with the clip
+    def activate(self, *args, layer=-1):
+        if self.clip is None or self.selectfun is None:
             return
-        self.next_img()
-        self.root.after(C.REFRESH_INTERVAL,self.hover_animate)
+        self.selectfun(self.clip, layer)
 
-    def start_hover(self,*args):
-        self.hovered = True
-        self.hover_animate()
+    def activate_l(self, *args):
+        self.activate(*args, layer=0)
 
-    def end_hover(self,*args):
-        self.hovered = False
+    def activate_r(self, *args):
+        self.activate(*args, layer=1)
 
-    def setup_imgs(self):
-        f_names = [os.path.join(C.SCROT_DIR,t_name) for t_name in self.clip.t_names if os.path.exists(os.path.join(C.SCROT_DIR,t_name))]
-        self.imgs = [ImageTk.PhotoImage(Image.open(f_name)) for f_name in f_names]
-        if len(self.imgs) == 0: return
-        self.current_img_i = 0
-        self.change_img_from_img(self.imgs[self.current_img_i])
-
-    def change_text(self,new_text):
+    def change_text(self, new_text):
         new_text = str(new_text)
         text_meas = []
         for c in new_text:
@@ -118,12 +74,12 @@ class ClipContainer:
                     text_meas.append(C.FONT_AVG_WIDTH)
         cumm_text_meas = list(accumulate(text_meas))
         if cumm_text_meas[-1] > C.THUMB_W:
-            to_i = bisect.bisect_left(cumm_text_meas,C.THUMB_W - 5*C.FONT_WIDTHS['.'])
+            to_i = bisect.bisect_left(cumm_text_meas, C.THUMB_W - 5 * C.FONT_WIDTHS['.'])
             new_text = new_text[:to_i].strip() + ".."
         self.label.config(text=new_text)
 
-    def change_clip(self,clip):
-        if clip is None: 
+    def change_clip(self, clip):
+        if clip is None:
             self.remove_clip()
             return
         self.last_clip = self.clip
@@ -134,14 +90,11 @@ class ClipContainer:
 
         if self.clip.t_names is None:
             self.change_img_from_img(self.default_img)
-            # self.clip.t_name = './scrot/{}.png'.format(ntpath.basename(self.clip.fname))
         else:
             self.setup_imgs()
-        #print('clip changed to',self.clip.name)
         self.toggle_dnd()
-        # add to clip collection
 
-    def remove_clip(self,*args):
+    def remove_clip(self, *args):
         self.clip = None
         self.imgs = []
         self.hovered = False
@@ -149,72 +102,115 @@ class ClipContainer:
         if self.parent.index >= 0:
             self.backend.clip_storage.clip_cols[self.parent.index][self.index] = None
 
-    # tkdnd stuff here
+    # thumbnail funs
+    def change_img_from_file(self, new_img):
+        self.current_img = ImageTk.PhotoImage(Image.open(new_img))
+        self.label.config(image=self.current_img)  # necessary to do twice to preserve image across garbage collection
+        self.label.image = self.current_img
+
+    def change_img_from_img(self, new_img):
+        self.current_img = new_img
+        self.label.config(image=self.current_img)
+        self.label.image = self.current_img
+
+    def next_img(self):
+        if len(self.imgs) == 0:
+            return
+        self.current_img_i = (self.current_img_i + 1) % len(self.imgs)
+        self.change_img_from_img(self.imgs[self.current_img_i])
+
+    def regen_imgs(self, *args):
+        if self.clip is None:
+            return
+        new_pix = self.parent.backend.thumb_maker.gen_thumbnail(self.clip.f_name, n_frames=C.NO_FRAMES)
+        if len(new_pix) == 0:
+            return
+        self.clip.t_names = new_pix
+        self.setup_imgs()
+
+    def hover_animate(self, *args):
+        if len(self.imgs) == 0:
+            return
+        if not self.hovered:
+            self.current_img_i = 0
+            self.change_img_from_img(self.imgs[self.current_img_i])
+            return
+        self.next_img()
+        self.root.after(C.REFRESH_INTERVAL, self.hover_animate)
+
+    def start_hover(self, *args):
+        self.hovered = True
+        self.hover_animate()
+
+    def end_hover(self, *args):
+        self.hovered = False
+
+    def setup_imgs(self):
+        f_names = [os.path.join(C.SCROT_DIR, t_name) for t_name in self.clip.t_names
+                   if os.path.exists(os.path.join(C.SCROT_DIR, t_name))]
+        self.imgs = [ImageTk.PhotoImage(Image.open(f_name)) for f_name in f_names]
+        if len(self.imgs) == 0:
+            return
+        self.current_img_i = 0
+        self.change_img_from_img(self.imgs[self.current_img_i])
+
+    # drag-n-drop stuff here
     def press(self, event):
-        if dnd_start(DragClip(self.clip,self), event):
+        if dnd_start(DragClip(self.clip, self), event):
             pass
-            # print(self.clip.name,"selected")
 
     def dnd_accept(self, source, event):
-        # print("source:",source.fname,"event",event)
         return self
 
     def dnd_enter(self, source, event):
-        #self.label.focus_set() # Show highlight border
         pass
 
     def dnd_motion(self, source, event):
         pass
-        
+
     def dnd_leave(self, source, event):
-        #self.parent.focus_set() # Hide highlight border
         pass
-        
+
     def dnd_commit(self, source, event):
-        #print('source:',source)
-        if source.clip is None: return
-        self.change_clip(source.clip) #change_text
+        if source.clip is None:
+            return
+        self.change_clip(source.clip)
         self.dnd_leave(source, event)
 
-    def dnd_end(self,target,event):
+    def dnd_end(self, target, event):
         pass
-        # print('target:',target)
-        # if target is not None and target != self:
-        #   self.remove_clip()
 
     def toggle_dnd(self):
         if not self.clip:
             self.change_text('no_clip')
             self.change_img_from_img(self.default_img)
-            self.label.unbind('<ButtonPress-1>') # this disables selecting clip
-            self.label.unbind('<ButtonPress-3>') # this disables drag around
+            self.label.unbind('<ButtonPress-1>')  # this disables selecting clip
+            self.label.unbind('<ButtonPress-3>')  # this disables drag around
             self.label.unbind('<ButtonRelease-1>')
         else:
             self.change_text(self.clip.name)
             # change image, if clip_name is empty / our clip is none, set the img to default img -.-
-            self.label.bind("<ButtonPress-3>", self.press,add="+") # now we can drag it around
-            self.label.bind('<ButtonPress-2>',self.remove_clip) # middle click 2 remove clip
+            self.label.bind("<ButtonPress-3>", self.press, add="+")  # now we can drag it around
+            self.label.bind('<ButtonPress-2>', self.remove_clip)  # middle click 2 remove clip
+
 
 class DragClip:
     """
     used for dragging clips wherever
     """
+
     def __init__(self, clip, source=None):
         self.clip = clip
         self.source = source
 
-    def dnd_end(self,target,event):
-        # print(type(target))
-        if self.source and type(target)==type(self.source):
+    def dnd_end(self, target, event):
+        if self.source and isinstance(target, type(self.source)):
             self.source.change_clip(target.last_clip)
 
 
 class ContainerCollection:
     # gui element that holds multiple clips
-    # mayb i need to be able to save/load as clipcollections (would add to sol_backend)
     def __init__(self, root, parent_frame, clipcol, select_cmd, backend):
-        # for i in range(len(clipcol)):
-        #   print(clipcol[i])
         self.clip_conts = []
         self.clip_collection = clipcol
         self.frame = tk.Frame(parent_frame)
@@ -255,11 +251,9 @@ class ContainerCollection:
     def clear(self):
         for clip_cont in self.clip_conts:
             clip_cont.remove_clip()
-        # may want to edit the actual clip collection too..
 
     @property
     def index(self):
-        # return self._index
         if self.clip_collection in self.backend.clip_storage.clip_cols:
             return self.backend.clip_storage.clip_cols.index(self.clip_collection)
         return -1
@@ -273,7 +267,9 @@ class CollectionsHolder:
         self.select_cmd = backend.select_clip
 
         self.root = root
-        defaultbg = self.root.cget('bg')
+        # defaultbg = self.root.cget('bg')
+        s = ttk.Style()
+        defaultbg = s.configure('.')['background']
         self.frame = parent_frame
         self.col_frame = ttk.Frame(self.frame)
         self.collections_frame = ttk.Frame(self.col_frame)
@@ -309,38 +305,23 @@ class CollectionsHolder:
 
         self.xsb.bind('<Button-3>', self.xsb_hax)
 
-    def canvas_scroll_update(self):
-        self.collection_label_canvas.configure(scrollregion=self.collection_label_canvas.bbox("all"))
+    # interact with backend
+    # collection maintenance
+    def add_collection(self):
+        self.clip_storage.add_collection()
+        self.highlight_col(len(self.clip_storage.clip_cols) - 1)
 
-    def canvas_scroll_mouse(self, event):
-        self.collection_label_canvas.xview('scroll', -1 * int(event.delta // 120), 'units')
+    def remove_collection(self, index):
+        if len(self.containers) <= 1:
+            self.containers[0].clear()
+            return
+        self.clip_storage.remove_collection(index)
 
-    def xsb_hax(self, event):
-        click_what = self.xsb.identify(event.x, event.y)
-        if click_what == 'arrow1':
-            self.swap_left()
-        elif click_what == 'arrow2':
-            self.swap_right()
+    def select_collection(self, index):
+        if index != self.clip_storage.cur_clip_col:
+            self.clip_storage.select_collection(index)
 
-    def refresh_after_load(self):
-        # clip collections
-        for c in self.containers:
-            c.frame.destroy()
-        self.containers = []
-        for l in self.container_labels:
-            l.destroy()
-        self.container_labels = []
-
-        for collection in self.clip_storage.clip_cols:
-            # print(collection.name)
-            # for i in range(8):
-            #   print(collection[i])
-            self.add_collection_frame(collection)
-
-        self.highlight_col()
-        # search
-        self.library_browse.tree_reset()
-
+    # swaps
     def go_left(self, *args):
         self.clip_storage.go_left()
 
@@ -352,6 +333,23 @@ class CollectionsHolder:
 
     def swap_right(self, *args):
         self.clip_storage.swap_right()
+
+    # gui updating
+    def refresh_after_load(self):
+        # clip collections
+        for c in self.containers:
+            c.frame.destroy()
+        self.containers = []
+        for l in self.container_labels:
+            l.destroy()
+        self.container_labels = []
+
+        for collection in self.clip_storage.clip_cols:
+            self.add_collection_frame(collection)
+
+        self.highlight_col()
+        # search
+        self.library_browse.tree_reset()
 
     def swap(self, ij):
         if len(ij) != 2:
@@ -365,35 +363,24 @@ class CollectionsHolder:
         self.containers[ij[0]], self.containers[ij[1]] = self.containers[ij[1]], self.containers[ij[0]]
         self.highlight_col()
 
-    def highlight_col(self, index=-1, do_scroll=True):
+    def highlight_col(self, index=-1):
         if index < 0:
             index = self.clip_storage.cur_clip_col
-        try:
-            self.containers[index].frame.tkraise()
-            for cl in self.container_labels:
-                cl.configure(relief=tk.RIDGE)
-            self.container_labels[index].configure(relief=tk.SUNKEN)
-            if index != self.clip_storage.cur_clip_col:
-                self.clip_storage.select_collection(index)
-            # scroll into view
-            if do_scroll:
-                left_x, wid_width = self.container_labels[index].winfo_x(), self.container_labels[index].winfo_width()
-                total_width = self.collection_label_canvas.bbox("all")[2]
-                scroll_to = (left_x - wid_width) / total_width
-                self.collection_label_canvas.xview('moveto', scroll_to)
-        except:
-            pass
+        self.containers[index].frame.tkraise()
+        for cl in self.container_labels:
+            cl.configure(relief=tk.RIDGE)
+        self.container_labels[index].configure(relief=tk.SUNKEN)
+        # scroll into view
+        left_x, wid_width = self.container_labels[index].winfo_x(), self.container_labels[index].winfo_width()
+        total_width = self.collection_label_canvas.bbox("all")[2]
+        # check if need to scroll
+        xsb_get = self.xsb.get()
+        above, below = xsb_get[1] * total_width, xsb_get[0] * total_width
+        if (left_x + wid_width >= above) or (left_x < below):
+            scroll_to = (left_x - wid_width) / total_width
+            self.collection_label_canvas.xview('moveto', scroll_to)
 
-    def add_collection(self):
-        self.clip_storage.add_collection()
-        # self.add_collection_frame(self.clip_storage.clip_cols[-1])
-        self.highlight_col(len(self.clip_storage.clip_cols) - 1)
-        # # for debugging purposes
-        # for col in self.backend.clip_storage.clip_cols:
-        #   print("="*10,col.name,"="*10)
-        #   for i in range(len(col)):
-        #       print(col[i])
-
+    # gui helpers
     def add_collection_frame(self, collection=None):
         if collection is None:
             collection = self.clip_storage.clip_cols[-1]
@@ -403,7 +390,7 @@ class CollectionsHolder:
 
     def add_collection_label(self, collection):
         newlabel = ttk.Label(self.collections_labels_frame, text=collection.name, justify=tk.CENTER, padding='4 2 4 1', borderwidth='2', width=-4)
-        newlabel.bind('<ButtonPress-1>', lambda *args: self.highlight_col(self.container_labels.index(newlabel), False))
+        newlabel.bind('<ButtonPress-1>', lambda *args: self.select_collection(self.container_labels.index(newlabel)))
         newlabel.bind("<Double-1>", lambda *args: self.change_name_dialog(self.container_labels.index(newlabel)))
         newlabel.bind('<ButtonPress-2>', lambda *args: self.remove_collection(self.container_labels.index(newlabel)))
         newlabel.bind("<Double-3>", lambda *args: self.remove_collection(self.container_labels.index(newlabel)))
@@ -413,17 +400,12 @@ class CollectionsHolder:
         newlabel.pack(side=tk.LEFT)
         self.container_labels.append(newlabel)
 
-    def remove_collection(self, index):
-        if len(self.containers) <= 1:
-            self.containers[0].clear()
-            return
-        self.clip_storage.remove_collection(index)
-
     def remove_collection_frame(self, index):
         self.containers[index].frame.destroy()
         del self.containers[index]
         self.container_labels[index].destroy()
         del self.container_labels[index]
+        self.highlight_col()
 
     def change_name_dialog(self, index):
         new_name = tksimpledialog.askstring("rename collection", '',
@@ -433,7 +415,25 @@ class CollectionsHolder:
             self.containers[index].clip_collection.name = new_name
             self.container_labels[index].configure(text=new_name)
 
+    # scrolling
+    def canvas_scroll_update(self):
+        self.collection_label_canvas.configure(scrollregion=self.collection_label_canvas.bbox("all"))
 
+    def canvas_scroll_mouse(self, event):
+        # first check if we want to scroll
+        total_width = float(self.collection_label_canvas.config()['width'][-1])
+        label_frame_width = self.collection_label_canvas.bbox("all")[2]
+        if (total_width < label_frame_width):
+            self.collection_label_canvas.xview('scroll', -1 * int(event.delta // 120), 'units')
+
+    def xsb_hax(self, event):
+        click_what = self.xsb.identify(event.x, event.y)
+        if click_what == 'arrow1':
+            self.swap_left()
+        elif click_what == 'arrow2':
+            self.swap_right()
+
+# this stuff belongs in another class imo
 class LibraryBrowser:
     def __init__(self, backend, parent_frame):
         style = ttk.Style()
