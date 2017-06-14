@@ -164,6 +164,19 @@ class MainGui:
         new_val = str(int(new_val))
         self.root.call('wm', 'attributes', '.', '-topmost', new_val)
 
+    def exit_org_gui(self):
+        # resize the 1st clip control back to normal
+        self.clip_controls[0].resize(330)
+        for i in range(1, len(self.cc_frames)):
+            self.cc_frames[i].pack(side=tk.LEFT)
+
+        # repack bottom half
+        self.clip_conts.col_frame.pack_forget()
+        self.clip_conts.search_frame.pack(side=tk.LEFT, fill=tk.Y, anchor='e')
+        self.clip_conts.col_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
+
+        self.cur_view.set('full')
+
     def enter_clip_org_gui(self):
         # only want 1 clip control =)
         for i in range(1, len(self.cc_frames)):
@@ -180,13 +193,9 @@ class MainGui:
         if self.clip_org is not None:
             self.clip_org.close()
             self.clip_org = None
-        # resize the 1st clip control back to normal
-        self.clip_controls[0].resize(330)
-        for i in range(1, len(self.cc_frames)):
-            self.cc_frames[i].pack(side=tk.LEFT)
-        # library browser
-        self.clip_conts.search_frame.pack(side=tk.LEFT, fill=tk.Y)
-        self.cur_view.set('full')
+
+        # reset
+        self.exit_org_gui()
 
     def enter_lib_org_gui(self):
         # close clip_org if it isn't closed yet
@@ -198,25 +207,19 @@ class MainGui:
             self.cc_frames[i].pack_forget()
 
         # resize the 1 clip control
-        # self.root.geometry('750x567+50+50') # TEMP!!
         self.clip_controls[0].resize(4 * C.THUMB_W)
         # we want different library browser sry
         self.clip_conts.search_frame.pack_forget()
         self.lib_org = lib_org.LibraryOrgGui(tk.Toplevel(), self)
 
     def exit_lib_org_gui(self, *args):
-        # close clip_org if it isn't closed yet
+        # close lib_org if it isn't closed yet
         if self.lib_org is not None:
             self.lib_org.close()
             self.lib_org = None
-        # resize the 1st clip control back to normal
-        self.clip_controls[0].resize(330)
-        for i in range(1, len(self.cc_frames)):
-            self.cc_frames[i].pack(side=tk.LEFT)
-        # library browser
-        self.clip_conts.search_frame.pack(side=tk.LEFT, fill=tk.Y)
-        self.toggle_on_top()
-        self.cur_view.set('full')
+
+        # reset
+        self.exit_org_gui()
 
     def change_views(self, *args):
         new_view = self.cur_view.get()
