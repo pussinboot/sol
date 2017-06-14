@@ -88,10 +88,12 @@ class SetupGui:
         self.video_tab = None
         self.gui_tab = None
 
-        self.param_tab = tk.Frame(self.root_frame, padx=5, pady=5)
-        self.network_tab = tk.Frame(self.root_frame, padx=5, pady=5)
-        self.video_tab = tk.Frame(self.root_frame, padx=5, pady=5)
-        self.gui_tab = tk.Frame(self.root_frame, padx=5, pady=5)
+        tab_padding = '5 5 5 5'
+
+        self.param_tab = ttk.Frame(self.root_frame, padding=tab_padding)
+        self.network_tab = ttk.Frame(self.root_frame, padding=tab_padding)
+        self.video_tab = ttk.Frame(self.root_frame, padding=tab_padding)
+        self.gui_tab = ttk.Frame(self.root_frame, padding=tab_padding)
 
         for tab_name in [(self.param_tab, 'sol config'),
                          (self.network_tab, 'network config'),
@@ -262,16 +264,16 @@ class SetupGui:
     # COMPILER HELPER FUNS
 
     def add_label_frame(self, frame_name, parent_tab):
-        new_label_frame = tk.LabelFrame(
-            parent_tab, text=frame_name, padx=5, pady=5)
+        new_label_frame = ttk.LabelFrame(
+            parent_tab, text=frame_name, padding='5 5 5 5')
         new_label_frame.pack(side=tk.TOP, expand=False, fill=tk.X, anchor='n')
         return new_label_frame
 
     def add_choice_row(self, parent_frame, hint_text):
-        new_frame = tk.Frame(parent_frame)
+        new_frame = ttk.Frame(parent_frame)
         new_frame.pack(fill=tk.X)
-        desc_label = tk.Label(new_frame, text='{} :'.format(
-            hint_text), anchor='w', pady=5)
+        desc_label = ttk.Label(new_frame, text='{} :'.format(
+            hint_text), anchor='w', padding='0 5 0 5')
         desc_label.pack(side=tk.LEFT)
         return new_frame
 
@@ -290,10 +292,10 @@ class SetupGui:
                 new_folder_path = os.sep.join(new_folder_path.split('/'))
                 new_var.set(new_folder_path)
 
-        dot_but = tk.Button(new_frame, text='..', command=change_folder)
+        dot_but = ttk.Button(new_frame, text='..', command=change_folder, width=1)
         dot_but.pack(side=tk.RIGHT, anchor='e')
 
-        current_path_label = tk.Label(
+        current_path_label = ttk.Label(
             new_frame, textvar=new_var, anchor='w', relief='sunken')
         current_path_label.pack(side=tk.RIGHT, fill=tk.X,
                                 anchor='e', expand=True)
@@ -314,10 +316,10 @@ class SetupGui:
                 new_file_path = os.sep.join(new_file_path.split('/'))
                 new_var.set(new_file_path)
 
-        dot_but = tk.Button(new_frame, text='..', command=change_file)
+        dot_but = ttk.Button(new_frame, text='..', command=change_file)
         dot_but.pack(side=tk.RIGHT, anchor='e')
 
-        current_path_label = tk.Label(
+        current_path_label = ttk.Label(
             new_frame, textvar=new_var, anchor='w', relief='sunken')
         current_path_label.pack(side=tk.RIGHT, fill=tk.X,
                                 anchor='e', expand=True)
@@ -357,7 +359,7 @@ class SetupGui:
         if starting_choice is not None:
             new_var.set(int(starting_choice))
 
-        check_but = tk.Checkbutton(new_frame, variable=new_var)
+        check_but = ttk.Checkbutton(new_frame, variable=new_var)
         check_but.pack(side=tk.RIGHT, anchor='e')
 
         return new_var, 'bool', new_frame
@@ -388,7 +390,7 @@ class SetupGui:
     def add_list_enter(self, hint_text, parent_frame, starting_choice=None, extra_args=None):
         new_frame = self.add_choice_row(parent_frame, hint_text)
         new_var = tk.StringVar()
-        list_entry = tk.Entry(new_frame, textvariable=new_var, justify="left")
+        list_entry = ttk.Entry(new_frame, textvariable=new_var, justify="left")
         list_entry.pack(side=tk.RIGHT, fill=tk.X, anchor='e', expand=True)
 
         if starting_choice is not None:
@@ -404,7 +406,7 @@ class SetupGui:
         if starting_choice is not None:
             new_var.set(str(starting_choice))
 
-        str_entry = tk.Entry(new_frame, textvariable=new_var, justify="left")
+        str_entry = ttk.Entry(new_frame, textvariable=new_var, justify="left")
         str_entry.pack(side=tk.RIGHT, fill=tk.X, anchor='e', expand=True)
 
         return new_var, 'str', new_frame
