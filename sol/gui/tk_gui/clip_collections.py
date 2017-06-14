@@ -433,7 +433,8 @@ class CollectionsHolder:
         elif click_what == 'arrow2':
             self.swap_right()
 
-# this stuff belongs in another class imo
+
+# this stuff belongs in another class imo, nevermind it uses clipcontainers : )
 class LibraryBrowser:
     def __init__(self, backend, parent_frame):
         style = ttk.Style()
@@ -448,119 +449,115 @@ class LibraryBrowser:
         self.folders = {}
 
         self.parent_frame = parent_frame
-        self.frame = tk.Frame(self.parent_frame)
+        self.frame = ttk.Frame(self.parent_frame)
         self.browsers = ttk.Notebook(self.frame)
 
-        self.search_frame = tk.Frame(self.parent_frame)
-        self.browse_frame = tk.Frame(self.parent_frame)
-        self.tag_frame = tk.Frame(self.parent_frame)
+        self.search_frame = ttk.Frame(self.parent_frame)
+        self.browse_frame = ttk.Frame(self.parent_frame)
+        self.tag_frame = ttk.Frame(self.parent_frame)
 
         # search tree setup
         self.search_query = tk.StringVar()
-        self.search_field = tk.Entry(self.search_frame,textvariable=self.search_query,width=5)
-        self.search_query.trace('w',self.search)
-        self.search_inner_frame = tk.Frame(self.search_frame)
-        self.search_tree = ttk.Treeview(self.search_inner_frame,selectmode='extended', show='tree', height = 11)
-        self.search_tree.bind('<ButtonPress>',self.make_drag_clip, add="+")
-        self.search_tree.bind('<Double-1>',lambda e: self.activate_clip_to_layer(e,0))
-        self.search_tree.bind('<Double-3>',lambda e: self.activate_clip_to_layer(e,1))
+        self.search_field = ttk.Entry(self.search_frame, textvariable=self.search_query, width=5)
+        self.search_query.trace('w', self.search)
+        self.search_inner_frame = ttk.Frame(self.search_frame)
+        self.search_tree = ttk.Treeview(self.search_inner_frame, selectmode='extended', show='tree', height=11)
+        self.search_tree.bind('<ButtonPress>', self.make_drag_clip, add="+")
+        self.search_tree.bind('<Double-1>', lambda e: self.activate_clip_to_layer(e, 0))
+        self.search_tree.bind('<Double-3>', lambda e: self.activate_clip_to_layer(e, 1))
 
-        self.search_field.pack(side=tk.TOP,anchor=tk.N,fill=tk.X,pady=2)
-        self.search_tree.pack(side=tk.LEFT,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)
+        self.search_field.pack(side=tk.TOP, anchor=tk.N, fill=tk.X, pady=2)
+        self.search_tree.pack(side=tk.LEFT, anchor=tk.N, fill=tk.BOTH, expand=tk.Y)
         self.ysb = ttk.Scrollbar(self.search_frame, orient='vertical', command=self.search_tree.yview)
         self.search_tree.configure(yscrollcommand=self.ysb.set)
-        self.ysb.pack(side=tk.RIGHT,anchor=tk.N,fill=tk.Y)
-        self.search_inner_frame.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=True)
+        self.ysb.pack(side=tk.RIGHT, anchor=tk.N, fill=tk.Y)
+        self.search_inner_frame.pack(side=tk.TOP, anchor=tk.N, fill=tk.BOTH, expand=True)
 
         # browse tree setup
-        self.browse_tree = ttk.Treeview(self.browse_frame,selectmode='extended', show='tree', height = 13)
-        self.browse_tree.bind('<ButtonPress>',self.make_drag_clip, add="+")
-        self.browse_tree.bind('<Double-1>',lambda e: self.activate_clip_to_layer(e,0))
-        self.browse_tree.bind('<Double-3>',lambda e: self.activate_clip_to_layer(e,1))
+        self.browse_tree = ttk.Treeview(self.browse_frame, selectmode='extended', show='tree', height=13)
+        self.browse_tree.bind('<ButtonPress>', self.make_drag_clip, add="+")
+        self.browse_tree.bind('<Double-1>', lambda e: self.activate_clip_to_layer(e, 0))
+        self.browse_tree.bind('<Double-3>', lambda e: self.activate_clip_to_layer(e, 1))
 
-        self.browse_tree.pack(side=tk.LEFT,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)
+        self.browse_tree.pack(side=tk.LEFT, anchor=tk.N, fill=tk.BOTH, expand=tk.Y)
         self.ysbb = ttk.Scrollbar(self.browse_frame, orient='vertical', command=self.browse_tree.yview)
         self.browse_tree.configure(yscrollcommand=self.ysbb.set)
-        self.ysbb.pack(side=tk.RIGHT,anchor=tk.N,fill=tk.Y)
+        self.ysbb.pack(side=tk.RIGHT, anchor=tk.N, fill=tk.Y)
 
         # tags tree setup
         self.tag_query = tk.StringVar()
-        self.tag_field = tk.Entry(self.tag_frame,textvariable=self.tag_query,width=5)
-        self.tag_query.trace('w',self.tag_search)
-        self.tag_inner_frame = tk.Frame(self.tag_frame)
-        self.tag_tree = ttk.Treeview(self.tag_inner_frame,selectmode='extended', show='tree', height = 11)
-        self.tag_tree.bind('<ButtonPress>',self.make_drag_clip, add="+")
-        self.tag_tree.bind('<Double-1>',lambda e: self.activate_clip_to_layer(e,0))
-        self.tag_tree.bind('<Double-3>',lambda e: self.activate_clip_to_layer(e,1))
+        self.tag_field = ttk.Entry(self.tag_frame, textvariable=self.tag_query, width=5)
+        self.tag_query.trace('w', self.tag_search)
+        self.tag_inner_frame = ttk.Frame(self.tag_frame)
+        self.tag_tree = ttk.Treeview(self.tag_inner_frame, selectmode='extended', show='tree', height=11)
+        self.tag_tree.bind('<ButtonPress>', self.make_drag_clip, add="+")
+        self.tag_tree.bind('<Double-1>', lambda e: self.activate_clip_to_layer(e, 0))
+        self.tag_tree.bind('<Double-3>', lambda e: self.activate_clip_to_layer(e, 1))
 
-        self.tag_field.pack(side=tk.TOP,anchor=tk.N,fill=tk.X,pady=2)
-        self.tag_tree.pack(side=tk.LEFT,anchor=tk.N,fill=tk.BOTH,expand=tk.Y)
+        self.tag_field.pack(side=tk.TOP, anchor=tk.N, fill=tk.X, pady=2)
+        self.tag_tree.pack(side=tk.LEFT, anchor=tk.N, fill=tk.BOTH, expand=tk.Y)
         self.ysbbb = ttk.Scrollbar(self.tag_frame, orient='vertical', command=self.tag_tree.yview)
         self.tag_tree.configure(yscrollcommand=self.ysbbb.set)
-        self.ysbbb.pack(side=tk.RIGHT,anchor=tk.N,fill=tk.Y)
-        self.tag_inner_frame.pack(side=tk.TOP,anchor=tk.N,fill=tk.BOTH,expand=True)
-
+        self.ysbbb.pack(side=tk.RIGHT, anchor=tk.N, fill=tk.Y)
+        self.tag_inner_frame.pack(side=tk.TOP, anchor=tk.N, fill=tk.BOTH, expand=True)
 
         # pack everything
-        self.browsers.add(self.search_frame,text='search')
-        self.browsers.add(self.tag_frame,text='tags')
-        self.browsers.add(self.browse_frame,text='browse')
+        self.browsers.add(self.search_frame, text='search')
+        self.browsers.add(self.tag_frame, text='tags')
+        self.browsers.add(self.browse_frame, text='browse')
 
-        self.frame.pack(fill=tk.BOTH,expand=tk.Y)
-        self.browsers.pack(expand=True,fill=tk.BOTH)
+        self.frame.pack(fill=tk.BOTH, expand=tk.Y)
+        self.browsers.pack(expand=True, fill=tk.BOTH)
 
         # finally populate the trees
         self.tree_reset()
 
-
-
-    def search(self,*args):
-        # print(self.search_query.get())
+    def search(self, *args):
         search_term = self.search_query.get()
         if search_term != "":
-            res = self.db.search(search_term) # n = 3 # for limiting
-            self.search_tree.item("root",open=False)
+            res = self.db.search(search_term)  # n = 3 # for limiting
+            self.search_tree.item("root", open=False)
             if self.search_tree.exists("search"):
                 self.search_tree.delete("search")
-            search_res = self.search_tree.insert('', 'end',iid="search", text='Search Results',open=True,values=['category'])
+            search_res = self.search_tree.insert('', 'end', iid="search", text='Search Results', open=True, values=['category'])
             for clip in res:
-                self.search_tree.insert(search_res, 'end', text=clip.name,values=["clip",clip.f_name])
+                self.search_tree.insert(search_res, 'end', text=clip.name, values=["clip", clip.f_name])
         else:
             if self.search_tree.exists("search"):
                 self.search_tree.delete("search")
-            self.search_tree.item("root",open=True)
+            self.search_tree.item("root", open=True)
 
-    def tag_search(self,*args):
-        # print(self.search_query.get())
+    def tag_search(self, *args):
         search_term = self.tag_query.get()
         if search_term != "":
-            self.tag_tree.item("root",open=False)
+            self.tag_tree.item("root", open=False)
             if self.tag_tree.exists("search"):
                 self.tag_tree.delete("search")
-            search_res = self.tag_tree.insert('', 'end',iid="search", text='Search Results',open=True,values=['nop',0])
+            search_res = self.tag_tree.insert('', 'end', iid="search", text='Search Results', open=True, values=['nop', 0])
             res_tags = self.db.tagdb.search(search_term)
             for tag, clips in res_tags:
-                tag_folder = self.tag_tree.insert(search_res, 'end', text=tag,values=["tag",0])
+                tag_folder = self.tag_tree.insert(search_res, 'end', text=tag, values=["tag", 0])
                 for clip in clips:
-                    self.tag_tree.insert(tag_folder, 'end', text=clip.name,values=["clip",clip.f_name])
+                    self.tag_tree.insert(tag_folder, 'end', text=clip.name, values=["clip", clip.f_name])
 
         else:
             if self.tag_tree.exists("search"):
                 self.tag_tree.delete("search")
-            self.tag_tree.item("root",open=True)
+            self.tag_tree.item("root", open=True)
 
-    def last_search(self,*args):
+    def last_search(self, *args):
         res = self.db.last_search
-        if res is None: return
-        self.search_tree.item("root",open=False)
+        if res is None:
+            return
+        self.search_tree.item("root", open=False)
         if self.search_tree.exists("search"):
             self.search_tree.delete("search")
-        search_res = self.search_tree.insert('', 'end',iid="search", text='Search Results',open=True,values=['category'])
+        search_res = self.search_tree.insert('', 'end', iid="search", text='Search Results', open=True, values=['category'])
         for clip in res:
-            self.search_tree.insert(search_res, 'end', text=clip.name,values=["clip",clip.f_name])
+            self.search_tree.insert(search_res, 'end', text=clip.name, values=["clip", clip.f_name])
 
-    def get_clip_from_event(self,event):
-        if event.state != 8: # sure numlock is on for 8 to work...
+    def get_clip_from_event(self, event):
+        if event.state != 8:  # sure numlock is on for 8 to work...
             if event.state != 0:
                 return
         tv = event.widget
@@ -569,37 +566,40 @@ class LibraryBrowser:
         if not tv.selection():
             return
         item = tv.selection()[0]
-        if tv.item(item,"values")[0] != 'clip':
+        if tv.item(item, "values")[0] != 'clip':
             return
-        clip_fname = tv.item(item,"values")[1]
-        if clip_fname not in self.db.clips: return
+        clip_fname = tv.item(item, "values")[1]
+        if clip_fname not in self.db.clips:
+            return
         return self.db.clips[clip_fname]
 
-    def make_drag_clip(self,event):
+    def make_drag_clip(self, event):
         the_clip = self.get_clip_from_event(event)
-        if the_clip is None: return
-        if dnd_start(DragClip(the_clip),event):
+        if the_clip is None:
+            return
+        if dnd_start(DragClip(the_clip), event):
             pass
 
-    def activate_clip_to_layer(self,event,layer):
+    def activate_clip_to_layer(self, event, layer):
         the_clip = self.get_clip_from_event(event)
-        if the_clip is None: return
-        self.backend.select_clip(the_clip,layer)
+        if the_clip is None:
+            return
+        self.backend.select_clip(the_clip, layer)
 
     def tree_reset(self):
         # search
         clips = self.db.alphabetical_listing
         if self.search_tree.exists("root"):
             self.search_tree.delete("root")
-        self.s_tree_root = self.search_tree.insert('', 'end',iid="root", text='All',open=True,values=['category'])
+        self.s_tree_root = self.search_tree.insert('', 'end', iid="root", text='All', open=True, values=['category'])
         for c_name_clip in clips:
-            self.search_tree.insert(self.s_tree_root, 'end', text=c_name_clip[0],values=["clip",c_name_clip[1].f_name])
+            self.search_tree.insert(self.s_tree_root, 'end', text=c_name_clip[0], values=["clip", c_name_clip[1].f_name])
         # browse
         files = self.db.hierarchical_listing
         for folder in self.folders.values():
             if self.browse_tree.exists(folder):
                 self.browse_tree.delete(folder)
-        if files is None: 
+        if files is None:
             return
         self.folders = {}
         cur_folder = ''
@@ -609,35 +609,33 @@ class LibraryBrowser:
                 top_folder = ''
                 if node[2] in self.folders:
                     top_folder = self.folders[node[2]]
-                    self.browse_tree.item(top_folder,open=True)
-                self.folders[node[1]] = cur_folder = self.browse_tree.insert(top_folder,'end',text=node[1],open=False,values=['folder'])
+                    self.browse_tree.item(top_folder, open=True)
+                self.folders[node[1]] = cur_folder = self.browse_tree.insert(top_folder, 'end', text=node[1], open=False, values=['folder'])
             else:
-                self.browse_tree.insert(cur_folder, 'end', text=files[i][1],values=["clip",files[i][2]])
+                self.browse_tree.insert(cur_folder, 'end', text=files[i][1], values=["clip", files[i][2]])
         # tags
         if self.tag_tree.exists("root"):
             self.tag_tree.delete("root")
-        self.t_tree_root = self.tag_tree.insert('', 'end',iid="root", text='All',open=True,values=['nah',0])
+        self.t_tree_root = self.tag_tree.insert('', 'end', iid="root", text='All', open=True, values=['nah', 0])
 
         all_tags = self.db.tagdb.search("")
         for tag, clips in all_tags:
-            tag_folder = self.tag_tree.insert('root', 'end', text=tag,values=["tag",0])
+            tag_folder = self.tag_tree.insert('root', 'end', text=tag, values=["tag", 0])
             for clip in clips:
-                self.tag_tree.insert(tag_folder, 'end', text=clip.name,values=["clip",clip.f_name])
-
-
+                self.tag_tree.insert(tag_folder, 'end', text=clip.name, values=["clip", clip.f_name])
 
 
 class ClipOrg:
     # popup with the clip org gui =)
     # ClipCont = ClipContainer but with unbind("<Double-3>")
-    def __init__(self,root,parent):
+    def __init__(self, root, parent):
         self.root = root
         self.parent = parent
         self.backend = self.parent.magi
         self.root.title('clip org')
         self.parent.root.call('wm', 'attributes', '.', '-topmost', '0')
-        self.root.geometry('{}x{}'.format(C.THUMB_W * 4 + 100,400))
-        self.root.protocol("WM_DELETE_WINDOW",self.parent.exit_clip_org_gui)
+        self.root.geometry('{}x{}'.format(C.THUMB_W * 4 + 100, 400))
+        self.root.protocol("WM_DELETE_WINDOW", self.parent.exit_clip_org_gui)
         self.index = -1
 
         self.mainframe = tk.Frame(root)
@@ -645,24 +643,25 @@ class ClipOrg:
         self.all_clip_frame = tk.Frame(self.clip_frame)
         self.all_clip_canvas = tk.Canvas(self.all_clip_frame)
         self.all_clip_inner_frame = tk.Frame(self.all_clip_canvas)
-        self.vsb_all_clips = tk.Scrollbar(self.all_clip_frame, orient="vertical", command=self.all_clip_canvas.yview)
+        self.vsb_all_clips = ttk.Scrollbar(self.all_clip_frame, orient="vertical", command=self.all_clip_canvas.yview)
         self.all_clip_canvas.configure(yscrollcommand=self.vsb_all_clips.set)
 
         self.search_query = tk.StringVar()
-        self.search_field = tk.Entry(self.clip_frame,textvariable=self.search_query)
-        self.search_field.bind('<Return>',self.search)
+        self.search_field = tk.Entry(self.clip_frame, textvariable=self.search_query)
+        self.search_query.trace('w', self.search)
+        # self.search_field.bind('<Return>', self.search)
 
         self.clip_conts = {}
         self.clip_folds = []
 
-        self.mainframe.pack(expand=True,fill="both")
-        self.search_field.pack(side="top",fill="x")
-        self.clip_frame.pack(side='top',expand=True,fill="both")
-        self.all_clip_frame.pack(side='top',expand=True,fill="both")
+        self.mainframe.pack(expand=True, fill="both")
+        self.search_field.pack(side="top", fill="x")
+        self.clip_frame.pack(side='top', expand=True, fill="both")
+        self.all_clip_frame.pack(side='top', expand=True, fill="both")
         self.vsb_all_clips.pack(side="right", fill="y")
         self.all_clip_canvas.pack(side="left", fill="both", expand=True)
-        self.all_clip_canvas.create_window((4,4), window=self.all_clip_inner_frame, anchor="nw", 
-                                  tags="self.all_clip_inner_frame")
+        self.all_clip_canvas.create_window((4, 4), window=self.all_clip_inner_frame, anchor="nw",
+                                           tags="self.all_clip_inner_frame")
 
         self.all_clip_inner_frame.bind("<MouseWheel>", self.mouse_wheel)
         self.all_clip_inner_frame.bind("<Button-4>", self.mouse_wheel)
@@ -671,55 +670,32 @@ class ClipOrg:
 
         self.initialize_all_clips()
 
-
     def reset_scroll_region(self, event=None):
         self.all_clip_canvas.configure(scrollregion=self.all_clip_canvas.bbox("all"))
 
-    def mouse_wheel(self,event):
-         self.all_clip_canvas.yview('scroll',-1*int(event.delta//120),'units')
+    def mouse_wheel(self, event):
+        self.all_clip_canvas.yview('scroll', -1 * int(event.delta // 120), 'units')
 
-    def mouse_wheel_search(self,event):
-         self.search_clip_canvas.yview('scroll',-1*int(event.delta//120),'units')
+    def mouse_wheel_search(self, event):
+        self.search_clip_canvas.yview('scroll', -1 * int(event.delta // 120), 'units')
 
     def initialize_all_clips(self):
         # first sort by filename : )
-        all_clips = self.backend.db.alphabetical_listing#[:50] # speedup for testing..
+        all_clips = self.backend.db.alphabetical_listing  # [:50] speedup for testing..
 
         for i, cc in enumerate(all_clips):
-            new_clip_cont = ClipOrgClip(self,self.all_clip_inner_frame,self.backend.select_clip,cc[1])
-            r,c = i//4, i%4
-            new_clip_cont.grid(row=r,column=c)
-            self.clip_conts[cc[1].f_name] = [new_clip_cont,r,c]
+            new_clip_cont = ClipOrgClip(self, self.all_clip_inner_frame, self.backend.select_clip, cc[1])
+            r, c = (i // 4), (i % 4)
+            new_clip_cont.grid(row=r, column=c)
+            self.clip_conts[cc[1].f_name] = [new_clip_cont, r, c]
 
-        # for i in range(len(fnames)):
-        #   foldername = fnames[i].split("\\")[-2]
-        #   if foldername == 'dxv':
-        #       foldername = fnames[i].split("\\")[-3]
-        #   if foldername != last_folder_name:
-        #       offset = i
-        #       last_folder_name = foldername
-        #       new_frame = tk.LabelFrame(self.all_clip_inner_frame,text=foldername)
-        #       new_frame.frame = new_frame
-        #       new_frame.mouse_wheel = self.mouse_wheel
-        #       new_frame.bind("<MouseWheel>", self.mouse_wheel)
-        #       new_frame.bind("<Button-4>", self.mouse_wheel)
-        #       new_frame.bind("<Button-5>", self.mouse_wheel)
-        #       new_frame.backend = self.backend
-        #       self.clip_folds.append(new_frame)
-        #   newcont = ClipCont(self.backend.library.clips[fnames[i]],self.lib_gui,self.clip_folds[-1])
-        #   self.clip_conts.append(newcont)
-        #   self.clip_conts[-1].grid(row=((i-offset)//self.across),column=((i-offset)%self.across))
-
-        # for frame in self.clip_folds:
-        #   frame.pack()
-
-    def search(self,event,*args):
-        print('searching',self.search_query.get())
+    def search(self, event, *args):
+        # print('searching', self.search_query.get())
         search_term = self.search_query.get()
         self.search_res_clip_conts = []
         if search_term == "":
             for clip_cont in self.clip_conts.values():
-                clip_cont[0].grid(row=clip_cont[1],column=clip_cont[2])
+                clip_cont[0].grid(row=clip_cont[1], column=clip_cont[2])
         else:
             res = self.backend.db.search(search_term)
             for clip_cont in self.clip_conts.values():
@@ -728,26 +704,29 @@ class ClipOrg:
             i = 0
             for clip in res:
                 if clip.f_name in self.clip_conts:
-                    self.clip_conts[clip.f_name][0].grid(row=i//4,column=i%4)
+                    self.clip_conts[clip.f_name][0].grid(row=i // 4, column=i % 4)
                     i += 1
-            self.reset_scroll_region()
+        self.reset_scroll_region()
+
     def quit(self):
         self.backend.save_data()
 
-
-    def close(self,*args):
+    def close(self, *args):
         self.parent.root.call('wm', 'attributes', '.', '-topmost', str(int(self.parent.on_top_toggle.get())))
         self.root.destroy()
 
+
 class ClipOrgClip(ClipContainer):
-    def __init__(self,parent,parent_frame,selectfun,clip):
+    def __init__(self, parent, parent_frame, selectfun, clip):
         self.selectfun = selectfun
         self.last_clip = None
 
         self.parent = parent
         self.backend = parent.backend
         self.root = parent.root
-        self.frame = tk.Frame(parent_frame,padx=5,pady=0)
+        self.frame = ttk.Frame(parent_frame, padding='5 0 5 0')
+        self.frame = tk.Frame(parent_frame, padx=5, pady=0)
+
         self.grid = self.frame.grid
         self.grid_forget = self.frame.grid_forget
 
@@ -756,11 +735,11 @@ class ClipOrgClip(ClipContainer):
         self.current_img_i = 0
         self.hovered = False
 
-        self.label = tk.Label(self.frame,image=self.current_img,text='test',compound='top',width=C.THUMB_W,bd=2) # width of clip preview
+        self.label = tk.Label(self.frame, image=self.current_img, text='test', compound='top', width=C.THUMB_W, bd=2)
         self.label.image = self.current_img
         self.label.pack()
-        self.label.bind('<Double-1>',self.activate_l)
-        self.label.bind('<Double-2>',self.regen_imgs)
+        self.label.bind('<Double-1>', self.activate_l)
+        self.label.bind('<Double-2>', self.regen_imgs)
 
         self.frame.dnd_accept = self.dnd_accept
 
@@ -768,11 +747,11 @@ class ClipOrgClip(ClipContainer):
         self.change_clip(clip)
 
         self.label.unbind('<Button-2>')
-        for b in ["<MouseWheel>","<Button-4>", "<Button-5>"]:
+        for b in ["<MouseWheel>", "<Button-4>", "<Button-5>"]:
             self.label.bind(b, parent.mouse_wheel)
             self.frame.bind(b, parent.mouse_wheel)
 
-    def change_clip(self,clip):
+    def change_clip(self, clip):
         if clip is None:
             self.remove_clip()
             return
@@ -786,17 +765,18 @@ class ClipOrgClip(ClipContainer):
         self.toggle_dnd()
 
     def setup_imgs(self):
-        f_names = [os.path.join(C.SCROT_DIR,t_name) for t_name in self.clip.t_names if os.path.exists(os.path.join(C.SCROT_DIR,t_name))]
+        f_names = [os.path.join(C.SCROT_DIR, t_name) for t_name in self.clip.t_names if os.path.exists(os.path.join(C.SCROT_DIR, t_name))]
         if len(f_names) > 0:
             f_name = f_names[0]
         else:
             f_name = EMPTY_CLIP
         self.imgs = [ImageTk.PhotoImage(Image.open(f_name))]
-        if len(self.imgs) == 0: return
+        if len(self.imgs) == 0:
+            return
         self.current_img_i = 0
         self.change_img_from_img(self.imgs[self.current_img_i])
 
-    def dnd_accept(self,source,event):
+    def dnd_accept(self, source, event):
         pass
 
     def dnd_commit(self, source, event):
