@@ -12,3 +12,10 @@
 
 support multiple midi devices
 fx as Another Layer?
+
+# audio stuff
+https://stackoverflow.com/questions/33851379/pyaudio-installation-on-mac-python-3
+https://gist.github.com/jiaaro/9767512210a1d80a8a0d
+
+https://github.com/ninlith/audio-visualizer-screenlet
+https://github.com/intxcc/pyaudio_portaudio/
