@@ -68,39 +68,48 @@ class ClipControl:
         self.info_frame.pack(side=tk.TOP, fill=tk.X, expand=True)
 
         self.top_frame.pack(side=tk.TOP)
-        self.progress_frame.pack(side=tk.LEFT, expand=True)
+        self.progress_frame.pack(side=tk.LEFT)
         self.top_right_frame.pack(side=tk.LEFT)
 
         self.bottom_frame.pack(side=tk.TOP)
-        self.pad_but_frame.pack(side=tk.LEFT, expand=True)
+        self.pad_but_frame.pack(side=tk.LEFT)
         self.bottom_right_frame.pack(side=tk.LEFT)
 
         # progressbar
 
-        # top right control area
+        # control areas
+        self.setup_control_frame_top()
+        self.setup_control_frame_bottom()
+
+        # pads
+        self.setup_pads()
+
+    def setup_control_frame_top(self):
         self.control_but_frame = ttk.Frame(self.top_right_frame)
         self.control_bottom_frame = ttk.Frame(self.top_right_frame)
 
-        control_slice_pads = '3 0 10 2'
+        control_slice_pads = '2 0 10 2'
         self.control_zoom_frame = ttk.Frame(self.control_bottom_frame, padding=control_slice_pads)
-        self.control_spd_frame = ttk.Frame(self.control_bottom_frame, padding=control_slice_pads)
         self.control_sens_frame = ttk.Frame(self.control_bottom_frame, padding=control_slice_pads)
+        self.control_spd_frame = ttk.Frame(self.control_bottom_frame, padding=control_slice_pads)
+        self.control_spd_but_frame = ttk.Frame(self.control_bottom_frame, padding=control_slice_pads)
 
         self.control_but_frame.pack(side=tk.TOP, anchor='w')
         self.control_bottom_frame.pack(side=tk.TOP, anchor='w')
         self.control_zoom_frame.pack(side=tk.LEFT)
-        self.control_spd_frame.pack(side=tk.LEFT)
         self.control_sens_frame.pack(side=tk.LEFT)
+        self.control_spd_frame.pack(side=tk.LEFT)
+        self.control_spd_but_frame.pack(side=tk.LEFT)
 
         # ctrl buts
         ctrl_but_pad = '9 1 9 1'
-        playbut = ttk.Button(self.control_but_frame, text=">", width=2, padding=ctrl_but_pad)
+        playbut = ttk.Button(self.control_but_frame, text=">", width=2, padding=ctrl_but_pad, takefocus=False)
             # command=lambda: pb_funs[0]())
-        pausebut = ttk.Button(self.control_but_frame, text="||", width=2, padding=ctrl_but_pad)
+        pausebut = ttk.Button(self.control_but_frame, text="||", width=2, padding=ctrl_but_pad, takefocus=False)
             # command=lambda: pb_funs[1]())
-        rvrsbut = ttk.Button(self.control_but_frame, text="<", width=2, padding=ctrl_but_pad)
+        rvrsbut = ttk.Button(self.control_but_frame, text="<", width=2, padding=ctrl_but_pad, takefocus=False)
             # command=lambda: pb_funs[2]())
-        clearbut = ttk.Button(self.control_but_frame, text="X", width=2, padding=ctrl_but_pad)
+        clearbut = ttk.Button(self.control_but_frame, text="X", width=2, padding=ctrl_but_pad, takefocus=False)
             # command=lambda: pb_funs[4]())
 
         for but in [rvrsbut, pausebut, playbut, clearbut]:
@@ -109,18 +118,18 @@ class ClipControl:
         # zoom buts
         self.zoom_follow_var = tk.BooleanVar()
 
-        zoom_in_but = ttk.Button(self.control_zoom_frame, text="+", width=1)
-        zoom_out_but = ttk.Button(self.control_zoom_frame, text="-", width=1)
-        zoom_reset_but = ttk.Button(self.control_zoom_frame, text="o", width=1)
+        zoom_in_but = ttk.Button(self.control_zoom_frame, text="+", width=1, takefocus=False)
+        zoom_out_but = ttk.Button(self.control_zoom_frame, text="-", width=1, takefocus=False)
+        zoom_reset_but = ttk.Button(self.control_zoom_frame, text="o", width=1, takefocus=False)
         zoom_follow_cb = ttk.Checkbutton(self.control_zoom_frame, width=0,
-                                         variable=self.zoom_follow_var)
+                                         variable=self.zoom_follow_var, takefocus=False)
         self.zoom_control_buts = [zoom_in_but, zoom_out_but, zoom_reset_but, zoom_follow_cb]
         for zcb in self.zoom_control_buts:
             zcb.pack(side=tk.TOP, anchor='w')
 
-        self.speed_var, self.xtra_speed_var = tk.DoubleVar(), tk.StringVar()
         self.sens_var, self.xtra_sens_var = tk.DoubleVar(), tk.StringVar()
-        spd_sens_vars = [(self.speed_var, self.xtra_speed_var), (self.sens_var, self.xtra_sens_var)]
+        self.speed_var, self.xtra_speed_var = tk.DoubleVar(), tk.StringVar()
+        spd_sens_vars = [(self.sens_var, self.xtra_sens_var), (self.speed_var, self.xtra_speed_var)]
 
         def gen_update_trace(v1, v2):
             var1, var2 = v1, v2
@@ -147,15 +156,14 @@ class ClipControl:
             svp[0].trace('w', t_fun)
             svp[0].set('1.0')
 
-
         def setup_slider(frame, text, var1, var2):
-            label = ttk.Label(frame, text=text, width=4)
+            label = ttk.Label(frame, text=text, width=4, relief='groove', borderwidth=2)
             scale = ttk.Scale(frame, from_=10.0, to=0.0, variable=var1,
                               orient=tk.VERTICAL, length=50)
             scale.bind("<MouseWheel>", lambda e: var1.set(var1.get() + (e.delta / (120 / 0.1))))
             val_entry = ttk.Entry(frame, textvariable=var2, width=4,
                                   validate="key")
-            val_entry['validatecommand'] = (val_entry.register(testVal),'%P')
+            val_entry['validatecommand'] = (val_entry.register(testVal), '%P')
             val_entry.bind('<Return>', lambda e: var1.set(var2.get()))
             val_entry.bind('<Up>', lambda e: var1.set(var1.get() + 0.05))
             val_entry.bind('<Down>', lambda e: var1.set(var1.get() - 0.05))
@@ -163,13 +171,22 @@ class ClipControl:
             scale.pack(side=tk.TOP)
             val_entry.pack(side=tk.TOP)
 
-        setup_slider(self.control_spd_frame, 'spd', *spd_sens_vars[0])
-        setup_slider(self.control_sens_frame, 'sens', *spd_sens_vars[1])
+        setup_slider(self.control_sens_frame, 'sens', *spd_sens_vars[0])
+        setup_slider(self.control_spd_frame, 'spd', *spd_sens_vars[1])
 
+        # spd buts
+        double_but = ttk.Button(self.control_spd_but_frame, text="* 2", width=3, takefocus=False,
+                                command=lambda: self.speed_var.set(min(10, 2 * self.speed_var.get())))
+        half_but = ttk.Button(self.control_spd_but_frame, text="/ 2", width=3, takefocus=False,
+                              command=lambda: self.speed_var.set(0.5 * self.speed_var.get()))
 
-        # pads
-        self.setup_pads()
+        double_but.pack(side=tk.TOP)
+        half_but.pack(side=tk.TOP)
 
+    def setup_control_frame_bottom(self):
+        self.ctrl_type_frame = ttk.Frame(self.bottom_right_frame)
+        self.qp_lp_switch = SwitchButton(self.ctrl_type_frame, 'QP', 'LP')
+        self.ctrl_type_frame.pack(side=tk.TOP)
 
     def activate_pad(self, i):
         # depends on if we are in cue or loop point mode
@@ -238,9 +255,46 @@ class ClipControl:
         pass
 
 
+class SwitchButton:
+    def __init__(self, frame, text1, text2, min_width=5):
+        self.bool_var = tk.BooleanVar()
+        self.bool_var.set(False)
+
+        self.root_frame = frame
+        self.frame = ttk.Frame(self.root_frame)
+
+        self.but_1 = ttk.Label(self.frame, text=text1, borderwidth=2,
+                               width=min_width, anchor='e')
+        self.but_1.bind('<Button-1>',lambda e: self.switch(False))
+        self.but_2 = ttk.Label(self.frame, text=text2, borderwidth=2,
+                               width=min_width)
+        self.but_2.bind('<Button-1>',lambda e: self.switch(True))
+
+        self.frame.pack()
+        self.but_1.pack(side=tk.LEFT)
+        self.but_2.pack(side=tk.LEFT)
+
+        self.switch(False)
+
+    def switch(self, new_val):
+        self.bool_var.set(new_val)
+        if (new_val):
+            # button 2 now
+            self.but_2.config(relief='sunken')
+            self.but_1.config(relief='raised')
+        else:
+            self.but_1.config(relief='sunken')
+            self.but_2.config(relief='raised')
+
+
+
+
 if __name__ == '__main__':
+
     rootwin = tk.Tk()
+    ttk.Style().theme_use('alt')
     rootwin.title('test_cc')
+    rootwin.bind("<Control-q>", lambda e: rootwin.destroy())
 
     class FakeBackend:
         def __init__(self):
