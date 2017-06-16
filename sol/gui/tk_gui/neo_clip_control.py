@@ -44,10 +44,10 @@ class ClipControl:
         # |_______________________________________|________________|
         # |         |         |         |         | [qp/lp switch] |
         # | [qp/lp] |         |         |         | [loop ctrls]   |
-        # | ________| ________|_ _______|___ _____|                |
+        # | ________|_________|_________|_________|                |
         # |         |         |         |         | [loop nxt/prv] |
         # |         |         |         |         | [loop in/out]  |
-        # | ________| ________|_ _______|___ _____|________________|
+        # | ________|_________|_________|_________|________________|
 
         self.root_frame = ttk.Frame(self.root)
         self.root_frame.dnd_accept = self.dnd_accept  # for dnd
@@ -82,7 +82,7 @@ class ClipControl:
         self.setup_control_frame_bottom()
 
         # pads
-        self.setup_pads()
+        # self.setup_pads()
 
     def setup_control_frame_top(self):
         self.control_but_frame = ttk.Frame(self.top_right_frame)
@@ -165,8 +165,8 @@ class ClipControl:
                                   validate="key")
             val_entry['validatecommand'] = (val_entry.register(testVal), '%P')
             val_entry.bind('<Return>', lambda e: var1.set(var2.get()))
-            val_entry.bind('<Up>', lambda e: var1.set(var1.get() + 0.05))
-            val_entry.bind('<Down>', lambda e: var1.set(var1.get() - 0.05))
+            val_entry.bind('<Up>', lambda e: var1.set(min(var1.get() + 0.05, 10)))
+            val_entry.bind('<Down>', lambda e: var1.set(max(var1.get() - 0.05, 0)))
             label.pack(side=tk.TOP)
             scale.pack(side=tk.TOP)
             val_entry.pack(side=tk.TOP)
@@ -184,9 +184,43 @@ class ClipControl:
         half_but.pack(side=tk.TOP)
 
     def setup_control_frame_bottom(self):
-        self.ctrl_type_frame = ttk.Frame(self.bottom_right_frame)
-        self.qp_lp_switch = SwitchButton(self.ctrl_type_frame, 'QP', 'LP')
-        self.ctrl_type_frame.pack(side=tk.TOP)
+        self.ctrl_type_frame = ttk.Frame(self.bottom_right_frame, relief='groove')
+        self.ctrl_sep_frame = ttk.Frame(self.bottom_right_frame, padding='0 2 0 2')
+        self.main_loop_ctrl_frame = ttk.Frame(self.bottom_right_frame)
+        self.loop_but_ctrl_frame = ttk.Frame(self.bottom_right_frame)
+
+        self.ctrl_type_frame.pack(side=tk.TOP, anchor='nw',fill=tk.X)
+        ttk.Separator(self.ctrl_sep_frame).pack(side=tk.LEFT)
+        self.ctrl_sep_frame.pack(side=tk.TOP,fill=tk.X)
+        self.main_loop_ctrl_frame.pack(side=tk.TOP,anchor='e')
+        self.loop_but_ctrl_frame.pack(side=tk.TOP)
+
+        self.qp_lp_switch = SwitchButton(self.ctrl_type_frame, 'QP', 'LP',
+                                         pack_args={'side': tk.LEFT}, padding='2')
+        self.lp_selected_label = ttk.Label(self.ctrl_type_frame, text='selected [0]', anchor='e', justify='right', padding='2 0 2 0')
+        self.lp_selected_label.pack(side=tk.LEFT, expand=True, fill=tk.X)
+        self.loop_on_toggle = ToggleButton(self.main_loop_ctrl_frame, 'loop on', 7,
+                                           pack_args={'side': tk.LEFT}, padding='19 4 19 4')
+        ttk.Separator(self.main_loop_ctrl_frame, orient='horizontal').pack(side=tk.LEFT, fill=tk.X)
+        self.loop_type_switch = SwitchButton(self.main_loop_ctrl_frame, 'dflt', 'bnce',
+                                             padding='1 4 2 4')
+
+        loop_but_pad = '8 4 8 4'
+        loop_in_but = ttk.Button(self.loop_but_ctrl_frame, text="in", width=3, padding=loop_but_pad, takefocus=False)
+            # command=lambda: pb_funs[0]())
+        loop_out_but = ttk.Button(self.loop_but_ctrl_frame, text="out", width=3, padding=loop_but_pad, takefocus=False)
+            # command=lambda: pb_funs[1]())
+        loop_prev_but = ttk.Button(self.loop_but_ctrl_frame, text="\\/", width=2, padding=loop_but_pad, takefocus=False)
+            # command=lambda: pb_funs[2]())
+        loop_next_but = ttk.Button(self.loop_but_ctrl_frame, text="/\\", width=2, padding=loop_but_pad, takefocus=False)
+
+        for i, lpb in enumerate([loop_in_but, loop_out_but, loop_prev_but, loop_next_but]):
+            lpb.pack(side=tk.LEFT)
+            # if i == 1:
+            #     ttk.Separator(self.loop_but_ctrl_frame).pack(side=tk.LEFT)
+
+
+
 
     def activate_pad(self, i):
         # depends on if we are in cue or loop point mode
@@ -256,7 +290,7 @@ class ClipControl:
 
 
 class SwitchButton:
-    def __init__(self, frame, text1, text2, min_width=5):
+    def __init__(self, frame, text1, text2, min_width=5, pack_args=None, padding=None):
         self.bool_var = tk.BooleanVar()
         self.bool_var.set(False)
 
@@ -265,14 +299,22 @@ class SwitchButton:
 
         self.but_1 = ttk.Label(self.frame, text=text1, borderwidth=2,
                                width=min_width, anchor='e')
-        self.but_1.bind('<Button-1>',lambda e: self.switch(False))
+        self.but_1.bind('<Button-1>', lambda e: self.switch(False))
         self.but_2 = ttk.Label(self.frame, text=text2, borderwidth=2,
                                width=min_width)
-        self.but_2.bind('<Button-1>',lambda e: self.switch(True))
+        self.but_2.bind('<Button-1>', lambda e: self.switch(True))
 
-        self.frame.pack()
+        if padding is not None:
+            self.but_1.config(padding=padding)
+            self.but_2.config(padding=padding)
+
         self.but_1.pack(side=tk.LEFT)
         self.but_2.pack(side=tk.LEFT)
+
+        if pack_args is not None:
+            self.frame.pack(**pack_args)
+        else:
+            self.frame.pack()
 
         self.switch(False)
 
@@ -287,7 +329,30 @@ class SwitchButton:
             self.but_2.config(relief='raised')
 
 
+class ToggleButton:
+    def __init__(self, frame, text, min_width=5, pack_args=None, padding=None):
+        self.frame = frame
+        self.bool_var = tk.BooleanVar()
+        self.but = ttk.Label(self.frame, text=text, borderwidth=2, width=min_width)
+        self.but.bind('<Button-1>', self.toggle)
 
+        if padding is not None:
+            self.but.config(padding=padding)
+
+        if pack_args is not None:
+            self.but.pack(**pack_args)
+        else:
+            self.but.pack()
+
+    def toggle(self, *args):
+        self.switch((not self.bool_var.get()))
+
+    def switch(self, new_val):
+        self.bool_var.set(new_val)
+        if (new_val):
+            self.but.config(relief='sunken')
+        else:
+            self.but.config(relief='raised')
 
 if __name__ == '__main__':
 
