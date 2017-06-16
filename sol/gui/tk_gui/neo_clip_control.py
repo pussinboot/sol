@@ -43,8 +43,41 @@ class ClipControl:
             # 'loop_type': self.update_loop_type,
             # 'loop_selection': self.update_loop_select,
             'playback_speed': self.update_speed,
-            # 'control_sens': self.update_sens
+            'control_sens': self.update_sens
         }
+
+        base_addr = '/magi/layer{}'.format(self.layer)
+        bfn = self.backend.fun_store
+
+        self.send_back = {
+            # playback
+            'play': bfn[base_addr + '/playback/play'],
+            'pause': bfn[base_addr + '/playback/pause'],
+            'reverse': bfn[base_addr + '/playback/reverse'],
+            'random': bfn[base_addr + '/playback/random'],
+            'clear': bfn[base_addr + '/playback/clear'],
+            'seek': bfn[base_addr + '/playback/seek'],
+            # params
+            'speed': bfn[base_addr + '/playback/speed'],
+            'sens': bfn['/magi/control{}/sens'.format(self.layer)],
+            # cue funs
+            'cue_set': bfn[base_addr + '/cue'],
+            'cue_clear': bfn[base_addr + '/cue/clear'],
+            # loop funs
+            'loop_set_a': bfn[base_addr + '/loop/set/a'],
+            'loop_set_b': bfn[base_addr + '/loop/set/b'],
+            'loop_on_off': bfn[base_addr + '/loop/on_off'],
+            'loop_type': bfn[base_addr + '/loop/type'],
+            'loop_select': bfn[base_addr + '/loop/select'],
+            'loop_move': bfn[base_addr + '/loop/select/move'],
+            'loop_clear': bfn[base_addr + '/loop/clear'],
+            # scratching
+        }
+
+
+
+        self.speed_var.trace('w', self.gen_update_callback('speed', self.speed_var))
+        self.sens_var.trace('w', self.gen_update_callback('sens', self.sens_var))
 
         # let's setup the gooey
         # it looks like
@@ -104,6 +137,24 @@ class ClipControl:
         # pads
         self.setup_pads()
 
+    def gen_update_callback(self, key, var):
+        fun = self.send_back[key]
+        tk_var = var
+
+        def fun_tor(*args):
+            fun('', tk_var.get())
+
+        return fun_tor
+
+    def gen_send_cmd(self, key, default_value=1):
+        fun = self.send_back[key]
+        val = default_value
+
+        def fun_tor(*args):
+            fun('', val)
+
+        return fun_tor
+
     def update_clip(self,clip):
         if clip is None:
             self.name_var.set("------")
@@ -147,7 +198,18 @@ class ClipControl:
             self.backend.rename_clip(cur_clip,new_name) # have to do this to update search properly etc
 
     def update_speed(self, clip):
-        print(clip)
+        if clip is None:
+            spd = 0.0
+        else:
+            spd = clip.params['playback_speed']
+        self.speed_var.set(spd)
+
+    def update_sens(self, clip):
+        if clip is None:
+            sens = 0.0
+        else:
+            sens = clip.params['control_sens']
+        self.sens_var.set(sens)
 
     def setup_control_frame_top(self):
         self.control_but_frame = ttk.Frame(self.top_right_frame)
@@ -168,14 +230,14 @@ class ClipControl:
 
         # ctrl buts
         ctrl_but_pad = '12 1 12 1'
-        playbut = ttk.Button(self.control_but_frame, text=">", width=2, padding=ctrl_but_pad, takefocus=False)
-            # command=lambda: pb_funs[0]())
-        pausebut = ttk.Button(self.control_but_frame, text="||", width=2, padding=ctrl_but_pad, takefocus=False)
-            # command=lambda: pb_funs[1]())
-        rvrsbut = ttk.Button(self.control_but_frame, text="<", width=2, padding=ctrl_but_pad, takefocus=False)
-            # command=lambda: pb_funs[2]())
-        clearbut = ttk.Button(self.control_but_frame, text="X", width=2, padding=ctrl_but_pad, takefocus=False)
-            # command=lambda: pb_funs[4]())
+        playbut = ttk.Button(self.control_but_frame, text=">", width=2, padding=ctrl_but_pad, takefocus=False,
+                             command=self.gen_send_cmd('play'))
+        pausebut = ttk.Button(self.control_but_frame, text="||", width=2, padding=ctrl_but_pad, takefocus=False,
+                              command=self.gen_send_cmd('pause'))
+        rvrsbut = ttk.Button(self.control_but_frame, text="<", width=2, padding=ctrl_but_pad, takefocus=False,
+                             command=self.gen_send_cmd('reverse'))
+        clearbut = ttk.Button(self.control_but_frame, text="X", width=2, padding=ctrl_but_pad, takefocus=False,
+                              command=self.gen_send_cmd('clear'))
 
         for but in [rvrsbut, pausebut, playbut, clearbut]:
             but.pack(side=tk.LEFT)
@@ -225,7 +287,7 @@ class ClipControl:
         for svp in spd_sens_vars:
             t_fun = gen_update_trace(*svp)
             svp[0].trace('w', t_fun)
-            svp[0].set('1.0')
+            # svp[0].set('1.0')
 
         def setup_slider(frame, text, var1, var2, style):
             label = ttk.Label(frame, text=text, width=4, relief='groove', borderwidth=2)
