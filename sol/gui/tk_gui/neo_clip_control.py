@@ -1,7 +1,9 @@
 import tkinter as tk
+import tkinter.simpledialog as tksimpledialog
 
 from tkinter import ttk
 
+from itertools import accumulate
 
 from sol.config import GlobalConfig
 C = GlobalConfig()
@@ -11,26 +13,38 @@ class ClipControl:
 
         self.root = root
         self.backend = backend
-        self.layer = layer
-        self.width = 330
 
         # important savedata
+        self.width = 330
+        self.layer = layer
         self.cur_pos = 0.0
         self.pad_buts = []
         self.pad_but_cmds = []
 
+        # all tk vars
+        self.name_var = tk.StringVar()
+        self.zoom_follow_var = tk.BooleanVar()
+
+        self.sens_var, self.xtra_sens_var = tk.DoubleVar(), tk.StringVar()
+        self.speed_var, self.xtra_speed_var = tk.DoubleVar(), tk.StringVar()
+
+        # these are overriden upon creation
+        self.qp_lp_var = None
+        self.loop_on_var = None
+        self.loop_type_var = None
+
         # tk
 
         # clip parameter to update function
-        # self.param_dispatch = {
-        #     'cue_points': self.update_cues,
-        #     'loop_points': self.update_loop,
-        #     'loop_on': self.update_loop,
-        #     'loop_type': self.update_loop,
-        #     'loop_selection': self.update_loop,
-        #     'playback_speed': self.update_speed,
-        #     'control_sens': self.update_sens
-        # }
+        self.param_dispatch = {
+            # 'cue_points': self.update_cues,
+            # 'loop_points': self.update_loop,
+            # 'loop_on': self.update_loop_on,
+            # 'loop_type': self.update_loop_type,
+            # 'loop_selection': self.update_loop_select,
+            'playback_speed': self.update_speed,
+            # 'control_sens': self.update_sens
+        }
 
         # let's setup the gooey
         # it looks like
@@ -52,7 +66,8 @@ class ClipControl:
         self.root_frame = ttk.Frame(self.root)
         self.root_frame.dnd_accept = self.dnd_accept  # for dnd
 
-        self.info_frame = ttk.Frame(self.root_frame)
+        self.info_frame = ttk.Frame(self.root_frame, relief='ridge', padding='1')
+        self.name_label = ttk.Label(self.info_frame, textvariable=self.name_var)
 
         left_frame_padding = '2 0 5 0'
 
@@ -68,6 +83,7 @@ class ClipControl:
         self.root_frame.pack(fill=tk.X, expand=True)
 
         self.info_frame.pack(side=tk.TOP, fill=tk.X, expand=True)
+        self.name_label.pack(expand=True)
 
         self.top_frame.pack(side=tk.TOP)
         self.progress_frame.pack(side=tk.LEFT)
@@ -87,6 +103,51 @@ class ClipControl:
 
         # pads
         self.setup_pads()
+
+    def update_clip(self,clip):
+        if clip is None:
+            self.name_var.set("------")
+            self.update_clip_params(clip)
+            self.name_label.unbind("<Double-Button-1>")
+            return
+        self.update_name(clip.name)
+        self.update_clip_params(clip)
+        self.name_label.bind("<Double-Button-1>", self.change_name_dialog)
+
+    def update_clip_params(self,clip,param=None):
+        if param in self.param_dispatch:
+            self.param_dispatch[param](clip)
+        elif param is None:
+            for fun in self.param_dispatch.values():
+                fun(clip)
+
+    def update_name(self, new_name):
+        new_text = new_name
+        text_meas = []
+        for c in new_text:
+            if c in C.FONT_WIDTHS:
+                text_meas.append(C.FONT_WIDTHS[c])
+            else:
+                text_meas.append(C.FONT_AVG_WIDTH)
+
+        cumm_text_meas = list(accumulate(text_meas))
+        if cumm_text_meas[-1] > self.width-25:
+            to_i = bisect.bisect_left(cumm_text_meas,self.width-25 - 5*C.FONT_WIDTHS['.'])
+            new_text = new_text[:to_i].strip() + ".."
+        self.name_var.set(new_text)
+
+    def change_name_dialog(self, *args):
+        cur_clip = self.backend.clip_storage.current_clips[self.layer]
+        if cur_clip is None:
+            return
+        new_name = tksimpledialog.askstring("rename clip",'',
+                    initialvalue=cur_clip.name)
+        if new_name:
+            # change name
+            self.backend.rename_clip(cur_clip,new_name) # have to do this to update search properly etc
+
+    def update_speed(self, clip):
+        print(clip)
 
     def setup_control_frame_top(self):
         self.control_but_frame = ttk.Frame(self.top_right_frame)
@@ -120,7 +181,10 @@ class ClipControl:
             but.pack(side=tk.LEFT)
 
         # zoom buts
-        self.zoom_follow_var = tk.BooleanVar()
+        def update_zoom_follow(*args):
+            self.progressbar.auto_scroll = self.zoom_follow_var.get()
+
+        self.zoom_follow_var.trace('w', update_zoom_follow)
 
         zoom_in_but = ttk.Button(self.control_zoom_frame, text="+", width=1, takefocus=False,
                                  command=lambda: self.progressbar.adjust_zoom(1.25))
@@ -134,8 +198,6 @@ class ClipControl:
         for zcb in self.zoom_control_buts:
             zcb.pack(side=tk.TOP, anchor='w')
 
-        self.sens_var, self.xtra_sens_var = tk.DoubleVar(), tk.StringVar()
-        self.speed_var, self.xtra_speed_var = tk.DoubleVar(), tk.StringVar()
         spd_sens_vars = [(self.sens_var, self.xtra_sens_var), (self.speed_var, self.xtra_speed_var)]
 
         def gen_update_trace(v1, v2):
@@ -211,13 +273,19 @@ class ClipControl:
 
         self.qp_lp_switch = SwitchButton(self.ctrl_type_frame, 'QP', 'LP',
                                          pack_args={'side': tk.LEFT}, padding='2')
+        self.qp_lp_var = self.qp_lp_switch.bool_var
+
         self.lp_selected_label = ttk.Label(self.ctrl_type_frame, text='selected [0]', anchor='e', justify='right', padding='2 0 2 0')
         self.lp_selected_label.pack(side=tk.LEFT, expand=True, fill=tk.X)
+
         self.loop_on_toggle = ToggleButton(self.main_loop_ctrl_frame, 'loop on', 7,
                                            pack_args={'side': tk.LEFT}, padding='20 4 20 4')
+        self.loop_on_var = self.loop_on_toggle.bool_var
+
         ttk.Separator(self.main_loop_ctrl_frame, orient='horizontal').pack(side=tk.LEFT, fill=tk.X)
         self.loop_type_switch = SwitchButton(self.main_loop_ctrl_frame, 'dflt', 'bnce',
                                              padding='2 4 2 4')
+        self.loop_type_var = self.loop_type_switch.bool_var
 
         loop_but_pad = '10 4 10 4'
         loop_in_but = ttk.Button(self.loop_but_ctrl_frame, text="in", width=3, padding=loop_but_pad, takefocus=False)
@@ -232,9 +300,6 @@ class ClipControl:
             lpb.pack(side=tk.LEFT)
             # if i == 1:
             #     ttk.Separator(self.loop_but_ctrl_frame).pack(side=tk.LEFT)
-
-
-
 
     def activate_pad(self, i):
         # depends on if we are in cue or loop point mode
@@ -279,7 +344,6 @@ class ClipControl:
 
                 self.pad_buts.append(but)
                 self.pad_but_cmds.append(gen_but_funs(i))
-
 
     # tkdnd stuff
     def dnd_accept(self, source, event):
@@ -377,11 +441,14 @@ class ProgressBar:
         self.pbar_pos = 0
         self.zoom_factor = 1.0
         self.total_width = width
+
+        self.auto_scroll = False
+
         self.refresh_interval = 100
 
         # for cue points
         self.qp_lines = [None] * C.NO_Q
-        self.qp_labels = [None] * C.NO_Q
+        self.qp_qp_labels = [None] * C.NO_Q
 
         # tk stuff
         self.root = root
@@ -399,7 +466,6 @@ class ProgressBar:
         self.frame.pack(anchor=tk.W,side=tk.TOP,expand=tk.YES,fill=tk.BOTH)
 
         self.setup_canvas()
-        self.actions_binding()
 
         self.root.after(self.refresh_interval,self.update_pbar)
 
@@ -415,6 +481,7 @@ class ProgressBar:
 
         self.outside_loop_rect_l = self.canvas.create_rectangle(0,0,0,0,fill='#333',stipple='gray50',tag='bg')
         self.outside_loop_rect_r = self.canvas.create_rectangle(0,0,0,0,fill='#333',stipple='gray50',tag='bg')
+        self.actions_binding()
 
     def actions_binding(self):
 
@@ -434,7 +501,7 @@ class ProgressBar:
         self.canvas.scale(tk.ALL, 0, 0, actual_scale, 1)
 
         big_bbox = self.canvas.bbox("all")
-        self.canvas.configure(scrollregion = big_bbox)
+        self.canvas.configure(scrollregion=big_bbox)
         self.zoom_factor = new_factor
         self.total_width = new_factor * self.width
 
@@ -443,7 +510,7 @@ class ProgressBar:
         self.adjust_zoom(1.0 / self.zoom_factor)
 
     # progress bar follow mouse
-    def find_mouse(self,event):
+    def find_mouse(self, event):
         new_x = self.canvas.canvasx(event.x) / self.total_width
         new_x = max(0, (min(new_x, 1)))
         self.pbar_pos = new_x
@@ -451,33 +518,43 @@ class ProgressBar:
         # if self.seek_action is None: return
         # self.seek_action(newx/self.width)
 
-    def move_bar(self,x):
+    def move_bar(self, x):
         new_x = self.total_width * x
-        self.canvas.coords(self.pbar,new_x,0,new_x,self.height)
+        self.canvas.coords(self.pbar, new_x, 0, new_x, self.height)
 
     def update_pbar(self):
         self.move_bar(self.pbar_pos)
-        self.root.after(self.refresh_interval,self.update_pbar)
+
+        # check if need to scroll
+        if self.auto_scroll:
+            csp = self.hbar.get()
+            if self.pbar_pos < csp[0]:
+                self.canvas.xview('moveto', max(0, self.pbar_pos - (csp[1] - csp[0])))
+            elif self.pbar_pos > csp[1]:
+                self.canvas.xview('moveto', self.pbar_pos)
+
+        self.root.after(self.refresh_interval, self.update_pbar)
 
     # drag n drop
     def drag_begin(self, event):
         # record the item and its location
-        item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y),halo=5)[0]
-        if 'line' not in self.canvas.gettags(item): return
+        item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y), halo=5)[0]
+        if 'line' not in self.canvas.gettags(item):
+            return
         self._drag_data["item"] = item
-        self._drag_data["label"] = self.labels[self.lines.index(item)]
+        self._drag_data["label"] = self.qp_labels[self.qp_lines.index(item)]
         self._drag_data["x"] = event.x
 
     def drag_end(self, event):
         if self._drag_data["item"] is None: return
         if self.drag_release_action:
-            newx = self.canvas.canvasx(event.x)
-            if newx < 0:
-                newx = 0
-            elif newx > self.width:
-                newx = self.width - 2
-            i = self.lines.index(self._drag_data["item"])
-            self.drag_release_action(i,newx/self.width)
+            new_x = self.canvas.canvasx(event.x)
+            if new_x < 0:
+                new_x = 0
+            elif new_x > self.total_width:
+                new_x = self.total_width - 2
+            i = self.qp_lines.index(self._drag_data["item"])
+            self.drag_release_action(i, new_x / self.total_width)
         # reset the drag information
         self._drag_data["item"] = None
         self._drag_data["label"] = None
@@ -504,9 +581,9 @@ class ProgressBar:
         if self.cue_fun is None: return
         item = self.canvas.find_closest(event.x, event.y,halo=5)[0]
         if 'label' in self.canvas.gettags(item):
-            item = self.canvas.find_closest(event.x - 10, event.y - 20,halo=5)[0]
+            item = self.canvas.find_closest(event.x - 10, event.y - 20, halo=5)[0]
         if 'line' in self.canvas.gettags(item):
-            i = self.lines.index(item)
+            i = self.qp_lines.index(item)
         else:
             return
         self.cue_fun('',i)
@@ -518,27 +595,73 @@ if __name__ == '__main__':
     rootwin.title('test_cc')
     rootwin.bind("<Control-q>", lambda e: rootwin.destroy())
 
-    class FakeBackend:
-        def __init__(self):
+    # class FakeBackend:
+    #     def __init__(self):
+    #         pass
+
+    #     def return_fun(self, *args, **kwds):
+    #         pass
+
+    #     def __getattr__(self, *args, **kwds):
+    #         tor_str = 'call: {}'.format(args[0])
+    #         if len(args) > 1:
+    #             tor_str += ' args: [{}]'.format(','.join(args[1:]))
+    #         if len(kwds) > 0:
+    #             tor_str += ' kwds: {}'.format(kwds)
+    #         print(tor_str)
+    #         return self.return_fun
+
+    # fake_backend = FakeBackend()
+
+    class FakeGUI:
+        def __init__(self, backend):
+            self.backend = backend
+            self.clip_controls = [None] * C.NO_LAYERS
+
+        def update_clip(self, layer, clip):
+            print('update?')
+            cc = self.clip_controls[layer]
+            if cc is not None:
+                cc.update_clip(clip)
+
+        def update_clip_params(self, layer, clip, param):
+            # dispatch things according to param
+            cc = self.clip_controls[layer]
+            if cc is not None:
+                cc.update_clip_params(clip, param)
+
+        def update_cur_pos(self, layer, pos):
+            # pass along the current position
+            self.clip_controls[layer].update_cur_pos(pos)
+
+        def update_search(self):
             pass
 
-        def return_fun(self, *args, **kwds):
-            pass
+        def update_cols(self, what, ij=None):
+           pass
 
-        def __getattr__(self, *args, **kwds):
-            tor_str = 'call: {}'.format(args[0])
-            if len(args) > 1:
-                tor_str += ' args: [{}]'.format(','.join(args[1:]))
-            if len(kwds) > 0:
-                tor_str += ' kwds: {}'.format(kwds)
-            print(tor_str)
-            return self.return_fun
+        def update_clip_names(self):
+            for i in range(C.NO_LAYERS):
+                cc = self.clip_controls[i]
+                if cc is not None:
+                    cc.update_name(self.backend.clip_storage.current_clips[i].name)
 
+        def restart(self):
+            for i in range(C.NO_LAYERS):
+                self.update_clip(i, self.backend.clip_storage.current_clips[i])
 
+    from sol import magi
 
+    test_backend = magi.Magi()
+    test_gui = FakeGUI(test_backend)
+    test_backend.gui = test_gui
 
-    fake_backend = FakeBackend()
+    test_cc = ClipControl(rootwin, test_backend, 0)
+    test_gui.clip_controls[0] = test_cc
 
-    test_cc = ClipControl(rootwin,fake_backend,0)
+    test_backend.start()
+    rootwin.protocol("WM_DELETE_WINDOW", test_backend.stop())
+
+    test_gui.restart()
 
     rootwin.mainloop()
