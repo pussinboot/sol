@@ -118,12 +118,12 @@ class LibraryOrgGui:
         self.menubar = tk.Menu(self.root)
         self.filemenu = tk.Menu(self.menubar, tearoff=0)
 
-        self.filemenu.add_command(label="save", command=self.save_prompt)
-        self.filemenu.add_command(label="save as", command=self.save_as_prompt)
+        self.filemenu.add_command(label="save", command=self.save_prompt, accelerator='Ctrl-S')
+        self.filemenu.add_command(label="save as", command=self.save_as_prompt, accelerator='Ctrl-Shift-S')
         self.root.bind("<Control-s>", lambda e: self.save_prompt())
         self.root.bind("<Control-Shift-KeyPress-S>", lambda e: self.save_as_prompt())
 
-        self.filemenu.add_command(label="load", command=self.load_prompt)
+        self.filemenu.add_command(label="load", command=self.load_prompt, accelerator='Ctrl-O')
         self.root.bind("<Control-o>", lambda e: self.load_prompt())
 
         if standalone:
