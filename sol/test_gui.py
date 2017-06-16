@@ -248,6 +248,7 @@ class MainGui:
         self.filemenu = tk.Menu(self.menubar, tearoff=0)  # file menu
         # new
         self.filemenu.add_command(label="new", command=self.new_save)
+                                  # accelerator='Ctrl-N') # how to add this text
         # save
         self.filemenu.add_command(label="save", command=self.save)
         # save as
