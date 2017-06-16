@@ -28,6 +28,7 @@ class ClipControl:
         self.sens_var, self.xtra_sens_var = tk.DoubleVar(), tk.StringVar()
         self.speed_var, self.xtra_speed_var = tk.DoubleVar(), tk.StringVar()
 
+        self.loop_selected_text_var = tk.StringVar()
         # these are overriden upon creation
         self.qp_lp_var = None
         self.loop_on_var = None
@@ -66,7 +67,9 @@ class ClipControl:
             # loop funs
             'loop_set_a': bfn[base_addr + '/loop/set/a'],
             'loop_set_b': bfn[base_addr + '/loop/set/b'],
-            'loop_on_off': bfn[base_addr + '/loop/on_off'],
+            'loop_set_a_cur': bfn[base_addr + '/loop/set/cur/a'],
+            'loop_set_b_cur': bfn[base_addr + '/loop/set/cur/b'],
+            'loop_on_off': bfn[base_addr + '/loop/set/on_off'],
             'loop_type': bfn[base_addr + '/loop/type'],
             'loop_select': bfn[base_addr + '/loop/select'],
             'loop_move': bfn[base_addr + '/loop/select/move'],
@@ -76,8 +79,8 @@ class ClipControl:
 
 
 
-        self.speed_var.trace('w', self.gen_update_callback('speed', self.speed_var))
-        self.sens_var.trace('w', self.gen_update_callback('sens', self.sens_var))
+        self.speed_var.trace('w', self.gen_update_cmd('speed', self.speed_var))
+        self.sens_var.trace('w', self.gen_update_cmd('sens', self.sens_var))
 
         # let's setup the gooey
         # it looks like
@@ -137,7 +140,7 @@ class ClipControl:
         # pads
         self.setup_pads()
 
-    def gen_update_callback(self, key, var):
+    def gen_update_cmd(self, key, var):
         fun = self.send_back[key]
         tk_var = var
 
@@ -151,9 +154,26 @@ class ClipControl:
         val = default_value
 
         def fun_tor(*args):
+            print(key, val)
             fun('', val)
 
         return fun_tor
+
+    def gen_toggle_cmd(self, key, var, default_values=[False, True]):
+        fun = self.send_back[key]
+        tk_var = var
+        toggle_lookup = default_values[:]
+
+        def fun_tor(*args):
+            bool_val = tk_var.get()
+            send_val = toggle_lookup[int(bool_val)]  # 0, 1 = False, True
+            print(key, send_val)
+            fun('', send_val)
+
+        return fun_tor
+
+    def update_cur_pos(self, pos):
+        self.cur_pos = pos
 
     def update_clip(self,clip):
         if clip is None:
@@ -327,37 +347,41 @@ class ClipControl:
         self.main_loop_ctrl_frame = ttk.Frame(self.bottom_right_frame)
         self.loop_but_ctrl_frame = ttk.Frame(self.bottom_right_frame)
 
-        self.ctrl_type_frame.pack(side=tk.TOP, anchor='nw',fill=tk.X)
+        self.ctrl_type_frame.pack(side=tk.TOP, anchor='nw', fill=tk.X)
         ttk.Separator(self.ctrl_sep_frame).pack(side=tk.LEFT)
-        self.ctrl_sep_frame.pack(side=tk.TOP,fill=tk.X)
-        self.main_loop_ctrl_frame.pack(side=tk.TOP,anchor='e')
+        self.ctrl_sep_frame.pack(side=tk.TOP, fill=tk.X)
+        self.main_loop_ctrl_frame.pack(side=tk.TOP, anchor='e')
         self.loop_but_ctrl_frame.pack(side=tk.TOP)
 
         self.qp_lp_switch = SwitchButton(self.ctrl_type_frame, 'QP', 'LP',
                                          pack_args={'side': tk.LEFT}, padding='2')
         self.qp_lp_var = self.qp_lp_switch.bool_var
 
-        self.lp_selected_label = ttk.Label(self.ctrl_type_frame, text='selected [0]', anchor='e', justify='right', padding='2 0 2 0')
+        self.lp_selected_label = ttk.Label(self.ctrl_type_frame, textvariable=self.loop_selected_text_var, anchor='e', justify='right', padding='2 0 2 0')
         self.lp_selected_label.pack(side=tk.LEFT, expand=True, fill=tk.X)
+        self.loop_selected_text_var.set('selected [-]')
 
         self.loop_on_toggle = ToggleButton(self.main_loop_ctrl_frame, 'loop on', 7,
                                            pack_args={'side': tk.LEFT}, padding='20 4 20 4')
         self.loop_on_var = self.loop_on_toggle.bool_var
+        self.loop_on_toggle.send_cmd = self.gen_toggle_cmd('loop_on_off', self.loop_on_var)
 
         ttk.Separator(self.main_loop_ctrl_frame, orient='horizontal').pack(side=tk.LEFT, fill=tk.X)
         self.loop_type_switch = SwitchButton(self.main_loop_ctrl_frame, 'dflt', 'bnce',
                                              padding='2 4 2 4')
         self.loop_type_var = self.loop_type_switch.bool_var
+        self.loop_type_switch.send_cmd = self.gen_toggle_cmd('loop_type', self.loop_type_var, ['d', 'b'])
 
         loop_but_pad = '10 4 10 4'
-        loop_in_but = ttk.Button(self.loop_but_ctrl_frame, text="in", width=3, padding=loop_but_pad, takefocus=False)
-            # command=lambda: pb_funs[0]())
-        loop_out_but = ttk.Button(self.loop_but_ctrl_frame, text="out", width=3, padding=loop_but_pad, takefocus=False)
-            # command=lambda: pb_funs[1]())
-        loop_prev_but = ttk.Button(self.loop_but_ctrl_frame, text="\\/", width=2, padding=loop_but_pad, takefocus=False)
-            # command=lambda: pb_funs[2]())
-        loop_next_but = ttk.Button(self.loop_but_ctrl_frame, text="/\\", width=2, padding=loop_but_pad, takefocus=False)
+        loop_in_but = ttk.Button(self.loop_but_ctrl_frame, text="in", width=3, padding=loop_but_pad, takefocus=False,
+                                 command=self.gen_send_cmd('loop_set_a_cur'))
+        loop_out_but = ttk.Button(self.loop_but_ctrl_frame, text="out", width=3, padding=loop_but_pad, takefocus=False,
+                                  command=self.gen_send_cmd('loop_set_b_cur'))
 
+        loop_prev_but = ttk.Button(self.loop_but_ctrl_frame, text="\\/", width=2, padding=loop_but_pad, takefocus=False,
+                                   command=self.gen_send_cmd('loop_move', -1))
+        loop_next_but = ttk.Button(self.loop_but_ctrl_frame, text="/\\", width=2, padding=loop_but_pad, takefocus=False,
+                                   command=self.gen_send_cmd('loop_move', +1))
         for i, lpb in enumerate([loop_in_but, loop_out_but, loop_prev_but, loop_next_but]):
             lpb.pack(side=tk.LEFT)
             # if i == 1:
@@ -434,6 +458,8 @@ class SwitchButton:
         self.bool_var = tk.BooleanVar()
         self.bool_var.set(False)
 
+        self.send_cmd = None
+
         self.root_frame = frame
         self.frame = ttk.Frame(self.root_frame)
 
@@ -459,6 +485,11 @@ class SwitchButton:
         self.switch(False)
 
     def switch(self, new_val):
+        self.update(new_val)
+        if self.send_cmd is not None:
+            self.send_cmd(new_val)
+
+    def update(self, new_val):
         self.bool_var.set(new_val)
         if (new_val):
             # button 2 now
@@ -476,6 +507,8 @@ class ToggleButton:
         self.but = ttk.Label(self.frame, text=text, borderwidth=2, width=min_width)
         self.but.bind('<Button-1>', self.toggle)
 
+        self.send_cmd = None
+
         if padding is not None:
             self.but.config(padding=padding)
 
@@ -488,6 +521,11 @@ class ToggleButton:
         self.switch((not self.bool_var.get()))
 
     def switch(self, new_val):
+        self.update(new_val)
+        if self.send_cmd is not None:
+            self.send_cmd(new_val)
+
+    def update(self, new_val):
         self.bool_var.set(new_val)
         if (new_val):
             self.but.config(relief='sunken')
@@ -655,7 +693,6 @@ if __name__ == '__main__':
     rootwin = tk.Tk()
     ttk.Style().theme_use('clam')
     rootwin.title('test_cc')
-    rootwin.bind("<Control-q>", lambda e: rootwin.destroy())
 
     # class FakeBackend:
     #     def __init__(self):
@@ -676,7 +713,8 @@ if __name__ == '__main__':
     # fake_backend = FakeBackend()
 
     class FakeGUI:
-        def __init__(self, backend):
+        def __init__(self, backend, root):
+            self.root = root
             self.backend = backend
             self.clip_controls = [None] * C.NO_LAYERS
 
@@ -694,13 +732,15 @@ if __name__ == '__main__':
 
         def update_cur_pos(self, layer, pos):
             # pass along the current position
-            self.clip_controls[layer].update_cur_pos(pos)
+            cc = self.clip_controls[layer]
+            if cc is not None:
+                cc.update_cur_pos(pos)
 
         def update_search(self):
             pass
 
         def update_cols(self, what, ij=None):
-           pass
+            pass
 
         def update_clip_names(self):
             for i in range(C.NO_LAYERS):
@@ -712,17 +752,23 @@ if __name__ == '__main__':
             for i in range(C.NO_LAYERS):
                 self.update_clip(i, self.backend.clip_storage.current_clips[i])
 
+        def quit(self, *args):
+            self.backend.stop()
+            self.root.destroy()
+
     from sol import magi
 
     test_backend = magi.Magi()
-    test_gui = FakeGUI(test_backend)
+    test_gui = FakeGUI(test_backend, rootwin)
     test_backend.gui = test_gui
 
     test_cc = ClipControl(rootwin, test_backend, 0)
     test_gui.clip_controls[0] = test_cc
 
     test_backend.start()
-    rootwin.protocol("WM_DELETE_WINDOW", test_backend.stop())
+
+    rootwin.protocol("WM_DELETE_WINDOW", test_gui.quit)
+    rootwin.bind("<Control-q>", test_gui.quit)
 
     test_gui.restart()
 
