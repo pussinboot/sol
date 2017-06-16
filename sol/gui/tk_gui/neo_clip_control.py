@@ -106,7 +106,7 @@ class ClipControl:
         self.control_spd_but_frame.pack(side=tk.LEFT)
 
         # ctrl buts
-        ctrl_but_pad = '9 1 9 1'
+        ctrl_but_pad = '12 1 12 1'
         playbut = ttk.Button(self.control_but_frame, text=">", width=2, padding=ctrl_but_pad, takefocus=False)
             # command=lambda: pb_funs[0]())
         pausebut = ttk.Button(self.control_but_frame, text="||", width=2, padding=ctrl_but_pad, takefocus=False)
@@ -143,7 +143,9 @@ class ClipControl:
 
             def curry_trace(*args):
                 get_got = var1.get()
-                var2.set('{:01.2f}'.format(get_got))
+                new_txt = '{:01.2f}'.format(get_got)
+                new_txt = new_txt[:4]
+                var2.set(new_txt)
 
             return curry_trace
 
@@ -163,10 +165,10 @@ class ClipControl:
             svp[0].trace('w', t_fun)
             svp[0].set('1.0')
 
-        def setup_slider(frame, text, var1, var2):
+        def setup_slider(frame, text, var1, var2, style):
             label = ttk.Label(frame, text=text, width=4, relief='groove', borderwidth=2)
             scale = ttk.Scale(frame, from_=10.0, to=0.0, variable=var1,
-                              orient=tk.VERTICAL, length=50)
+                              orient=tk.VERTICAL, length=72, style=style)
             scale.bind("<MouseWheel>", lambda e: var1.set(var1.get() + (e.delta / (120 / 0.1))))
             val_entry = ttk.Entry(frame, textvariable=var2, width=4,
                                   validate="key")
@@ -178,8 +180,13 @@ class ClipControl:
             scale.pack(side=tk.TOP)
             val_entry.pack(side=tk.TOP)
 
-        setup_slider(self.control_sens_frame, 'sens', *spd_sens_vars[0])
-        setup_slider(self.control_spd_frame, 'spd', *spd_sens_vars[1])
+        # dont want ultra thicc handles
+        s = ttk.Style()
+        ss = 'Poop.Vertical.TScale'
+        s.configure(ss, sliderlength='17.5')
+
+        setup_slider(self.control_sens_frame, 'sens', *spd_sens_vars[0], ss)
+        setup_slider(self.control_spd_frame, 'spd', *spd_sens_vars[1], ss)
 
         # spd buts
         double_but = ttk.Button(self.control_spd_but_frame, text="* 2", width=3, takefocus=False,
@@ -207,12 +214,12 @@ class ClipControl:
         self.lp_selected_label = ttk.Label(self.ctrl_type_frame, text='selected [0]', anchor='e', justify='right', padding='2 0 2 0')
         self.lp_selected_label.pack(side=tk.LEFT, expand=True, fill=tk.X)
         self.loop_on_toggle = ToggleButton(self.main_loop_ctrl_frame, 'loop on', 7,
-                                           pack_args={'side': tk.LEFT}, padding='19 4 19 4')
+                                           pack_args={'side': tk.LEFT}, padding='20 4 20 4')
         ttk.Separator(self.main_loop_ctrl_frame, orient='horizontal').pack(side=tk.LEFT, fill=tk.X)
         self.loop_type_switch = SwitchButton(self.main_loop_ctrl_frame, 'dflt', 'bnce',
-                                             padding='1 4 2 4')
+                                             padding='2 4 2 4')
 
-        loop_but_pad = '8 4 8 4'
+        loop_but_pad = '10 4 10 4'
         loop_in_but = ttk.Button(self.loop_but_ctrl_frame, text="in", width=3, padding=loop_but_pad, takefocus=False)
             # command=lambda: pb_funs[0]())
         loop_out_but = ttk.Button(self.loop_but_ctrl_frame, text="out", width=3, padding=loop_but_pad, takefocus=False)
@@ -399,8 +406,10 @@ class ProgressBar:
 
     def setup_canvas(self):
         w, h = self.width, self.height
-        self.canvasbg = self.canvas.create_rectangle(0,0,w,h,fill='black',tag='bg')
-        self.bottombg = self.canvas.create_rectangle(0,h,w,h+15,fill='#aaa')
+        self.canvasbg = self.canvas.create_rectangle(0, 0, w, h,
+                                                     fill='black', tag='bg')
+        self.bottombg = self.canvas.create_rectangle(0, h, w, h + 15,
+                                                     fill='#aaa')
 
         self.pbar = self.canvas.create_line(0,0,0,h,fill='gray',width=3)
 

@@ -292,7 +292,7 @@ class SetupGui:
                 new_folder_path = os.sep.join(new_folder_path.split('/'))
                 new_var.set(new_folder_path)
 
-        dot_but = ttk.Button(new_frame, text='..', command=change_folder, width=1)
+        dot_but = ttk.Button(new_frame, text='..', command=change_folder, width=1, takefocus=False)
         dot_but.pack(side=tk.RIGHT, anchor='e')
 
         current_path_label = ttk.Label(
@@ -316,7 +316,7 @@ class SetupGui:
                 new_file_path = os.sep.join(new_file_path.split('/'))
                 new_var.set(new_file_path)
 
-        dot_but = ttk.Button(new_frame, text='..', command=change_file)
+        dot_but = ttk.Button(new_frame, text='..', command=change_file, takefocus=False)
         dot_but.pack(side=tk.RIGHT, anchor='e')
 
         current_path_label = ttk.Label(
@@ -359,7 +359,7 @@ class SetupGui:
         if starting_choice is not None:
             new_var.set(int(starting_choice))
 
-        check_but = ttk.Checkbutton(new_frame, variable=new_var)
+        check_but = ttk.Checkbutton(new_frame, variable=new_var, takefocus=False)
         check_but.pack(side=tk.RIGHT, anchor='e')
 
         return new_var, 'bool', new_frame
