@@ -164,6 +164,8 @@ class LibraryOrgGui:
             self.load()
         else:
             self.gen_all_folder_names()
+            self.clip_storage_dict = self.db.file_ops.save_clip_storage(self.backend.clip_storage)
+
         self.init_tree()
 
     def init_tree(self, *args):
@@ -522,6 +524,7 @@ class LibraryOrgGui:
             self.db.clear()
             fio.load_database(parsed_xml.find('database'), self.db)
             # save clip storage
+            # this needs to be done separately in the case of standalone liborg
             self.clip_storage_dict = parsed_xml.find('clip_storage')
             fio.update_last_save(filename)
             if C.DEBUG:
