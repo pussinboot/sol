@@ -54,12 +54,14 @@ class ClipControl:
 
         self.info_frame = ttk.Frame(self.root_frame)
 
+        left_frame_padding = '2 0 5 0'
+
         self.top_frame = ttk.Frame(self.root_frame)
-        self.progress_frame = ttk.Frame(self.top_frame)
+        self.progress_frame = ttk.Frame(self.top_frame, padding=left_frame_padding)
         self.top_right_frame = ttk.Frame(self.top_frame)
 
         self.bottom_frame = ttk.Frame(self.root_frame)
-        self.pad_but_frame = ttk.Frame(self.bottom_frame)
+        self.pad_but_frame = ttk.Frame(self.bottom_frame, padding=left_frame_padding)
         self.bottom_right_frame = ttk.Frame(self.bottom_frame)
 
         # pack it up
@@ -76,13 +78,15 @@ class ClipControl:
         self.bottom_right_frame.pack(side=tk.LEFT)
 
         # progressbar
+        self.progressbar = ProgressBar(self.progress_frame, self.width, 85)
+
 
         # control areas
         self.setup_control_frame_top()
         self.setup_control_frame_bottom()
 
         # pads
-        # self.setup_pads()
+        self.setup_pads()
 
     def setup_control_frame_top(self):
         self.control_but_frame = ttk.Frame(self.top_right_frame)
@@ -118,9 +122,12 @@ class ClipControl:
         # zoom buts
         self.zoom_follow_var = tk.BooleanVar()
 
-        zoom_in_but = ttk.Button(self.control_zoom_frame, text="+", width=1, takefocus=False)
-        zoom_out_but = ttk.Button(self.control_zoom_frame, text="-", width=1, takefocus=False)
-        zoom_reset_but = ttk.Button(self.control_zoom_frame, text="o", width=1, takefocus=False)
+        zoom_in_but = ttk.Button(self.control_zoom_frame, text="+", width=1, takefocus=False,
+                                 command=lambda: self.progressbar.adjust_zoom(1.25))
+        zoom_out_but = ttk.Button(self.control_zoom_frame, text="-", width=1, takefocus=False,
+                                  command=lambda: self.progressbar.adjust_zoom(.75))
+        zoom_reset_but = ttk.Button(self.control_zoom_frame, text="o", width=1, takefocus=False,
+                                    command=lambda: self.progressbar.reset_zoom())
         zoom_follow_cb = ttk.Checkbutton(self.control_zoom_frame, width=0,
                                          variable=self.zoom_follow_var, takefocus=False)
         self.zoom_control_buts = [zoom_in_but, zoom_out_but, zoom_reset_but, zoom_follow_cb]
@@ -232,7 +239,7 @@ class ClipControl:
     def setup_pads(self):
         n_buts = C.NO_Q
         n_rows = 1
-        pad_x = self.width // 8 - 7
+        pad_x = self.width // 8 - 4
         pad_str = '{0} 15 {0} 15'.format(pad_x)
 
         if n_buts > 4:
@@ -354,10 +361,151 @@ class ToggleButton:
         else:
             self.but.config(relief='raised')
 
+
+class ProgressBar:
+    def __init__(self, root, width=300, height=33):
+        self.width, self.height = width, height
+        self._drag_data = {"x": 0, "y": 0, "item": None, "label": None}
+
+        self.pbar_pos = 0
+        self.zoom_factor = 1.0
+        self.total_width = width
+        self.refresh_interval = 100
+
+        # for cue points
+        self.qp_lines = [None] * C.NO_Q
+        self.qp_labels = [None] * C.NO_Q
+
+        # tk stuff
+        self.root = root
+        self.frame = ttk.Frame(self.root)
+        self.canvas_frame = ttk.Frame(self.frame)
+        self.canvas = tk.Canvas(self.canvas_frame, width=width, height=height + 15,
+                                bg="black", scrollregion=(0, 0, width, height))
+        self.hbar = ttk.Scrollbar(self.canvas_frame,orient=tk.HORIZONTAL)
+        self.hbar.config(command=self.canvas.xview)
+        self.canvas.config(xscrollcommand=self.hbar.set)
+
+        self.canvas.pack(anchor=tk.W)
+        self.canvas_frame.pack(anchor=tk.W,side=tk.LEFT,expand=tk.YES,fill=tk.BOTH)
+        self.hbar.pack(anchor=tk.W,side=tk.BOTTOM,expand=tk.YES,fill=tk.BOTH)
+        self.frame.pack(anchor=tk.W,side=tk.TOP,expand=tk.YES,fill=tk.BOTH)
+
+        self.setup_canvas()
+        self.actions_binding()
+
+        self.root.after(self.refresh_interval,self.update_pbar)
+
+
+    def setup_canvas(self):
+        w, h = self.width, self.height
+        self.canvasbg = self.canvas.create_rectangle(0,0,w,h,fill='black',tag='bg')
+        self.bottombg = self.canvas.create_rectangle(0,h,w,h+15,fill='#aaa')
+
+        self.pbar = self.canvas.create_line(0,0,0,h,fill='gray',width=3)
+
+        self.outside_loop_rect_l = self.canvas.create_rectangle(0,0,0,0,fill='#333',stipple='gray50',tag='bg')
+        self.outside_loop_rect_r = self.canvas.create_rectangle(0,0,0,0,fill='#333',stipple='gray50',tag='bg')
+
+    def actions_binding(self):
+
+        self.canvas.tag_bind("bg","<B1-Motion>",self.find_mouse)
+        self.canvas.tag_bind("bg","<ButtonRelease-1>",self.find_mouse)
+        self.canvas.tag_bind("line","<B1-Motion>",self.find_mouse)
+        self.canvas.tag_bind("line","<ButtonPress-3>",self.drag_begin)
+        self.canvas.tag_bind("line","<ButtonRelease-3>",self.drag_end)
+        self.canvas.tag_bind("line","<B3-Motion>",self.drag)
+        self.canvas.tag_bind("line","<ButtonPress-1>",self.find_nearest)
+        self.canvas.tag_bind("label","<ButtonPress-1>",self.find_nearest)
+
+    def adjust_zoom(self, by_factor):
+        new_factor = self.zoom_factor * by_factor
+        new_factor = max(1.0, new_factor)
+        actual_scale = new_factor / self.zoom_factor
+        self.canvas.scale(tk.ALL, 0, 0, actual_scale, 1)
+
+        big_bbox = self.canvas.bbox("all")
+        self.canvas.configure(scrollregion = big_bbox)
+        self.zoom_factor = new_factor
+        self.total_width = new_factor * self.width
+
+
+    def reset_zoom(self):
+        self.adjust_zoom(1.0 / self.zoom_factor)
+
+    # progress bar follow mouse
+    def find_mouse(self,event):
+        new_x = self.canvas.canvasx(event.x) / self.total_width
+        new_x = max(0, (min(new_x, 1)))
+        self.pbar_pos = new_x
+        self.move_bar(new_x)
+        # if self.seek_action is None: return
+        # self.seek_action(newx/self.width)
+
+    def move_bar(self,x):
+        new_x = self.total_width * x
+        self.canvas.coords(self.pbar,new_x,0,new_x,self.height)
+
+    def update_pbar(self):
+        self.move_bar(self.pbar_pos)
+        self.root.after(self.refresh_interval,self.update_pbar)
+
+    # drag n drop
+    def drag_begin(self, event):
+        # record the item and its location
+        item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y),halo=5)[0]
+        if 'line' not in self.canvas.gettags(item): return
+        self._drag_data["item"] = item
+        self._drag_data["label"] = self.labels[self.lines.index(item)]
+        self._drag_data["x"] = event.x
+
+    def drag_end(self, event):
+        if self._drag_data["item"] is None: return
+        if self.drag_release_action:
+            newx = self.canvas.canvasx(event.x)
+            if newx < 0:
+                newx = 0
+            elif newx > self.width:
+                newx = self.width - 2
+            i = self.lines.index(self._drag_data["item"])
+            self.drag_release_action(i,newx/self.width)
+        # reset the drag information
+        self._drag_data["item"] = None
+        self._drag_data["label"] = None
+        self._drag_data["x"] = 0
+
+    def drag(self, event):
+        # compute how much this object has moved
+        delta_x = event.x - self._drag_data["x"]
+        # move the object the appropriate amount
+        if self._drag_data["item"]:
+            coord = self.canvas.coords(self._drag_data["item"])
+            if coord[0] + delta_x < 0:
+                delta_x = -curx
+            elif coord[2] + delta_x > self.width:
+                delta_x = self.width - coord[2]
+
+            self.canvas.move(self._drag_data["item"], delta_x, 0)# delta_y)
+            for label_item in self._drag_data["label"]: 
+                self.canvas.move(label_item, delta_x, 0)
+        # record the new position
+        self._drag_data["x"] = event.x
+
+    def find_nearest(self,event):
+        if self.cue_fun is None: return
+        item = self.canvas.find_closest(event.x, event.y,halo=5)[0]
+        if 'label' in self.canvas.gettags(item):
+            item = self.canvas.find_closest(event.x - 10, event.y - 20,halo=5)[0]
+        if 'line' in self.canvas.gettags(item):
+            i = self.lines.index(item)
+        else:
+            return
+        self.cue_fun('',i)
+
 if __name__ == '__main__':
 
     rootwin = tk.Tk()
-    ttk.Style().theme_use('alt')
+    ttk.Style().theme_use('clam')
     rootwin.title('test_cc')
     rootwin.bind("<Control-q>", lambda e: rootwin.destroy())
 
