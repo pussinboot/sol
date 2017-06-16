@@ -34,15 +34,18 @@ class ClipControl:
         self.loop_on_var = None
         self.loop_type_var = None
 
+        self.loop_on_toggle = None
+        self.loop_type_switch = None
+
         # tk
 
         # clip parameter to update function
         self.param_dispatch = {
             # 'cue_points': self.update_cues,
-            # 'loop_points': self.update_loop,
-            # 'loop_on': self.update_loop_on,
-            # 'loop_type': self.update_loop_type,
-            # 'loop_selection': self.update_loop_select,
+            'loop_points': self.update_loop,
+            'loop_on': self.update_loop_on,
+            'loop_type': self.update_loop_type,
+            'loop_selection': self.update_loop,
             'playback_speed': self.update_speed,
             'control_sens': self.update_sens
         }
@@ -76,7 +79,6 @@ class ClipControl:
             'loop_clear': bfn[base_addr + '/loop/clear'],
             # scratching
         }
-
 
 
         self.speed_var.trace('w', self.gen_update_cmd('speed', self.speed_var))
@@ -159,15 +161,12 @@ class ClipControl:
 
         return fun_tor
 
-    def gen_toggle_cmd(self, key, var, default_values=[False, True]):
+    def gen_toggle_cmd(self, key, default_values=[False, True]):
         fun = self.send_back[key]
-        tk_var = var
         toggle_lookup = default_values[:]
 
-        def fun_tor(*args):
-            bool_val = tk_var.get()
-            send_val = toggle_lookup[int(bool_val)]  # 0, 1 = False, True
-            print(key, send_val)
+        def fun_tor(new_val, *args):
+            send_val = toggle_lookup[int(new_val)]  # 0, 1 = False, True
             fun('', send_val)
 
         return fun_tor
@@ -186,6 +185,7 @@ class ClipControl:
         self.name_label.bind("<Double-Button-1>", self.change_name_dialog)
 
     def update_clip_params(self,clip,param=None):
+        # print('update',param)
         if param in self.param_dispatch:
             self.param_dispatch[param](clip)
         elif param is None:
@@ -230,6 +230,38 @@ class ClipControl:
         else:
             sens = clip.params['control_sens']
         self.sens_var.set(sens)
+
+    def update_loop(self, clip=None):
+        self.update_loop_on(clip)
+        self.update_loop_type(clip)
+
+        selected_ind = '-'
+        if clip is not None:
+            ls = clip.params['loop_selection']
+            if ls >= 0:
+                selected_ind = str(ls)
+
+        self.loop_selected_text_var.set('selected [{}]'.format(selected_ind))
+
+
+
+    def update_loop_on(self, clip=None):
+        if clip is None:
+            loop_state = False
+        else:
+            loop_state = clip.params['loop_on']
+        if self.loop_on_toggle is not None:
+            self.loop_on_toggle.update(loop_state)
+
+    def update_loop_type(self, clip=None):
+        loop_data = self.backend.loop_get(self.layer)
+        if loop_data is None:
+            loop_type = False
+        else:
+            loop_type = (loop_data[1][2] == 'b')
+
+        if self.loop_type_switch is not None:
+            self.loop_type_switch.update(loop_type)
 
     def setup_control_frame_top(self):
         self.control_but_frame = ttk.Frame(self.top_right_frame)
@@ -364,13 +396,13 @@ class ClipControl:
         self.loop_on_toggle = ToggleButton(self.main_loop_ctrl_frame, 'loop on', 7,
                                            pack_args={'side': tk.LEFT}, padding='20 4 20 4')
         self.loop_on_var = self.loop_on_toggle.bool_var
-        self.loop_on_toggle.send_cmd = self.gen_toggle_cmd('loop_on_off', self.loop_on_var)
+        self.loop_on_toggle.send_cmd = self.gen_toggle_cmd('loop_on_off')
 
         ttk.Separator(self.main_loop_ctrl_frame, orient='horizontal').pack(side=tk.LEFT, fill=tk.X)
         self.loop_type_switch = SwitchButton(self.main_loop_ctrl_frame, 'dflt', 'bnce',
                                              padding='2 4 2 4')
         self.loop_type_var = self.loop_type_switch.bool_var
-        self.loop_type_switch.send_cmd = self.gen_toggle_cmd('loop_type', self.loop_type_var, ['d', 'b'])
+        self.loop_type_switch.send_cmd = self.gen_toggle_cmd('loop_type', ['d', 'b'])
 
         loop_but_pad = '10 4 10 4'
         loop_in_but = ttk.Button(self.loop_but_ctrl_frame, text="in", width=3, padding=loop_but_pad, takefocus=False,
@@ -386,6 +418,7 @@ class ClipControl:
             lpb.pack(side=tk.LEFT)
             # if i == 1:
             #     ttk.Separator(self.loop_but_ctrl_frame).pack(side=tk.LEFT)
+
 
     def activate_pad(self, i):
         # depends on if we are in cue or loop point mode
@@ -485,9 +518,10 @@ class SwitchButton:
         self.switch(False)
 
     def switch(self, new_val):
-        self.update(new_val)
         if self.send_cmd is not None:
             self.send_cmd(new_val)
+        else:
+            self.update(new_val)
 
     def update(self, new_val):
         self.bool_var.set(new_val)
@@ -521,9 +555,10 @@ class ToggleButton:
         self.switch((not self.bool_var.get()))
 
     def switch(self, new_val):
-        self.update(new_val)
         if self.send_cmd is not None:
             self.send_cmd(new_val)
+        else:
+            self.update(new_val)
 
     def update(self, new_val):
         self.bool_var.set(new_val)
