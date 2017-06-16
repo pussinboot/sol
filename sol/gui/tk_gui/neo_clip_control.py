@@ -152,13 +152,13 @@ class ClipControl:
             label = ttk.Label(frame, text=text, width=4)
             scale = ttk.Scale(frame, from_=10.0, to=0.0, variable=var1,
                               orient=tk.VERTICAL, length=50)
-            # need to add on scroll handlers
+            scale.bind("<MouseWheel>", lambda e: var1.set(var1.get() + (e.delta / (120 / 0.1))))
             val_entry = ttk.Entry(frame, textvariable=var2, width=4,
                                   validate="key")
             val_entry['validatecommand'] = (val_entry.register(testVal),'%P')
-            val_entry.bind('<Return>', lambda x: var1.set(var2.get()))
-            val_entry.bind('<Up>', lambda x: var1.set(var1.get() + 0.05))
-            val_entry.bind('<Down>', lambda x: var1.set(var1.get() - 0.05))
+            val_entry.bind('<Return>', lambda e: var1.set(var2.get()))
+            val_entry.bind('<Up>', lambda e: var1.set(var1.get() + 0.05))
+            val_entry.bind('<Down>', lambda e: var1.set(var1.get() - 0.05))
             label.pack(side=tk.TOP)
             scale.pack(side=tk.TOP)
             val_entry.pack(side=tk.TOP)
