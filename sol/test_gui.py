@@ -28,7 +28,7 @@ class MainGui:
 
     def __init__(self, root):
         # theme
-        ttk.Style().theme_use('alt')
+        ttk.Style().theme_use('clam')
 
         # tk
         self.root = root
