@@ -18,7 +18,11 @@ class ClipControl:
         self.width = 330
         self.layer = layer
         self.cur_pos = 0.0
+        self.cur_clip = None
+
         self.pad_buts = []
+        self.cue_but_states = []
+        self.loop_but_states = []
         self.pad_but_cmds = []
 
         # all tk vars
@@ -41,7 +45,7 @@ class ClipControl:
 
         # clip parameter to update function
         self.param_dispatch = {
-            # 'cue_points': self.update_cues,
+            'cue_points': self.update_cues,
             'loop_points': self.update_loop,
             'loop_on': self.update_loop_on,
             'loop_type': self.update_loop_type,
@@ -174,7 +178,8 @@ class ClipControl:
     def update_cur_pos(self, pos):
         self.cur_pos = pos
 
-    def update_clip(self,clip):
+    def update_clip(self, clip):
+        self.cur_clip = clip
         if clip is None:
             self.name_var.set("------")
             self.update_clip_params(clip)
@@ -184,7 +189,7 @@ class ClipControl:
         self.update_clip_params(clip)
         self.name_label.bind("<Double-Button-1>", self.change_name_dialog)
 
-    def update_clip_params(self,clip,param=None):
+    def update_clip_params(self, clip, param=None):
         # print('update',param)
         if param in self.param_dispatch:
             self.param_dispatch[param](clip)
@@ -231,6 +236,25 @@ class ClipControl:
             sens = clip.params['control_sens']
         self.sens_var.set(sens)
 
+    def update_cues(self, clip):
+        if clip is None:
+            for i in range(C.NO_Q):
+                but = self.pad_buts[i]
+                but.config(state='disabled')
+                but.config(relief='groove')
+                # unbind
+                but.unbind("<ButtonPress-1>")
+                but.unbind("<ButtonPress-3>")
+            return
+
+        cp = clip.params['cue_points']
+        self.cue_but_states = [cp[i] is not None for i in range(C.NO_Q)]
+
+        lp = clip.params['loop_points']
+        self.loop_but_states = [(lp[i] is not None) and (None not in lp[i][:2]) for i in range(C.NO_LP)]
+
+        self.pad_reconfigure()
+
     def update_loop(self, clip=None):
         self.update_loop_on(clip)
         self.update_loop_type(clip)
@@ -242,8 +266,6 @@ class ClipControl:
                 selected_ind = str(ls)
 
         self.loop_selected_text_var.set('selected [{}]'.format(selected_ind))
-
-
 
     def update_loop_on(self, clip=None):
         if clip is None:
@@ -388,6 +410,7 @@ class ClipControl:
         self.qp_lp_switch = SwitchButton(self.ctrl_type_frame, 'QP', 'LP',
                                          pack_args={'side': tk.LEFT}, padding='2')
         self.qp_lp_var = self.qp_lp_switch.bool_var
+        self.qp_lp_var.trace('w', self.pad_reconfigure)
 
         self.lp_selected_label = ttk.Label(self.ctrl_type_frame, textvariable=self.loop_selected_text_var, anchor='e', justify='right', padding='2 0 2 0')
         self.lp_selected_label.pack(side=tk.LEFT, expand=True, fill=tk.X)
@@ -419,13 +442,38 @@ class ClipControl:
             # if i == 1:
             #     ttk.Separator(self.loop_but_ctrl_frame).pack(side=tk.LEFT)
 
-
     def activate_pad(self, i):
-        # depends on if we are in cue or loop point mode
-        print(i)
+        if (self.qp_lp_var.get()):  # if lp selected
+            fun_to_call = self.send_back['loop_select']
+        else:
+            fun_to_call = self.send_back['cue_set']
+        fun_to_call('', i)
 
     def delet_pad(self, i):
-        print('delet', i)
+        if (self.qp_lp_var.get()):  # if lp selected
+            fun_to_call = self.send_back['loop_clear']
+        else:
+            fun_to_call = self.send_back['cue_clear']
+        fun_to_call('', i)
+
+    def pad_reconfigure(self, *args):
+        if self.cur_clip is None:
+            return
+        if (self.qp_lp_var.get()):  # if lp selected
+            from_what = self.loop_but_states
+        else:
+            from_what = self.cue_but_states
+        for i, yn in enumerate(from_what):
+            but = self.pad_buts[i]
+            but.config(state='active')
+
+            but.bind("<ButtonPress-1>", self.pad_but_cmds[i][0])
+            but.bind("<ButtonPress-3>", self.pad_but_cmds[i][1])
+
+            if yn:
+                but.config(relief='raised')
+            else:
+                but.config(relief='flat')
 
     def setup_pads(self):
         n_buts = C.NO_Q
@@ -440,28 +488,28 @@ class ClipControl:
 
         def gen_but_funs(no):
             i = no
-            but = self.pad_buts[i]
 
             def activate(*args):
                 self.activate_pad(i)
-                but.config(relief='raised')
 
             def deactivate(*args):
                 self.delet_pad(i)
-                but.config(relief='groove')
 
             return [activate, deactivate]
 
         for r in range(n_rows):
             for c in range(4):
                 i = r * 4 + c
-                but = ttk.Label(self.pad_but_frame, text=str(i), borderwidth=2,
-                                padding=pad_str, relief='groove')
+                but = ttk.Label(self.pad_but_frame, text=str(i), borderwidth=4,
+                                padding=pad_str, relief='flat')
                 but.grid(row=r, column=c)
                 but.config(state='disabled')
-                but.unbind("<ButtonPress-3>")
+                but.bind("<ButtonPress-1>", lambda e: print(e))
+
 
                 self.pad_buts.append(but)
+                self.cue_but_states.append(False)
+                self.loop_but_states.append(False)
                 self.pad_but_cmds.append(gen_but_funs(i))
 
     # tkdnd stuff
