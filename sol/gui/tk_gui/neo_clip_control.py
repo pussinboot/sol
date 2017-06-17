@@ -4,9 +4,11 @@ import tkinter.simpledialog as tksimpledialog
 from tkinter import ttk
 
 from itertools import accumulate
+import bisect
 
 from sol.config import GlobalConfig
 C = GlobalConfig()
+
 
 class ClipControl:
     def __init__(self, root, backend, layer):
@@ -84,7 +86,6 @@ class ClipControl:
             # scratching
         }
 
-
         self.speed_var.trace('w', self.gen_update_cmd('speed', self.speed_var))
         self.sens_var.trace('w', self.gen_update_cmd('sens', self.sens_var))
 
@@ -138,6 +139,13 @@ class ClipControl:
         # progressbar
         self.progressbar = ProgressBar(self.progress_frame, self.width, 85)
         self.progressbar.send_funs['seek'] = self.send_back['seek']
+        self.progressbar.send_funs['cue'] = self.send_back['cue_set']
+
+        def set_cue(i, pos):
+            self.backend.set_cue_point(self.layer, i, pos)
+
+        self.progressbar.send_funs['set_cue'] = set_cue
+
         # control areas
         self.setup_control_frame_top()
         self.setup_control_frame_bottom()
@@ -190,7 +198,7 @@ class ClipControl:
         self.name_label.bind("<Double-Button-1>", self.change_name_dialog)
 
     def update_clip_params(self, clip, param=None):
-        print('update',param)
+        print('update', param)
         if param in self.param_dispatch:
             self.param_dispatch[param](clip)
         elif param is None:
@@ -207,8 +215,8 @@ class ClipControl:
                 text_meas.append(C.FONT_AVG_WIDTH)
 
         cumm_text_meas = list(accumulate(text_meas))
-        if cumm_text_meas[-1] > self.width-25:
-            to_i = bisect.bisect_left(cumm_text_meas,self.width-25 - 5*C.FONT_WIDTHS['.'])
+        if cumm_text_meas[-1] > self.width - 25:
+            to_i = bisect.bisect_left(cumm_text_meas, self.width - 25 - 5 * C.FONT_WIDTHS['.'])
             new_text = new_text[:to_i].strip() + ".."
         self.name_var.set(new_text)
 
@@ -216,11 +224,10 @@ class ClipControl:
         cur_clip = self.backend.clip_storage.current_clips[self.layer]
         if cur_clip is None:
             return
-        new_name = tksimpledialog.askstring("rename clip",'',
-                    initialvalue=cur_clip.name)
+        new_name = tksimpledialog.askstring("rename clip", '', initialvalue=cur_clip.name)
         if new_name:
             # change name
-            self.backend.rename_clip(cur_clip,new_name) # have to do this to update search properly etc
+            self.backend.rename_clip(cur_clip, new_name)  # have to do this to update search properly etc
 
     def update_speed(self, clip):
         if clip is None:
@@ -245,11 +252,12 @@ class ClipControl:
                 # unbind
                 but.unbind("<ButtonPress-1>")
                 but.unbind("<ButtonPress-3>")
+            self.progressbar.draw_cue_points()
             return
 
         cp = clip.params['cue_points']
         self.cue_but_states = [cp[i] is not None for i in range(C.NO_Q)]
-
+        self.progressbar.draw_cue_points(cp, self.cue_but_states)
         self.pad_reconfigure()
 
     def update_loop(self, clip=None):
@@ -647,7 +655,7 @@ class ProgressBar:
 
         # for cue points
         self.qp_lines = [None] * C.NO_Q
-        self.qp_qp_labels = [None] * C.NO_Q
+        self.qp_labels = [None] * C.NO_Q
 
         # fun dispatch
         self.send_funs = {}
@@ -658,19 +666,18 @@ class ProgressBar:
         self.canvas_frame = ttk.Frame(self.frame)
         self.canvas = tk.Canvas(self.canvas_frame, width=width, height=height + 15,
                                 bg="black", scrollregion=(0, 0, width, height))
-        self.hbar = ttk.Scrollbar(self.canvas_frame,orient=tk.HORIZONTAL)
+        self.hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL)
         self.hbar.config(command=self.canvas.xview)
         self.canvas.config(xscrollcommand=self.hbar.set)
 
         self.canvas.pack(anchor=tk.W)
-        self.canvas_frame.pack(anchor=tk.W,side=tk.LEFT,expand=tk.YES,fill=tk.BOTH)
-        self.hbar.pack(anchor=tk.W,side=tk.BOTTOM,expand=tk.YES,fill=tk.BOTH)
-        self.frame.pack(anchor=tk.W,side=tk.TOP,expand=tk.YES,fill=tk.BOTH)
+        self.canvas_frame.pack(anchor=tk.W, side=tk.LEFT, expand=tk.YES, fill=tk.BOTH)
+        self.hbar.pack(anchor=tk.W, side=tk.BOTTOM, expand=tk.YES, fill=tk.BOTH)
+        self.frame.pack(anchor=tk.W, side=tk.TOP, expand=tk.YES, fill=tk.BOTH)
 
         self.setup_canvas()
 
-        self.root.after(self.refresh_interval,self.update_pbar)
-
+        self.root.after(self.refresh_interval, self.update_pbar)
 
     def setup_canvas(self):
         w, h = self.width, self.height
@@ -679,22 +686,26 @@ class ProgressBar:
         self.bottombg = self.canvas.create_rectangle(0, h, w, h + 15,
                                                      fill='#aaa')
 
-        self.pbar = self.canvas.create_line(0,0,0,h,fill='gray',width=3)
+        self.pbar = self.canvas.create_line(0, 0, 0, h, fill='gray', width=3)
 
-        self.outside_loop_rect_l = self.canvas.create_rectangle(0,0,0,0,fill='#333',stipple='gray50',tag='loop_limit')
-        self.outside_loop_rect_r = self.canvas.create_rectangle(0,0,0,0,fill='#333',stipple='gray50',tag='loop_limit')
+        self.outside_loop_rect_l = self.canvas.create_rectangle(0, 0, 0, 0,
+                                                                fill='#333', stipple='gray50',
+                                                                tag='loop_limit')
+        self.outside_loop_rect_r = self.canvas.create_rectangle(0, 0, 0, 0,
+                                                                fill='#333', stipple='gray50',
+                                                                tag='loop_limit')
         self.actions_binding()
 
     def actions_binding(self):
 
-        self.canvas.tag_bind("bg","<B1-Motion>",self.find_mouse)
-        self.canvas.tag_bind("bg","<ButtonRelease-1>",self.find_mouse)
-        self.canvas.tag_bind("qp_line","<B1-Motion>",self.find_mouse)
-        self.canvas.tag_bind("qp_line","<ButtonPress-3>",self.drag_begin)
-        self.canvas.tag_bind("qp_line","<ButtonRelease-3>",self.drag_end)
-        self.canvas.tag_bind("qp_line","<B3-Motion>",self.drag)
-        self.canvas.tag_bind("qp_line","<ButtonPress-1>",self.find_nearest)
-        self.canvas.tag_bind("qp_label","<ButtonPress-1>",self.find_nearest)
+        self.canvas.tag_bind("bg", "<B1-Motion>", self.find_mouse)
+        self.canvas.tag_bind("bg", "<ButtonRelease-1>", self.find_mouse)
+        self.canvas.tag_bind("qp_line", "<B1-Motion>", self.find_mouse)
+        self.canvas.tag_bind("qp_line", "<ButtonPress-3>", self.drag_begin)
+        self.canvas.tag_bind("qp_line", "<ButtonRelease-3>", self.drag_end)
+        self.canvas.tag_bind("qp_line", "<B3-Motion>", self.drag)
+        self.canvas.tag_bind("qp_line", "<ButtonPress-1>", self.find_nearest)
+        self.canvas.tag_bind("qp_label", "<ButtonPress-1>", self.find_nearest)
 
     def adjust_zoom(self, by_factor):
         new_factor = self.zoom_factor * by_factor
@@ -741,27 +752,69 @@ class ProgressBar:
         self.canvas.coords(self.outside_loop_rect_l, 0, 0, x1, self.height)
         self.canvas.coords(self.outside_loop_rect_r, x2, 0, self.total_width, self.height)
 
+    def draw_cue_points(self, qp_data=None, qp_on_off=None):
+        if qp_data is None:
+            for i in range(C.NO_Q):
+                self.remove_qp(i)
+        else:
+            for i, qp in enumerate(qp_data):
+                if qp_on_off[i]:
+                    self.add_qp(qp, i)
+                else:
+                    self.remove_qp(i)
+
+    def add_qp(self, x_pos, i):
+        x_coord = x_pos * self.total_width
+        if self.qp_lines[i] is None:
+            self.qp_lines[i] = self.canvas.create_line(x_coord, 0, x_coord, self.height,
+                                                       activefill='white', fill='#ccc',
+                                                       width=3, dash=(4, ), tags='qp_line')
+            labelbox = self.canvas.create_rectangle(x_coord, self.height, x_coord + 15,
+                                                    self.height + 15, activefill='#aaa',
+                                                    tags='qp_label')
+            labeltext = self.canvas.create_text(x_coord, self.height + 14, anchor=tk.SW,
+                                                text=" {}".format(i), fill='black',
+                                                activefill='white', justify='center',
+                                                tags='qp_label')
+            self.qp_labels[i] = [labelbox, labeltext]
+
+        else:  # if qp already exists, move its things
+            self.canvas.coords(self.qp_lines[i], x_coord, 0, x_coord, self.height)
+            self.canvas.coords(self.qp_labels[i][0], x_coord, self.height,
+                               x_coord + 15, self.height + 15)
+            self.canvas.coords(self.qp_labels[i][1], x_coord, self.height + 14)
+
+    def remove_qp(self, i):
+        if self.qp_lines[i] is None:
+            return
+        self.canvas.delete(self.qp_lines[i])
+        self.qp_lines[i] = None
+        if self.qp_labels[i]:
+            for label_item in self.qp_labels[i]:
+                self.canvas.delete(label_item)
+            self.qp_labels[i] = None
 
     # drag n drop
     def drag_begin(self, event):
         # record the item and its location
         item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y), halo=5)[0]
-        if 'line' not in self.canvas.gettags(item):
+        if 'qp_line' not in self.canvas.gettags(item):
             return
         self._drag_data["item"] = item
         self._drag_data["label"] = self.qp_labels[self.qp_lines.index(item)]
         self._drag_data["x"] = event.x
 
     def drag_end(self, event):
-        if self._drag_data["item"] is None: return
-        if self.drag_release_action:
+        if self._drag_data["item"] is None:
+            return
+        if 'set_cue' in self.send_funs:
             new_x = self.canvas.canvasx(event.x)
             if new_x < 0:
                 new_x = 0
             elif new_x > self.total_width:
                 new_x = self.total_width - 2
             i = self.qp_lines.index(self._drag_data["item"])
-            self.drag_release_action(i, new_x / self.total_width)
+            self.send_funs['set_cue'](i, new_x / self.total_width)
         # reset the drag information
         self._drag_data["item"] = None
         self._drag_data["label"] = None
@@ -774,26 +827,28 @@ class ProgressBar:
         if self._drag_data["item"]:
             coord = self.canvas.coords(self._drag_data["item"])
             if coord[0] + delta_x < 0:
-                delta_x = -curx
-            elif coord[2] + delta_x > self.width:
-                delta_x = self.width - coord[2]
+                delta_x = -coord[0]
+            elif coord[2] + delta_x > self.total_width:
+                delta_x = self.total_width - coord[2]
 
-            self.canvas.move(self._drag_data["item"], delta_x, 0)# delta_y)
-            for label_item in self._drag_data["label"]: 
+            self.canvas.move(self._drag_data["item"], delta_x, 0)  # delta_y)
+            for label_item in self._drag_data["label"]:
                 self.canvas.move(label_item, delta_x, 0)
         # record the new position
         self._drag_data["x"] = event.x
 
-    def find_nearest(self,event):
-        if self.cue_fun is None: return
-        item = self.canvas.find_closest(event.x, event.y,halo=5)[0]
-        if 'label' in self.canvas.gettags(item):
+    def find_nearest(self, event):
+        if 'cue' not in self.send_funs:
+            return
+        item = self.canvas.find_closest(event.x, event.y, halo=5)[0]
+        if 'qp_label' in self.canvas.gettags(item):
             item = self.canvas.find_closest(event.x - 10, event.y - 20, halo=5)[0]
-        if 'line' in self.canvas.gettags(item):
+        if 'qp_line' in self.canvas.gettags(item):
             i = self.qp_lines.index(item)
         else:
             return
-        self.cue_fun('',i)
+        self.send_funs['cue']('', i)
+
 
 if __name__ == '__main__':
 
