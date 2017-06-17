@@ -84,6 +84,9 @@ class ClipControl:
             'loop_move': bfn[base_addr + '/loop/select/move'],
             'loop_clear': bfn[base_addr + '/loop/clear'],
             # scratching
+            'scratch_start': bfn['/magi/control{}/start'.format(self.layer)],
+            'scratch_do': bfn['/magi/control{}/do'.format(self.layer)],
+            'scratch_stop': bfn['/magi/control{}/stop'.format(self.layer)],
         }
 
         self.speed_var.trace('w', self.gen_update_cmd('speed', self.speed_var))
@@ -145,6 +148,10 @@ class ClipControl:
             self.backend.set_cue_point(self.layer, i, pos)
 
         self.progressbar.send_funs['set_cue'] = set_cue
+
+        # scroll scratch
+        for k in ['scratch_start', 'scratch_do', 'scratch_stop']:
+            self.progressbar.send_funs[k] = self.send_back[k]
 
         # control areas
         self.setup_control_frame_top()
@@ -651,6 +658,9 @@ class ProgressBar:
 
         self.auto_scroll = False
 
+        self.currently_scratching = False
+        self.scratch_job = None
+
         self.refresh_interval = 100
 
         # for cue points
@@ -697,15 +707,33 @@ class ProgressBar:
         self.actions_binding()
 
     def actions_binding(self):
+        self.canvas.bind("<MouseWheel>", self.scroll_scratch)
 
         self.canvas.tag_bind("bg", "<B1-Motion>", self.find_mouse)
         self.canvas.tag_bind("bg", "<ButtonRelease-1>", self.find_mouse)
+        self.canvas.tag_bind("loop_limit", "<B1-Motion>", self.find_mouse)
+        self.canvas.tag_bind("loop_limit", "<ButtonRelease-1>", self.find_mouse)
         self.canvas.tag_bind("qp_line", "<B1-Motion>", self.find_mouse)
         self.canvas.tag_bind("qp_line", "<ButtonPress-3>", self.drag_begin)
         self.canvas.tag_bind("qp_line", "<ButtonRelease-3>", self.drag_end)
         self.canvas.tag_bind("qp_line", "<B3-Motion>", self.drag)
         self.canvas.tag_bind("qp_line", "<ButtonPress-1>", self.find_nearest)
         self.canvas.tag_bind("qp_label", "<ButtonPress-1>", self.find_nearest)
+
+    def scroll_scratch(self, event):
+        if not self.currently_scratching:
+            self.currently_scratching = True
+            self.send_funs['scratch_start']('', True)
+        dt = event.delta / 12
+        self.send_funs['scratch_do']('', dt)
+        if self.scratch_job is not None:
+            self.root.after_cancel(self.scratch_job)
+        self.scratch_job = self.root.after(25, self.stop_scratch)
+
+    def stop_scratch(self):
+        self.scratch_job = None
+        self.currently_scratching = False
+        self.send_funs['scratch_stop']('', True)
 
     def adjust_zoom(self, by_factor):
         new_factor = self.zoom_factor * by_factor
