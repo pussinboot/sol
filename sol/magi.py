@@ -385,10 +385,10 @@ class Magi:
         if self.gui is not None: self.gui.update_clip_params(layer,cur_clip,
                                                              'cue_points')
 
-    def lp_create(self,cur_lp):
+    def lp_create(self, cur_lp):
         # function to create loop point if it doesnt exist yet
         if cur_lp is None or len(cur_lp) != 4:
-            return [None, None, 'd', None]
+            return [0, 1, 'd', None]
         return cur_lp
 
     def loop_check(self,layer):
@@ -734,6 +734,7 @@ class Magi:
                 if cur_clip is None: return
                 if n > len(cur_clip.params['loop_points']): return
                 cur_clip.params['loop_selection'] = n
+                cur_clip.params['loop_points'][n] = self.lp_create(cur_clip.params['loop_points'][n])
                 # print('current loop points\n',cur_clip.params['loop_points'][n])
                 self.send_loop(i)
                 if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
