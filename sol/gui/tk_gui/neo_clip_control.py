@@ -137,8 +137,7 @@ class ClipControl:
 
         # progressbar
         self.progressbar = ProgressBar(self.progress_frame, self.width, 85)
-
-
+        self.progressbar.send_funs['seek'] = self.send_back['seek']
         # control areas
         self.setup_control_frame_top()
         self.setup_control_frame_bottom()
@@ -177,6 +176,7 @@ class ClipControl:
 
     def update_cur_pos(self, pos):
         self.cur_pos = pos
+        self.progressbar.pbar_pos = pos
 
     def update_clip(self, clip):
         self.cur_clip = clip
@@ -190,7 +190,7 @@ class ClipControl:
         self.name_label.bind("<Double-Button-1>", self.change_name_dialog)
 
     def update_clip_params(self, clip, param=None):
-        # print('update',param)
+        print('update',param)
         if param in self.param_dispatch:
             self.param_dispatch[param](clip)
         elif param is None:
@@ -250,9 +250,6 @@ class ClipControl:
         cp = clip.params['cue_points']
         self.cue_but_states = [cp[i] is not None for i in range(C.NO_Q)]
 
-        lp = clip.params['loop_points']
-        self.loop_but_states = [(lp[i] is not None) and (None not in lp[i][:2]) for i in range(C.NO_LP)]
-
         self.pad_reconfigure()
 
     def update_loop(self, clip=None):
@@ -267,6 +264,10 @@ class ClipControl:
 
         self.loop_selected_text_var.set('selected [{}]'.format(selected_ind))
 
+        lp = clip.params['loop_points']
+        self.loop_but_states = [(lp[i] is not None) and (None not in lp[i][:2]) for i in range(C.NO_LP)]
+        self.pad_reconfigure()
+
     def update_loop_on(self, clip=None):
         if clip is None:
             loop_state = False
@@ -274,6 +275,21 @@ class ClipControl:
             loop_state = clip.params['loop_on']
         if self.loop_on_toggle is not None:
             self.loop_on_toggle.update(loop_state)
+
+        x1, x2 = 0, 1
+        if loop_state:
+            ls = clip.params['loop_selection']
+            if (0 <= ls < C.NO_LP):
+                lp = clip.params['loop_points']
+                check = lp[ls]
+                if check is not None:
+                    if check[0] is None:
+                        check[0] = 0
+                    if check[1] is None:
+                        check[1] = 1
+                    x1, x2 = check[0], check[1]
+
+        self.progressbar.draw_loop_boundaries(x1, x2)
 
     def update_loop_type(self, clip=None):
         loop_data = self.backend.loop_get(self.layer)
@@ -633,6 +649,9 @@ class ProgressBar:
         self.qp_lines = [None] * C.NO_Q
         self.qp_qp_labels = [None] * C.NO_Q
 
+        # fun dispatch
+        self.send_funs = {}
+
         # tk stuff
         self.root = root
         self.frame = ttk.Frame(self.root)
@@ -662,20 +681,20 @@ class ProgressBar:
 
         self.pbar = self.canvas.create_line(0,0,0,h,fill='gray',width=3)
 
-        self.outside_loop_rect_l = self.canvas.create_rectangle(0,0,0,0,fill='#333',stipple='gray50',tag='bg')
-        self.outside_loop_rect_r = self.canvas.create_rectangle(0,0,0,0,fill='#333',stipple='gray50',tag='bg')
+        self.outside_loop_rect_l = self.canvas.create_rectangle(0,0,0,0,fill='#333',stipple='gray50',tag='loop_limit')
+        self.outside_loop_rect_r = self.canvas.create_rectangle(0,0,0,0,fill='#333',stipple='gray50',tag='loop_limit')
         self.actions_binding()
 
     def actions_binding(self):
 
         self.canvas.tag_bind("bg","<B1-Motion>",self.find_mouse)
         self.canvas.tag_bind("bg","<ButtonRelease-1>",self.find_mouse)
-        self.canvas.tag_bind("line","<B1-Motion>",self.find_mouse)
-        self.canvas.tag_bind("line","<ButtonPress-3>",self.drag_begin)
-        self.canvas.tag_bind("line","<ButtonRelease-3>",self.drag_end)
-        self.canvas.tag_bind("line","<B3-Motion>",self.drag)
-        self.canvas.tag_bind("line","<ButtonPress-1>",self.find_nearest)
-        self.canvas.tag_bind("label","<ButtonPress-1>",self.find_nearest)
+        self.canvas.tag_bind("qp_line","<B1-Motion>",self.find_mouse)
+        self.canvas.tag_bind("qp_line","<ButtonPress-3>",self.drag_begin)
+        self.canvas.tag_bind("qp_line","<ButtonRelease-3>",self.drag_end)
+        self.canvas.tag_bind("qp_line","<B3-Motion>",self.drag)
+        self.canvas.tag_bind("qp_line","<ButtonPress-1>",self.find_nearest)
+        self.canvas.tag_bind("qp_label","<ButtonPress-1>",self.find_nearest)
 
     def adjust_zoom(self, by_factor):
         new_factor = self.zoom_factor * by_factor
@@ -688,7 +707,6 @@ class ProgressBar:
         self.zoom_factor = new_factor
         self.total_width = new_factor * self.width
 
-
     def reset_zoom(self):
         self.adjust_zoom(1.0 / self.zoom_factor)
 
@@ -698,8 +716,8 @@ class ProgressBar:
         new_x = max(0, (min(new_x, 1)))
         self.pbar_pos = new_x
         self.move_bar(new_x)
-        # if self.seek_action is None: return
-        # self.seek_action(newx/self.width)
+        if 'seek' in self.send_funs:
+            self.send_funs['seek']('', new_x)
 
     def move_bar(self, x):
         new_x = self.total_width * x
@@ -717,6 +735,12 @@ class ProgressBar:
                 self.canvas.xview('moveto', self.pbar_pos)
 
         self.root.after(self.refresh_interval, self.update_pbar)
+
+    def draw_loop_boundaries(self, x1, x2):
+        x1, x2 = x1 * self.total_width, x2 * self.total_width
+        self.canvas.coords(self.outside_loop_rect_l, 0, 0, x1, self.height)
+        self.canvas.coords(self.outside_loop_rect_r, x2, 0, self.total_width, self.height)
+
 
     # drag n drop
     def drag_begin(self, event):
