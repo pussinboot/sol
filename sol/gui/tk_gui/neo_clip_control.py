@@ -25,6 +25,7 @@ class ClipControl:
         self.pad_buts = []
         self.cue_but_states = []
         self.loop_but_states = []
+        self.lp_data = None
         self.pad_but_cmds = []
 
         # all tk vars
@@ -280,6 +281,7 @@ class ClipControl:
         self.loop_selected_text_var.set('selected [{}]'.format(selected_ind))
 
         lp = clip.params['loop_points']
+        self.lp_data = lp
         self.loop_but_states = [(lp[i] is not None) and (None not in lp[i][:2]) for i in range(C.NO_LP)]
         self.pad_reconfigure()
 
@@ -492,8 +494,10 @@ class ClipControl:
             return
         if (self.qp_lp_var.get()):  # if lp selected
             from_what = self.loop_but_states
+            self.progressbar.draw_loop_bars(self.lp_data, from_what)
         else:
             from_what = self.cue_but_states
+            self.progressbar.draw_loop_bars()
         for i, yn in enumerate(from_what):
             but = self.pad_buts[i]
             but.config(state='active')
@@ -652,6 +656,14 @@ class ProgressBar:
         self.width, self.height = width, height
         self._drag_data = {"x": 0, "y": 0, "item": None, "label": None}
 
+        self.colors = {
+            'bg': 'black',
+            'bottom_bar': '#aaa',
+            'pbar': 'gray',
+            'loop_range': '#333',
+            'loop_bar': '#666'
+        }
+
         self.pbar_pos = 0
         self.zoom_factor = 1.0
         self.total_width = width
@@ -667,6 +679,10 @@ class ProgressBar:
         self.qp_lines = [None] * C.NO_Q
         self.qp_labels = [None] * C.NO_Q
 
+        # for loops
+        self.loop_bars = [None] * C.NO_LP
+        self.loop_labels = [None] * C.NO_LP
+
         # fun dispatch
         self.send_funs = {}
 
@@ -675,7 +691,7 @@ class ProgressBar:
         self.frame = ttk.Frame(self.root)
         self.canvas_frame = ttk.Frame(self.frame)
         self.canvas = tk.Canvas(self.canvas_frame, width=width, height=height + 15,
-                                bg="black", scrollregion=(0, 0, width, height))
+                                bg=self.colors['bg'], scrollregion=(0, 0, width, height))
         self.hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL)
         self.hbar.config(command=self.canvas.xview)
         self.canvas.config(xscrollcommand=self.hbar.set)
@@ -692,17 +708,17 @@ class ProgressBar:
     def setup_canvas(self):
         w, h = self.width, self.height
         self.canvasbg = self.canvas.create_rectangle(0, 0, w, h,
-                                                     fill='black', tag='bg')
+                                                     fill=self.colors['bg'], tag='bg')
         self.bottombg = self.canvas.create_rectangle(0, h, w, h + 15,
-                                                     fill='#aaa')
+                                                     fill=self.colors['bottom_bar'])
 
-        self.pbar = self.canvas.create_line(0, 0, 0, h, fill='gray', width=3)
+        self.pbar = self.canvas.create_line(0, 0, 0, h, fill=self.colors['pbar'], width=3)
 
         self.outside_loop_rect_l = self.canvas.create_rectangle(0, 0, 0, 0,
-                                                                fill='#333', stipple='gray50',
+                                                                fill=self.colors['loop_range'], stipple='gray50',
                                                                 tag='loop_limit')
         self.outside_loop_rect_r = self.canvas.create_rectangle(0, 0, 0, 0,
-                                                                fill='#333', stipple='gray50',
+                                                                fill=self.colors['loop_range'], stipple='gray50',
                                                                 tag='loop_limit')
         self.actions_binding()
 
@@ -790,6 +806,44 @@ class ProgressBar:
                     self.add_qp(qp, i)
                 else:
                     self.remove_qp(i)
+
+    def draw_loop_bars(self, lp_data=None, lp_on_off=None):
+        if lp_data is None:
+            print('cler')
+            for i in range(C.NO_LP):
+                self.remove_lp(i)
+            return
+        print('drw')
+        for i, lpd in enumerate(lp_data):
+            if lp_on_off[i]:
+                self.add_lp(i, lpd)
+            else:
+                self.remove_lp(i)
+
+    def add_lp(self, i, lpd):
+        if None in lpd[:3]:
+            self.remove_lp(i)
+            return
+        x1, x2 = lpd[0] * self.total_width, lpd[1] * self.total_width
+        # lpd[2] is loop type .. maybe alternative bar config for this?
+        dy = self.height / C.NO_LP
+        y1 = i * dy
+        y2 = y1 + dy
+
+        self.loop_bars[i] = self.canvas.create_rectangle(x1, y1, x2, y2,
+                                                         fill=self.colors['loop_bar'], tag='l_l')
+        #                                                     activefill=self.bg_color)
+
+    def remove_lp(self, i):
+        print('delet',i)
+        if self.loop_bars[i] is None:
+            return
+        self.canvas.delete(self.loop_bars[i])
+        self.loop_bars[i] = None
+        if self.loop_labels[i] is not None:
+            self.canvas.delete(self.loop_labels[i])
+            self.loop_labels[i] = None
+
 
     def add_qp(self, x_pos, i):
         x_coord = x_pos * self.total_width
