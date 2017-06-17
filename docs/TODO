@@ -2,6 +2,19 @@
   #   #   # #   # #   #
   #    ###  ####   ###
 
+# to finish for 2.1
+    - progressbar really
+        - loop stacked bars
+        - drag ranges
+        - do control hax on scroll
+        - fix reset zoom
+
+    - themeing support
+
+# 2.2
+    - better midi, mayb kb support too
+    - audio analysis see notes below
+
 # to fix gui 
     - difference between doing something from the gui and actually doing it
     - doing something from the gui should ONLY tell magi what it did
@@ -19,3 +32,9 @@ https://gist.github.com/jiaaro/9767512210a1d80a8a0d
 
 https://github.com/ninlith/audio-visualizer-screenlet
 https://github.com/intxcc/pyaudio_portaudio/
+
+# ez midi
+
+use https://github.com/SpotlightKid/python-rtmidi/
+and redo the way config is done lolz
+
