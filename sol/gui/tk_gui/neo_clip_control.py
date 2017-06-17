@@ -713,10 +713,10 @@ class ProgressBar:
         actual_scale = new_factor / self.zoom_factor
         self.canvas.scale(tk.ALL, 0, 0, actual_scale, 1)
 
-        big_bbox = self.canvas.bbox("all")
-        self.canvas.configure(scrollregion=big_bbox)
-        self.zoom_factor = new_factor
         self.total_width = new_factor * self.width
+        bbox = (0, 0, self.total_width, self.height)
+        self.canvas.configure(scrollregion=bbox)
+        self.zoom_factor = new_factor
 
     def reset_zoom(self):
         self.adjust_zoom(1.0 / self.zoom_factor)
