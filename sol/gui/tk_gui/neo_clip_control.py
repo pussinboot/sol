@@ -145,6 +145,13 @@ class ClipControl:
         self.progressbar.send_funs['seek'] = self.send_back['seek']
         self.progressbar.send_funs['cue'] = self.send_back['cue_set']
 
+        self.progressbar.send_funs['loop_set_a'] = self.send_back['loop_set_a']
+        self.progressbar.send_funs['loop_set_b'] = self.send_back['loop_set_b']
+        self.progressbar.send_funs['loop_set_a_cur'] = self.send_back['loop_set_a_cur']
+        self.progressbar.send_funs['loop_set_b_cur'] = self.send_back['loop_set_b_cur']
+
+        self.progressbar.send_funs['loop_select'] = self.send_back['loop_select']
+
         def set_cue(i, pos):
             self.backend.set_cue_point(self.layer, i, pos)
 
@@ -681,6 +688,7 @@ class ProgressBar:
 
         # for loops
         self.loop_bars = [None] * C.NO_LP
+        self.loop_bars_data = [None] * C.NO_LP
         self.loop_labels = [None] * C.NO_LP
 
         # fun dispatch
@@ -729,20 +737,29 @@ class ProgressBar:
                                                              fill=self.colors['loop_bar'], tag='loop_bar')
             #                                                activefill=self.colors['?'])
 
-
     def actions_binding(self):
-        self.canvas.bind("<MouseWheel>", self.scroll_scratch)
-
+        # seeking
         self.canvas.tag_bind("bg", "<B1-Motion>", self.find_mouse)
         self.canvas.tag_bind("bg", "<ButtonRelease-1>", self.find_mouse)
         self.canvas.tag_bind("loop_limit", "<B1-Motion>", self.find_mouse)
         self.canvas.tag_bind("loop_limit", "<ButtonRelease-1>", self.find_mouse)
+
+        # cue points
+        self.canvas.tag_bind("qp_line", "<ButtonPress-1>", self.find_nearest)
+        self.canvas.tag_bind("qp_label", "<ButtonPress-1>", self.find_nearest)
         self.canvas.tag_bind("qp_line", "<B1-Motion>", self.find_mouse)
         self.canvas.tag_bind("qp_line", "<ButtonPress-3>", self.drag_begin)
         self.canvas.tag_bind("qp_line", "<ButtonRelease-3>", self.drag_end)
         self.canvas.tag_bind("qp_line", "<B3-Motion>", self.drag)
-        self.canvas.tag_bind("qp_line", "<ButtonPress-1>", self.find_nearest)
-        self.canvas.tag_bind("qp_label", "<ButtonPress-1>", self.find_nearest)
+
+        # looping
+        self.canvas.tag_bind("loop_bar", "<ButtonPress-1>", self.find_nearest_loop)
+        # self.canvas.tag_bind("loop_label", "<ButtonPress-1>", self.find_nearest_loop)
+        self.canvas.bind("<Shift-ButtonPress-2>", self.loop_set_a_cur)
+        self.canvas.bind("<Control-ButtonPress-2>", self.loop_set_b_cur)
+
+        # scratching
+        self.canvas.bind("<MouseWheel>", self.scroll_scratch)
 
     def scroll_scratch(self, event):
         if not self.currently_scratching:
@@ -799,6 +816,28 @@ class ProgressBar:
 
         self.root.after(self.refresh_interval, self.update_pbar)
 
+    # loop funs
+    def loop_set_a(self, event):
+        if 'loop_set_a' in self.send_funs:
+            new_x = self.canvas.canvasx(event.x) / self.total_width
+            new_x = max(0, (min(new_x, 1)))
+            self.send_funs['loop_set_a']('', new_x)
+
+    def loop_set_b(self, event):
+        if 'loop_set_b' in self.send_funs:
+            new_x = self.canvas.canvasx(event.x) / self.total_width
+            new_x = max(0, (min(new_x, 1)))
+            self.send_funs['loop_set_b']('', new_x)
+
+    def loop_set_a_cur(self, event):
+        if 'loop_set_a_cur' in self.send_funs:
+            self.send_funs['loop_set_a_cur']('', True)
+
+    def loop_set_b_cur(self, event):
+        if 'loop_set_b_cur' in self.send_funs:
+            self.send_funs['loop_set_b_cur']('', True)
+
+
     def draw_loop_boundaries(self, x1, x2):
         x1, x2 = x1 * self.total_width, x2 * self.total_width
         self.canvas.coords(self.outside_loop_rect_l, 0, 0, x1, self.height)
@@ -817,11 +856,9 @@ class ProgressBar:
 
     def draw_loop_bars(self, lp_data=None, lp_on_off=None):
         if lp_data is None:
-            print('cler')
             for i in range(C.NO_LP):
                 self.remove_lp(i)
             return
-        print('drw')
         for i, lpd in enumerate(lp_data):
             if lp_on_off[i]:
                 self.add_lp(i, lpd)
@@ -841,7 +878,6 @@ class ProgressBar:
 
 
     def remove_lp(self, i):
-        print('delet', i)
         if self.loop_bars[i] is None:
             return
         self.canvas.coords(self.loop_bars[i], 0, 0, 0, 0)
@@ -934,6 +970,18 @@ class ProgressBar:
         else:
             return
         self.send_funs['cue']('', i)
+
+    def find_nearest_loop(self, event):
+        if 'loop_select' not in self.send_funs:
+            return
+        item = self.canvas.find_closest(event.x, event.y, halo=5)[0]
+        if item in self.loop_bars:
+            i = self.loop_bars.index(item)
+        elif item in self.loop_labels:
+            i = self.loop_labels.index(item)
+        else:
+            return
+        self.send_funs['loop_select']('', i)
 
 
 if __name__ == '__main__':
