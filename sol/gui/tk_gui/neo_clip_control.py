@@ -702,6 +702,7 @@ class ProgressBar:
         self.frame.pack(anchor=tk.W, side=tk.TOP, expand=tk.YES, fill=tk.BOTH)
 
         self.setup_canvas()
+        self.setup_loopbars()
 
         self.root.after(self.refresh_interval, self.update_pbar)
 
@@ -721,6 +722,13 @@ class ProgressBar:
                                                                 fill=self.colors['loop_range'], stipple='gray50',
                                                                 tag='loop_limit')
         self.actions_binding()
+
+    def setup_loopbars(self):
+        for i in range(C.NO_LP):
+            self.loop_bars[i] = self.canvas.create_rectangle(0, 0, 0, 0,
+                                                             fill=self.colors['loop_bar'], tag='loop_bar')
+            #                                                activefill=self.colors['?'])
+
 
     def actions_binding(self):
         self.canvas.bind("<MouseWheel>", self.scroll_scratch)
@@ -829,20 +837,16 @@ class ProgressBar:
         dy = self.height / C.NO_LP
         y1 = i * dy
         y2 = y1 + dy
+        self.canvas.coords(self.loop_bars[i], x1, y1, x2, y2)
 
-        self.loop_bars[i] = self.canvas.create_rectangle(x1, y1, x2, y2,
-                                                         fill=self.colors['loop_bar'], tag='l_l')
-        #                                                     activefill=self.bg_color)
 
     def remove_lp(self, i):
-        print('delet',i)
+        print('delet', i)
         if self.loop_bars[i] is None:
             return
-        self.canvas.delete(self.loop_bars[i])
-        self.loop_bars[i] = None
+        self.canvas.coords(self.loop_bars[i], 0, 0, 0, 0)
         if self.loop_labels[i] is not None:
-            self.canvas.delete(self.loop_labels[i])
-            self.loop_labels[i] = None
+            self.canvas.coords(self.loop_labels[i], 0, 0, 0, 0)
 
 
     def add_qp(self, x_pos, i):
