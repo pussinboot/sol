@@ -5,10 +5,10 @@
 # to finish for 2.1
     - progressbar really
         - loop stacked bars
-            - for this i need to just always have the bars
-            - when not active hide them off screen?
-        - drag ranges
-            - set a/b 
+            - add labels
+            - color coding??.. programmatically set colors because no lp can change..
+
+    - make sure no lp is <= no qp....
 
     - themeing support
 
