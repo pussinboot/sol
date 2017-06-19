@@ -36,6 +36,7 @@ class ClipControl:
         self.speed_var, self.xtra_speed_var = tk.DoubleVar(), tk.StringVar()
 
         self.loop_selected_text_var = tk.StringVar()
+
         # these are overriden upon creation
         self.qp_lp_var = None
         self.loop_on_var = None
@@ -43,8 +44,6 @@ class ClipControl:
 
         self.loop_on_toggle = None
         self.loop_type_switch = None
-
-        # tk
 
         # clip parameter to update function
         self.param_dispatch = {
@@ -110,63 +109,9 @@ class ClipControl:
         # |         |         |         |         | [loop in/out]  |
         # | ________|_________|_________|_________|________________|
 
-        self.root_frame = ttk.Frame(self.root)
-        self.root_frame.dnd_accept = self.dnd_accept  # for dnd
+        self.setup_main_tk()
 
-        self.info_frame = ttk.Frame(self.root_frame, relief='ridge', padding='1')
-        self.name_label = ttk.Label(self.info_frame, textvariable=self.name_var)
-
-        left_frame_padding = '2 0 5 0'
-
-        self.top_frame = ttk.Frame(self.root_frame)
-        self.progress_frame = ttk.Frame(self.top_frame, padding=left_frame_padding)
-        self.top_right_frame = ttk.Frame(self.top_frame)
-
-        self.bottom_frame = ttk.Frame(self.root_frame)
-        self.pad_but_frame = ttk.Frame(self.bottom_frame, padding=left_frame_padding)
-        self.bottom_right_frame = ttk.Frame(self.bottom_frame)
-
-        # pack it up
-        self.root_frame.pack(fill=tk.X, expand=True)
-
-        self.info_frame.pack(side=tk.TOP, fill=tk.X, expand=True)
-        self.name_label.pack(expand=True)
-
-        self.top_frame.pack(side=tk.TOP)
-        self.progress_frame.pack(side=tk.LEFT)
-        self.top_right_frame.pack(side=tk.LEFT)
-
-        self.bottom_frame.pack(side=tk.TOP)
-        self.pad_but_frame.pack(side=tk.LEFT)
-        self.bottom_right_frame.pack(side=tk.LEFT)
-
-        # progressbar
-        self.progressbar = ProgressBar(self.progress_frame, self.width, 85)
-        self.progressbar.send_funs['seek'] = self.send_back['seek']
-        self.progressbar.send_funs['cue'] = self.send_back['cue_set']
-
-        self.progressbar.send_funs['loop_set_a'] = self.send_back['loop_set_a']
-        self.progressbar.send_funs['loop_set_b'] = self.send_back['loop_set_b']
-        self.progressbar.send_funs['loop_set_a_cur'] = self.send_back['loop_set_a_cur']
-        self.progressbar.send_funs['loop_set_b_cur'] = self.send_back['loop_set_b_cur']
-
-        self.progressbar.send_funs['loop_select'] = self.send_back['loop_select']
-
-        def set_cue(i, pos):
-            self.backend.set_cue_point(self.layer, i, pos)
-
-        self.progressbar.send_funs['set_cue'] = set_cue
-
-        # scroll scratch
-        for k in ['scratch_start', 'scratch_do', 'scratch_stop']:
-            self.progressbar.send_funs[k] = self.send_back[k]
-
-        # control areas
-        self.setup_control_frame_top()
-        self.setup_control_frame_bottom()
-
-        # pads
-        self.setup_pads()
+    # curry
 
     def gen_update_cmd(self, key, var):
         fun = self.send_back[key]
@@ -197,6 +142,24 @@ class ClipControl:
 
         return fun_tor
 
+    # send funs
+
+    def activate_pad(self, i):
+        if (self.qp_lp_var.get()):  # if lp selected
+            fun_to_call = self.send_back['loop_select']
+        else:
+            fun_to_call = self.send_back['cue_set']
+        fun_to_call('', i)
+
+    def delet_pad(self, i):
+        if (self.qp_lp_var.get()):  # if lp selected
+            fun_to_call = self.send_back['loop_clear']
+        else:
+            fun_to_call = self.send_back['cue_clear']
+        fun_to_call('', i)
+
+    # update dispatch
+
     def update_cur_pos(self, pos):
         self.cur_pos = pos
         self.progressbar.pbar_pos = pos
@@ -213,7 +176,7 @@ class ClipControl:
         self.name_label.bind("<Double-Button-1>", self.change_name_dialog)
 
     def update_clip_params(self, clip, param=None):
-        print('update', param)
+        print('updating', param)
         if param in self.param_dispatch:
             self.param_dispatch[param](clip)
         elif param is None:
@@ -234,15 +197,6 @@ class ClipControl:
             to_i = bisect.bisect_left(cumm_text_meas, self.width - 25 - 5 * C.FONT_WIDTHS['.'])
             new_text = new_text[:to_i].strip() + ".."
         self.name_var.set(new_text)
-
-    def change_name_dialog(self, *args):
-        cur_clip = self.backend.clip_storage.current_clips[self.layer]
-        if cur_clip is None:
-            return
-        new_name = tksimpledialog.askstring("rename clip", '', initialvalue=cur_clip.name)
-        if new_name:
-            # change name
-            self.backend.rename_clip(cur_clip, new_name)  # have to do this to update search properly etc
 
     def update_speed(self, clip):
         if clip is None:
@@ -324,6 +278,70 @@ class ClipControl:
 
         if self.loop_type_switch is not None:
             self.loop_type_switch.update(loop_type)
+
+    def pad_reconfigure(self, *args):
+        if self.cur_clip is None:
+            return
+        if (self.qp_lp_var.get()):  # if lp selected
+            from_what = self.loop_but_states
+            self.progressbar.draw_loop_bars(self.lp_data, from_what)
+        else:
+            from_what = self.cue_but_states
+            self.progressbar.draw_loop_bars()
+        for i, yn in enumerate(from_what):
+            but = self.pad_buts[i]
+            but.config(state='active')
+
+            but.bind("<ButtonPress-1>", self.pad_but_cmds[i][0])
+            but.bind("<ButtonPress-3>", self.pad_but_cmds[i][1])
+
+            if yn:
+                but.config(relief='raised')
+            else:
+                but.config(relief='flat')
+
+    # tk setup
+
+    def setup_main_tk(self):
+        self.root_frame = ttk.Frame(self.root)
+        self.root_frame.dnd_accept = self.dnd_accept  # for dnd
+
+        self.info_frame = ttk.Frame(self.root_frame, relief='ridge', padding='1')
+        self.name_label = ttk.Label(self.info_frame, textvariable=self.name_var)
+
+        left_frame_padding = '2 0 5 0'
+
+        self.top_frame = ttk.Frame(self.root_frame)
+        self.progress_frame = ttk.Frame(self.top_frame, padding=left_frame_padding)
+        self.top_right_frame = ttk.Frame(self.top_frame)
+
+        self.bottom_frame = ttk.Frame(self.root_frame)
+        self.pad_but_frame = ttk.Frame(self.bottom_frame, padding=left_frame_padding)
+        self.bottom_right_frame = ttk.Frame(self.bottom_frame)
+
+        # pack it up
+        self.root_frame.pack(fill=tk.X, expand=True)
+
+        self.info_frame.pack(side=tk.TOP, fill=tk.X, expand=True)
+        self.name_label.pack(expand=True)
+
+        self.top_frame.pack(side=tk.TOP)
+        self.progress_frame.pack(side=tk.LEFT)
+        self.top_right_frame.pack(side=tk.LEFT)
+
+        self.bottom_frame.pack(side=tk.TOP)
+        self.pad_but_frame.pack(side=tk.LEFT)
+        self.bottom_right_frame.pack(side=tk.LEFT)
+
+        # control areas
+        self.setup_control_frame_top()
+        self.setup_control_frame_bottom()
+
+        # progressbar
+        self.setup_progressbar()
+
+        # pads
+        self.setup_pads()
 
     def setup_control_frame_top(self):
         self.control_but_frame = ttk.Frame(self.top_right_frame)
@@ -482,40 +500,27 @@ class ClipControl:
             # if i == 1:
             #     ttk.Separator(self.loop_but_ctrl_frame).pack(side=tk.LEFT)
 
-    def activate_pad(self, i):
-        if (self.qp_lp_var.get()):  # if lp selected
-            fun_to_call = self.send_back['loop_select']
-        else:
-            fun_to_call = self.send_back['cue_set']
-        fun_to_call('', i)
+    def setup_progressbar(self):
+        self.progressbar = ProgressBar(self.progress_frame, self.width, 85)
 
-    def delet_pad(self, i):
-        if (self.qp_lp_var.get()):  # if lp selected
-            fun_to_call = self.send_back['loop_clear']
-        else:
-            fun_to_call = self.send_back['cue_clear']
-        fun_to_call('', i)
+        self.progressbar.send_funs['seek'] = self.send_back['seek']
+        self.progressbar.send_funs['cue'] = self.send_back['cue_set']
 
-    def pad_reconfigure(self, *args):
-        if self.cur_clip is None:
-            return
-        if (self.qp_lp_var.get()):  # if lp selected
-            from_what = self.loop_but_states
-            self.progressbar.draw_loop_bars(self.lp_data, from_what)
-        else:
-            from_what = self.cue_but_states
-            self.progressbar.draw_loop_bars()
-        for i, yn in enumerate(from_what):
-            but = self.pad_buts[i]
-            but.config(state='active')
+        self.progressbar.send_funs['loop_set_a'] = self.send_back['loop_set_a']
+        self.progressbar.send_funs['loop_set_b'] = self.send_back['loop_set_b']
+        self.progressbar.send_funs['loop_set_a_cur'] = self.send_back['loop_set_a_cur']
+        self.progressbar.send_funs['loop_set_b_cur'] = self.send_back['loop_set_b_cur']
 
-            but.bind("<ButtonPress-1>", self.pad_but_cmds[i][0])
-            but.bind("<ButtonPress-3>", self.pad_but_cmds[i][1])
+        self.progressbar.send_funs['loop_select'] = self.send_back['loop_select']
 
-            if yn:
-                but.config(relief='raised')
-            else:
-                but.config(relief='flat')
+        def set_cue(i, pos):
+            self.backend.set_cue_point(self.layer, i, pos)
+
+        self.progressbar.send_funs['set_cue'] = set_cue
+
+        # scroll scratch
+        for k in ['scratch_start', 'scratch_do', 'scratch_stop']:
+            self.progressbar.send_funs[k] = self.send_back[k]
 
     def setup_pads(self):
         n_buts = C.NO_Q
@@ -553,6 +558,15 @@ class ClipControl:
                 self.cue_but_states.append(False)
                 self.loop_but_states.append(False)
                 self.pad_but_cmds.append(gen_but_funs(i))
+
+    def change_name_dialog(self, *args):
+        cur_clip = self.backend.clip_storage.current_clips[self.layer]
+        if cur_clip is None:
+            return
+        new_name = tksimpledialog.askstring("rename clip", '', initialvalue=cur_clip.name)
+        if new_name:
+            # change name
+            self.backend.rename_clip(cur_clip, new_name)  # have to do this to update search properly etc
 
     # tkdnd stuff
     def dnd_accept(self, source, event):
@@ -714,6 +728,8 @@ class ProgressBar:
 
         self.root.after(self.refresh_interval, self.update_pbar)
 
+    # # # setup
+
     def setup_canvas(self):
         w, h = self.width, self.height
         self.canvasbg = self.canvas.create_rectangle(0, 0, w, h,
@@ -764,43 +780,9 @@ class ProgressBar:
         # scratching
         self.canvas.bind("<MouseWheel>", self.scroll_scratch)
 
-    def scroll_scratch(self, event):
-        if not self.currently_scratching:
-            self.currently_scratching = True
-            self.send_funs['scratch_start']('', True)
-        dt = event.delta / 12
-        self.send_funs['scratch_do']('', dt)
-        if self.scratch_job is not None:
-            self.root.after_cancel(self.scratch_job)
-        self.scratch_job = self.root.after(25, self.stop_scratch)
+    # # # draw helpers
 
-    def stop_scratch(self):
-        self.scratch_job = None
-        self.currently_scratching = False
-        self.send_funs['scratch_stop']('', True)
-
-    def adjust_zoom(self, by_factor):
-        new_factor = self.zoom_factor * by_factor
-        new_factor = max(1.0, new_factor)
-        actual_scale = new_factor / self.zoom_factor
-        self.canvas.scale(tk.ALL, 0, 0, actual_scale, 1)
-
-        self.total_width = new_factor * self.width
-        bbox = (0, 0, self.total_width, self.height)
-        self.canvas.configure(scrollregion=bbox)
-        self.zoom_factor = new_factor
-
-    def reset_zoom(self):
-        self.adjust_zoom(1.0 / self.zoom_factor)
-
-    # progress bar follow mouse
-    def find_mouse(self, event):
-        new_x = self.canvas.canvasx(event.x) / self.total_width
-        new_x = max(0, (min(new_x, 1)))
-        self.pbar_pos = new_x
-        self.move_bar(new_x)
-        if 'seek' in self.send_funs:
-            self.send_funs['seek']('', new_x)
+    # the actual bar
 
     def move_bar(self, x):
         new_x = self.total_width * x
@@ -819,19 +801,7 @@ class ProgressBar:
 
         self.root.after(self.refresh_interval, self.update_pbar)
 
-    # loop funs
-    def loop_set_a_cur(self, event):
-        if 'loop_set_a_cur' in self.send_funs:
-            self.send_funs['loop_set_a_cur']('', True)
-
-    def loop_set_b_cur(self, event):
-        if 'loop_set_b_cur' in self.send_funs:
-            self.send_funs['loop_set_b_cur']('', True)
-
-    def draw_loop_boundaries(self, x1, x2):
-        x1, x2 = x1 * self.total_width, x2 * self.total_width
-        self.canvas.coords(self.outside_loop_rect_l, 0, 0, x1, self.height)
-        self.canvas.coords(self.outside_loop_rect_r, x2, 0, self.total_width, self.height)
+    # cue points
 
     def draw_cue_points(self, qp_data=None, qp_on_off=None):
         if qp_data is None:
@@ -843,37 +813,6 @@ class ProgressBar:
                     self.add_qp(qp, i)
                 else:
                     self.remove_qp(i)
-
-    def draw_loop_bars(self, lp_data=None, lp_on_off=None):
-        if lp_data is None:
-            for i in range(C.NO_LP):
-                self.remove_lp(i)
-            return
-        for i, lpd in enumerate(lp_data):
-            if lp_on_off[i]:
-                self.add_lp(i, lpd)
-            else:
-                self.remove_lp(i)
-
-    def add_lp(self, i, lpd):
-        if None in lpd[:3]:
-            self.remove_lp(i)
-            return
-        x1, x2 = lpd[0] * self.total_width, lpd[1] * self.total_width
-        # lpd[2] is loop type .. maybe alternative bar config for this?
-        dy = self.height / C.NO_LP
-        y1 = i * dy
-        y2 = y1 + dy
-        self.canvas.coords(self.loop_bars[i], x1, y1, x2, y2)
-
-
-    def remove_lp(self, i):
-        if self.loop_bars[i] is None:
-            return
-        self.canvas.coords(self.loop_bars[i], 0, 0, 0, 0)
-        if self.loop_labels[i] is not None:
-            self.canvas.coords(self.loop_labels[i], 0, 0, 0, 0)
-
 
     def add_qp(self, x_pos, i):
         x_coord = x_pos * self.total_width
@@ -906,7 +845,96 @@ class ProgressBar:
                 self.canvas.delete(label_item)
             self.qp_labels[i] = None
 
+    # loop points
+
+    def draw_loop_boundaries(self, x1, x2):
+        x1, x2 = x1 * self.total_width, x2 * self.total_width
+        self.canvas.coords(self.outside_loop_rect_l, 0, 0, x1, self.height)
+        self.canvas.coords(self.outside_loop_rect_r, x2, 0, self.total_width, self.height)
+
+    def draw_loop_bars(self, lp_data=None, lp_on_off=None):
+        if lp_data is None:
+            for i in range(C.NO_LP):
+                self.remove_lp(i)
+            return
+        for i, lpd in enumerate(lp_data):
+            if lp_on_off[i]:
+                self.add_lp(i, lpd)
+            else:
+                self.remove_lp(i)
+
+    def add_lp(self, i, lpd):
+        if None in lpd[:3]:
+            self.remove_lp(i)
+            return
+        x1, x2 = lpd[0] * self.total_width, lpd[1] * self.total_width
+        # lpd[2] is loop type .. maybe alternative bar config for this?
+        dy = self.height / C.NO_LP
+        y1 = i * dy
+        y2 = y1 + dy
+        self.canvas.coords(self.loop_bars[i], x1, y1, x2, y2)
+
+    def remove_lp(self, i):
+        if self.loop_bars[i] is None:
+            return
+        self.canvas.coords(self.loop_bars[i], 0, 0, 0, 0)
+        if self.loop_labels[i] is not None:
+            self.canvas.coords(self.loop_labels[i], 0, 0, 0, 0)
+
+    # # # event actions
+
+    def adjust_zoom(self, by_factor):
+        new_factor = self.zoom_factor * by_factor
+        new_factor = max(1.0, new_factor)
+        actual_scale = new_factor / self.zoom_factor
+        self.canvas.scale(tk.ALL, 0, 0, actual_scale, 1)
+
+        self.total_width = new_factor * self.width
+        bbox = (0, 0, self.total_width, self.height)
+        self.canvas.configure(scrollregion=bbox)
+        self.zoom_factor = new_factor
+
+    def reset_zoom(self):
+        self.adjust_zoom(1.0 / self.zoom_factor)
+
+    def find_mouse(self, event):
+        # for progress bar to follow mouse
+        new_x = self.canvas.canvasx(event.x) / self.total_width
+        new_x = max(0, (min(new_x, 1)))
+        self.pbar_pos = new_x
+        self.move_bar(new_x)
+        if 'seek' in self.send_funs:
+            self.send_funs['seek']('', new_x)
+
+    # loop funs
+
+    def loop_set_a_cur(self, event):
+        if 'loop_set_a_cur' in self.send_funs:
+            self.send_funs['loop_set_a_cur']('', True)
+
+    def loop_set_b_cur(self, event):
+        if 'loop_set_b_cur' in self.send_funs:
+            self.send_funs['loop_set_b_cur']('', True)
+
+    # scratching
+
+    def scroll_scratch(self, event):
+        if not self.currently_scratching:
+            self.currently_scratching = True
+            self.send_funs['scratch_start']('', True)
+        dt = event.delta / 12
+        self.send_funs['scratch_do']('', dt)
+        if self.scratch_job is not None:
+            self.root.after_cancel(self.scratch_job)
+        self.scratch_job = self.root.after(25, self.stop_scratch)
+
+    def stop_scratch(self):
+        self.scratch_job = None
+        self.currently_scratching = False
+        self.send_funs['scratch_stop']('', True)
+
     # drag n drop
+
     def drag_begin(self, event):
         # record the item, its location, any associated labels and what type it is
         item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y), halo=5)[0]
