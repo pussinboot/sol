@@ -285,9 +285,11 @@ class ClipControl:
         if (self.qp_lp_var.get()):  # if lp selected
             from_what = self.loop_but_states
             self.progressbar.draw_loop_bars(self.lp_data, from_what)
+            self.progressbar.exit_cue_mode_binds()
         else:
             from_what = self.cue_but_states
             self.progressbar.draw_loop_bars()
+            self.progressbar.cue_mode_only_binds()
         for i, yn in enumerate(from_what):
             but = self.pad_buts[i]
             but.config(state='active')
@@ -724,7 +726,6 @@ class ProgressBar:
         self.frame.pack(anchor=tk.W, side=tk.TOP, expand=tk.YES, fill=tk.BOTH)
 
         self.setup_canvas()
-        self.setup_loopbars()
 
         self.root.after(self.refresh_interval, self.update_pbar)
 
@@ -736,6 +737,7 @@ class ProgressBar:
                                                      fill=self.colors['bg'], tag='bg')
         self.bottombg = self.canvas.create_rectangle(0, h, w, h + 15,
                                                      fill=self.colors['bottom_bar'])
+        self.setup_loopbars()
 
         self.pbar = self.canvas.create_line(0, 0, 0, h, fill=self.colors['pbar'], width=3)
 
@@ -753,12 +755,19 @@ class ProgressBar:
                                                              fill=self.colors['loop_bar'], tag='loop_bar')
             #                                                activefill=self.colors['?'])
 
+    def cue_mode_only_binds(self):
+        self.canvas.tag_bind("loop_limit", "<B1-Motion>", self.find_mouse)
+        self.canvas.tag_bind("loop_limit", "<ButtonRelease-1>", self.find_mouse)
+
+    def exit_cue_mode_binds(self):
+        self.canvas.tag_unbind("loop_limit", "<B1-Motion>")
+        self.canvas.tag_unbind("loop_limit", "<ButtonRelease-1>")
+
     def actions_binding(self):
         # seeking
         self.canvas.tag_bind("bg", "<B1-Motion>", self.find_mouse)
         self.canvas.tag_bind("bg", "<ButtonRelease-1>", self.find_mouse)
-        self.canvas.tag_bind("loop_limit", "<B1-Motion>", self.find_mouse)
-        self.canvas.tag_bind("loop_limit", "<ButtonRelease-1>", self.find_mouse)
+
 
         # cue points
         self.canvas.tag_bind("qp_line", "<ButtonPress-1>", self.find_nearest)
@@ -862,6 +871,15 @@ class ProgressBar:
                 self.add_lp(i, lpd)
             else:
                 self.remove_lp(i)
+        top_height, nei = self.do_loop_gravity()
+        dy = self.height / top_height
+
+        for i in nei:
+            lpd = self.loop_bars_data[i]
+            self.canvas.coords(self.loop_bars[i],
+                               lpd[0], dy * lpd[1],
+                               lpd[2], dy * lpd[3])
+
 
     def add_lp(self, i, lpd):
         if None in lpd[:3]:
@@ -869,17 +887,46 @@ class ProgressBar:
             return
         x1, x2 = lpd[0] * self.total_width, lpd[1] * self.total_width
         # lpd[2] is loop type .. maybe alternative bar config for this?
-        dy = self.height / C.NO_LP
-        y1 = i * dy
-        y2 = y1 + dy
-        self.canvas.coords(self.loop_bars[i], x1, y1, x2, y2)
+        # dy = self.height / C.NO_LP
+        # y1 = i * dy
+        # y2 = y1 + dy
+        self.loop_bars_data[i] = [x1, 0, x2, 1]
+        # self.canvas.coords(self.loop_bars[i], x1, y1, x2, y2)
 
     def remove_lp(self, i):
+        self.loop_bars_data[i] = None
         if self.loop_bars[i] is None:
             return
         self.canvas.coords(self.loop_bars[i], 0, 0, 0, 0)
         if self.loop_labels[i] is not None:
             self.canvas.coords(self.loop_labels[i], 0, 0, 0, 0)
+
+    def do_loop_gravity(self):
+        lbbd = self.loop_bars_data
+        # non empty indices
+        nei = [i for i, lpd in enumerate(lbbd) if lpd is not None]
+
+        def check_intersect(i1, i2):
+            b0, b1 = lbbd[i1][0], lbbd[i1][2]
+            c0, c1 = lbbd[i2][0], lbbd[i2][2]
+            if c0 < b0:
+                return c1 > b0
+            else:
+                return c0 < b1
+
+        for j in range(1, len(nei)):
+            # check any of the below loop ranges for intersect
+            # next bar must go on top of it
+            intersect_heights = [lbbd[nei[k]][3]
+                                 if check_intersect(nei[k], nei[j])
+                                 else 0
+                                 for k in range(0, j)]
+            new_y1 = max(intersect_heights)
+            lbbd[nei[j]][1] = new_y1
+            lbbd[nei[j]][3] = new_y1 + 1
+        # return the max height & nei
+        return (new_y1 + 1, nei)
+
 
     # # # event actions
 
