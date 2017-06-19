@@ -661,7 +661,7 @@ class ToggleButton:
 class ProgressBar:
     def __init__(self, root, width=300, height=33):
         self.width, self.height = width, height
-        self._drag_data = {"x": 0, "y": 0, "item": None, "label": None}
+        self._drag_data = {'x': 0, 'y': 0, 'item': None, 'label': [], 'type': None}
 
         self.colors = {
             'bg': 'black',
@@ -757,6 +757,9 @@ class ProgressBar:
         # self.canvas.tag_bind("loop_label", "<ButtonPress-1>", self.find_nearest_loop)
         self.canvas.bind("<Shift-ButtonPress-2>", self.loop_set_a_cur)
         self.canvas.bind("<Control-ButtonPress-2>", self.loop_set_b_cur)
+        self.canvas.tag_bind("loop_limit", "<ButtonPress-3>", self.drag_begin)
+        self.canvas.tag_bind("loop_limit", "<ButtonRelease-3>", self.drag_end)
+        self.canvas.tag_bind("loop_limit", "<B3-Motion>", self.drag)
 
         # scratching
         self.canvas.bind("<MouseWheel>", self.scroll_scratch)
@@ -817,18 +820,6 @@ class ProgressBar:
         self.root.after(self.refresh_interval, self.update_pbar)
 
     # loop funs
-    def loop_set_a(self, event):
-        if 'loop_set_a' in self.send_funs:
-            new_x = self.canvas.canvasx(event.x) / self.total_width
-            new_x = max(0, (min(new_x, 1)))
-            self.send_funs['loop_set_a']('', new_x)
-
-    def loop_set_b(self, event):
-        if 'loop_set_b' in self.send_funs:
-            new_x = self.canvas.canvasx(event.x) / self.total_width
-            new_x = max(0, (min(new_x, 1)))
-            self.send_funs['loop_set_b']('', new_x)
-
     def loop_set_a_cur(self, event):
         if 'loop_set_a_cur' in self.send_funs:
             self.send_funs['loop_set_a_cur']('', True)
@@ -836,7 +827,6 @@ class ProgressBar:
     def loop_set_b_cur(self, event):
         if 'loop_set_b_cur' in self.send_funs:
             self.send_funs['loop_set_b_cur']('', True)
-
 
     def draw_loop_boundaries(self, x1, x2):
         x1, x2 = x1 * self.total_width, x2 * self.total_width
@@ -918,46 +908,70 @@ class ProgressBar:
 
     # drag n drop
     def drag_begin(self, event):
-        # record the item and its location
+        # record the item, its location, any associated labels and what type it is
         item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y), halo=5)[0]
-        if 'qp_line' not in self.canvas.gettags(item):
+        item_tags = self.canvas.gettags(item)
+        if not ('qp_line' or 'loop_limit' in item_tags):
             return
         self._drag_data["item"] = item
-        self._drag_data["label"] = self.qp_labels[self.qp_lines.index(item)]
-        self._drag_data["x"] = event.x
+        if 'qp_line' in item_tags:
+            self._drag_data['label'] = self.qp_labels[self.qp_lines.index(item)]
+            self._drag_data['type'] = 'qp'
+        else:
+            self._drag_data['type'] = 'll'
+        self._drag_data['x'] = event.x
 
     def drag_end(self, event):
-        if self._drag_data["item"] is None:
+        if self._drag_data['item'] is None:
             return
-        if 'set_cue' in self.send_funs:
+        # just to be safe
+        if 'set_cue' in self.send_funs:  # don't do anything until we've set our funs
             new_x = self.canvas.canvasx(event.x)
             if new_x < 0:
                 new_x = 0
             elif new_x > self.total_width:
                 new_x = self.total_width - 2
-            i = self.qp_lines.index(self._drag_data["item"])
-            self.send_funs['set_cue'](i, new_x / self.total_width)
+            send_x = new_x / self.total_width
+            if self._drag_data['type'] == 'qp':
+                i = self.qp_lines.index(self._drag_data["item"])
+                self.send_funs['set_cue'](i, send_x)
+            elif self._drag_data['type'] == 'll':
+                if self._drag_data['item'] == self.outside_loop_rect_l:
+                    self.send_funs['loop_set_a']('', send_x)
+                else:
+                    self.send_funs['loop_set_b']('', send_x)
+
         # reset the drag information
-        self._drag_data["item"] = None
-        self._drag_data["label"] = None
-        self._drag_data["x"] = 0
+        self._drag_data['item'] = None
+        self._drag_data['label'] = []
+        self._drag_data['type'] = None
+        self._drag_data['x'] = 0
 
     def drag(self, event):
-        # compute how much this object has moved
-        delta_x = event.x - self._drag_data["x"]
         # move the object the appropriate amount
-        if self._drag_data["item"]:
-            coord = self.canvas.coords(self._drag_data["item"])
-            if coord[0] + delta_x < 0:
-                delta_x = -coord[0]
-            elif coord[2] + delta_x > self.total_width:
-                delta_x = self.total_width - coord[2]
+        if self._drag_data['item']:
+            if self._drag_data['type'] == 'qp':
+                # compute how much this object has moved
+                delta_x = event.x - self._drag_data['x']
+                coord = self.canvas.coords(self._drag_data['item'])
+                if coord[0] + delta_x < 0:
+                    delta_x = -coord[0]
+                elif coord[2] + delta_x > self.total_width:
+                    delta_x = self.total_width - coord[2]
 
-            self.canvas.move(self._drag_data["item"], delta_x, 0)  # delta_y)
-            for label_item in self._drag_data["label"]:
-                self.canvas.move(label_item, delta_x, 0)
+                self.canvas.move(self._drag_data['item'], delta_x, 0)  # delta_y)
+                for label_item in self._drag_data['label']:
+                    self.canvas.move(label_item, delta_x, 0)
+            else:
+                if self._drag_data['item'] == self.outside_loop_rect_l:
+                    self.canvas.coords(self.outside_loop_rect_l,
+                                       0, 0, event.x, self.height)
+                else:
+                    self.canvas.coords(self.outside_loop_rect_r,
+                                       event.x, 0, self.total_width, self.height)
+
         # record the new position
-        self._drag_data["x"] = event.x
+        self._drag_data['x'] = event.x
 
     def find_nearest(self, event):
         if 'cue' not in self.send_funs:
