@@ -60,6 +60,7 @@ class GlobalConfig:
             'FONT_WIDTHS'		: {},
             'FONT_HEIGHT'		: 10,
             'FONT_AVG_WIDTH'	: 5,
+            'SELECTED_THEME'    : 'light_gray',
         }
 
         self.default_options['RESOLUME_SAVE_DIR'] = os.path.expanduser(

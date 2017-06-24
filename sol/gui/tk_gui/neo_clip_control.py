@@ -9,6 +9,9 @@ import bisect
 from sol.config import GlobalConfig
 C = GlobalConfig()
 
+# temp
+import light_gray_theme as current_theme
+import themer
 
 class ClipControl:
     def __init__(self, root, backend, layer):
@@ -92,6 +95,15 @@ class ClipControl:
         self.speed_var.trace('w', self.gen_update_cmd('speed', self.speed_var))
         self.sens_var.trace('w', self.gen_update_cmd('sens', self.sens_var))
 
+        # colors
+        self.no_pad_rows = 1
+        if C.NO_Q > 4:
+            self.no_pad_rows = C.NO_Q // 4
+            if C.NO_Q % 4 != 0:
+                self.no_pad_rows += 1
+
+        self.pad_colors = [themer.linerp_colors(current_theme.pad_colors[i], self.no_pad_rows) for i in range(4)]
+
         # let's setup the gooey
         # it looks like
         # __________________________________________________________
@@ -127,7 +139,7 @@ class ClipControl:
         val = default_value
 
         def fun_tor(*args):
-            print(key, val)
+            # print(key, val)
             fun('', val)
 
         return fun_tor
@@ -176,7 +188,7 @@ class ClipControl:
         self.name_label.bind("<Double-Button-1>", self.change_name_dialog)
 
     def update_clip_params(self, clip, param=None):
-        print('updating', param)
+        # print('updating', param)
         if param in self.param_dispatch:
             self.param_dispatch[param](clip)
         elif param is None:
@@ -233,17 +245,21 @@ class ClipControl:
         self.update_loop_on(clip)
         self.update_loop_type(clip)
 
+        lp = None
+
         selected_ind = '-'
         if clip is not None:
             ls = clip.params['loop_selection']
             if ls >= 0:
                 selected_ind = str(ls)
+            lp = clip.params['loop_points']
+            self.loop_but_states = [(lp[i] is not None) and (None not in lp[i][:2]) for i in range(C.NO_LP)]
+        else:
+            self.loop_but_states = [False for i in range(C.NO_LP)]
 
         self.loop_selected_text_var.set('selected [{}]'.format(selected_ind))
 
-        lp = clip.params['loop_points']
         self.lp_data = lp
-        self.loop_but_states = [(lp[i] is not None) and (None not in lp[i][:2]) for i in range(C.NO_LP)]
         self.pad_reconfigure()
 
     def update_loop_on(self, clip=None):
@@ -293,19 +309,21 @@ class ClipControl:
         for i, yn in enumerate(from_what):
             but = self.pad_buts[i]
             but.config(state='active')
-
             but.bind("<ButtonPress-1>", self.pad_but_cmds[i][0])
             but.bind("<ButtonPress-3>", self.pad_but_cmds[i][1])
 
             if yn:
+                r, c = i // 4, i % 4
+                but.config(background=self.pad_colors[c][r])
                 but.config(relief='raised')
             else:
+                but.config(background='')
                 but.config(relief='flat')
 
     # tk setup
 
     def setup_main_tk(self):
-        self.root_frame = ttk.Frame(self.root)
+        self.root_frame = ttk.Frame(self.root, padding='5 1 5 2')
         self.root_frame.dnd_accept = self.dnd_accept  # for dnd
 
         self.info_frame = ttk.Frame(self.root_frame, relief='ridge', padding='1')
@@ -524,16 +542,13 @@ class ClipControl:
         for k in ['scratch_start', 'scratch_do', 'scratch_stop']:
             self.progressbar.send_funs[k] = self.send_back[k]
 
+        # colors
+        self.progressbar.colors['loop_bars'] = self.pad_colors
+        self.progressbar.setup_after_color_set()
+
     def setup_pads(self):
-        n_buts = C.NO_Q
-        n_rows = 1
         pad_x = self.width // 8 - 4
         pad_str = '{0} 15 {0} 15'.format(pad_x)
-
-        if n_buts > 4:
-            n_rows = n_buts // 4
-            if n_buts % 4 != 0:
-                n_rows += 1
 
         def gen_but_funs(no):
             i = no
@@ -546,7 +561,7 @@ class ClipControl:
 
             return [activate, deactivate]
 
-        for r in range(n_rows):
+        for r in range(self.no_pad_rows):
             for c in range(4):
                 i = r * 4 + c
                 but = ttk.Label(self.pad_but_frame, text=str(i), borderwidth=4,
@@ -554,7 +569,6 @@ class ClipControl:
                 but.grid(row=r, column=c)
                 but.config(state='disabled')
                 but.bind("<ButtonPress-1>", lambda e: print(e))
-
 
                 self.pad_buts.append(but)
                 self.cue_but_states.append(False)
@@ -737,9 +751,14 @@ class ProgressBar:
                                                      fill=self.colors['bg'], tag='bg')
         self.bottombg = self.canvas.create_rectangle(0, h, w, h + 15,
                                                      fill=self.colors['bottom_bar'])
-        self.setup_loopbars()
 
-        self.pbar = self.canvas.create_line(0, 0, 0, h, fill=self.colors['pbar'], width=3)
+    def setup_after_color_set(self):
+        for i in range(C.NO_LP):
+            r, c = i // 4, i % 4
+            self.loop_bars[i] = self.canvas.create_rectangle(0, 0, 0, 0,
+                                                             fill=self.colors['loop_bars'][c][r], tag='loop_bar')
+            #                                                activefill=self.colors['?'])
+        self.pbar = self.canvas.create_line(0, 0, 0, self.height, fill=self.colors['pbar'], width=3)
 
         self.outside_loop_rect_l = self.canvas.create_rectangle(0, 0, 0, 0,
                                                                 fill=self.colors['loop_range'], stipple='gray50',
@@ -748,12 +767,6 @@ class ProgressBar:
                                                                 fill=self.colors['loop_range'], stipple='gray50',
                                                                 tag='loop_limit')
         self.actions_binding()
-
-    def setup_loopbars(self):
-        for i in range(C.NO_LP):
-            self.loop_bars[i] = self.canvas.create_rectangle(0, 0, 0, 0,
-                                                             fill=self.colors['loop_bar'], tag='loop_bar')
-            #                                                activefill=self.colors['?'])
 
     def cue_mode_only_binds(self):
         self.canvas.tag_bind("loop_limit", "<B1-Motion>", self.find_mouse)
@@ -826,12 +839,13 @@ class ProgressBar:
     def add_qp(self, x_pos, i):
         x_coord = x_pos * self.total_width
         if self.qp_lines[i] is None:
+            r, c = i // 4, i % 4
             self.qp_lines[i] = self.canvas.create_line(x_coord, 0, x_coord, self.height,
                                                        activefill='white', fill='#ccc',
                                                        width=3, dash=(4, ), tags='qp_line')
             labelbox = self.canvas.create_rectangle(x_coord, self.height, x_coord + 15,
-                                                    self.height + 15, activefill='#aaa',
-                                                    tags='qp_label')
+                                                    self.height + 15, tags='qp_label',
+                                                    fill=self.colors['loop_bars'][c][r])
             labeltext = self.canvas.create_text(x_coord, self.height + 14, anchor=tk.SW,
                                                 text=" {}".format(i), fill='black',
                                                 activefill='white', justify='center',
@@ -1142,7 +1156,6 @@ if __name__ == '__main__':
             self.root.destroy()
 
     from sol import magi
-
     test_backend = magi.Magi()
     test_gui = FakeGUI(test_backend, rootwin)
     test_backend.gui = test_gui
