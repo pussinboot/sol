@@ -1,10 +1,5 @@
-# from tkinter import ttk
-
-# themes = ttk.Style().theme_names()
-
-#             # b = ttk.Button(lf, text=t, command=lambda t=t: 
-
-# print(themes)
+import importlib
+from tkinter import ttk
 
 def hex_to_rgb(hex_val):
     hex_val = hex_val.lstrip('#')
@@ -25,3 +20,10 @@ def linerp_colors(two_colors, n):
     from_col, to_col = hex_to_rgb(two_colors[0]), hex_to_rgb(two_colors[1])
     return [rgb_to_hex(linerp_helper(from_col, to_col, (x / (n - 1)))) for x in range(n)]
 
+def config_setup(config):
+    theme_package_name = 'sol.themes.' + config.SELECTED_THEME
+    sel_theme = importlib.import_module(theme_package_name)
+    return sel_theme
+
+def setup(sel_theme):
+    ttk.Style().theme_use(sel_theme.default_style)

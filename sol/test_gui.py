@@ -9,6 +9,7 @@ from tkinter import ttk
 from sol.magi import Magi
 from sol.gui.lib_org import lib_org
 
+# from sol.gui.tk_gui import clip_control
 from sol.gui.tk_gui import neo_clip_control as clip_control
 from sol.gui.tk_gui import clip_collections
 from sol.gui.tk_gui import midi_config
@@ -27,9 +28,9 @@ class MainGui:
     """
 
     def __init__(self, root):
-        # theme
-        ttk.Style().theme_use('clam')
 
+        # theming
+        C.themer.setup(C.CURRENT_THEME)
         # tk
         self.root = root
         self.mainframe = ttk.Frame(root, padding='0')

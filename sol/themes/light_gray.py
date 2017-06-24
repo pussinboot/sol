@@ -1,3 +1,4 @@
+default_style = 'clam'
 
 # http://paletton.com/#uid=72R0P0kc-FOnpt1kIvkaUvzcSqc
 pad_colors = [
