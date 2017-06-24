@@ -323,7 +323,7 @@ class ClipControl:
         self.root_frame.dnd_accept = self.dnd_accept  # for dnd
 
         self.info_frame = ttk.Frame(self.root_frame, relief='ridge', padding='1')
-        self.name_label = ttk.Label(self.info_frame, textvariable=self.name_var)
+        self.name_label = ttk.Label(self.info_frame, textvariable=self.name_var, padding='0 1 0 2')
 
         left_frame_padding = '2 0 5 0'
 
@@ -364,31 +364,30 @@ class ClipControl:
         self.control_bottom_frame = ttk.Frame(self.top_right_frame)
 
         control_slice_pads = '2 0 10 2'
-        self.control_zoom_frame = ttk.Frame(self.control_bottom_frame, padding=control_slice_pads)
         self.control_sens_frame = ttk.Frame(self.control_bottom_frame, padding=control_slice_pads)
         self.control_spd_frame = ttk.Frame(self.control_bottom_frame, padding=control_slice_pads)
-        self.control_spd_but_frame = ttk.Frame(self.control_bottom_frame, padding=control_slice_pads)
 
         self.control_but_frame.pack(side=tk.TOP, anchor='w')
         self.control_bottom_frame.pack(side=tk.TOP, anchor='w')
-        self.control_zoom_frame.pack(side=tk.LEFT)
-        self.control_sens_frame.pack(side=tk.LEFT)
-        self.control_spd_frame.pack(side=tk.LEFT)
-        self.control_spd_but_frame.pack(side=tk.LEFT)
+
+        self.control_sens_frame.grid(row=1, column=1, rowspan=4)
+        self.control_spd_frame.grid(row=1, column=2, rowspan=4)
+
+
 
         # ctrl buts
         ctrl_but_pad = '12 1 12 1'
-        playbut = ttk.Button(self.control_but_frame, text=">", width=2, padding=ctrl_but_pad, takefocus=False,
+        playbut = ttk.Button(self.control_bottom_frame, text=">", width=2, padding=ctrl_but_pad, takefocus=False,
                              command=self.gen_send_cmd('play'))
-        pausebut = ttk.Button(self.control_but_frame, text="||", width=2, padding=ctrl_but_pad, takefocus=False,
+        pausebut = ttk.Button(self.control_bottom_frame, text="||", width=2, padding=ctrl_but_pad, takefocus=False,
                               command=self.gen_send_cmd('pause'))
-        rvrsbut = ttk.Button(self.control_but_frame, text="<", width=2, padding=ctrl_but_pad, takefocus=False,
+        rvrsbut = ttk.Button(self.control_bottom_frame, text="<", width=2, padding=ctrl_but_pad, takefocus=False,
                              command=self.gen_send_cmd('reverse'))
-        clearbut = ttk.Button(self.control_but_frame, text="X", width=2, padding=ctrl_but_pad, takefocus=False,
+        clearbut = ttk.Button(self.control_bottom_frame, text="X", width=2, padding=ctrl_but_pad, takefocus=False,
                               command=self.gen_send_cmd('clear'))
 
-        for but in [rvrsbut, pausebut, playbut, clearbut]:
-            but.pack(side=tk.LEFT)
+        for i, but in enumerate([rvrsbut, pausebut, playbut, clearbut]):
+            but.grid(row=0, column=i)
 
         # zoom buts
         def update_zoom_follow(*args):
@@ -396,17 +395,17 @@ class ClipControl:
 
         self.zoom_follow_var.trace('w', update_zoom_follow)
 
-        zoom_in_but = ttk.Button(self.control_zoom_frame, text="+", width=1, takefocus=False,
+        zoom_in_but = ttk.Button(self.control_bottom_frame, text="+", width=1, takefocus=False,
                                  command=lambda: self.progressbar.adjust_zoom(1.25))
-        zoom_out_but = ttk.Button(self.control_zoom_frame, text="-", width=1, takefocus=False,
+        zoom_out_but = ttk.Button(self.control_bottom_frame, text="-", width=1, takefocus=False,
                                   command=lambda: self.progressbar.adjust_zoom(.75))
-        zoom_reset_but = ttk.Button(self.control_zoom_frame, text="o", width=1, takefocus=False,
+        zoom_reset_but = ttk.Button(self.control_bottom_frame, text="o", width=1, takefocus=False,
                                     command=lambda: self.progressbar.reset_zoom())
-        zoom_follow_cb = ttk.Checkbutton(self.control_zoom_frame, width=0,
+        zoom_follow_cb = ttk.Checkbutton(self.control_bottom_frame, width=0,
                                          variable=self.zoom_follow_var, takefocus=False)
         self.zoom_control_buts = [zoom_in_but, zoom_out_but, zoom_reset_but, zoom_follow_cb]
-        for zcb in self.zoom_control_buts:
-            zcb.pack(side=tk.TOP, anchor='w')
+        for i, zcb in enumerate(self.zoom_control_buts):
+            zcb.grid(row=(i + 1), column=0, sticky='w')
 
         spd_sens_vars = [(self.sens_var, self.xtra_sens_var), (self.speed_var, self.xtra_speed_var)]
 
@@ -435,12 +434,11 @@ class ClipControl:
         for svp in spd_sens_vars:
             t_fun = gen_update_trace(*svp)
             svp[0].trace('w', t_fun)
-            # svp[0].set('1.0')
 
         def setup_slider(frame, text, var1, var2, style):
             label = ttk.Label(frame, text=text, width=4, relief='groove', borderwidth=2)
             scale = ttk.Scale(frame, from_=10.0, to=0.0, variable=var1,
-                              orient=tk.VERTICAL, length=72, style=style)
+                              orient=tk.VERTICAL, length=60, style=style)
             scale.bind("<MouseWheel>", lambda e: var1.set(var1.get() + (e.delta / (120 / 0.1))))
             val_entry = ttk.Entry(frame, textvariable=var2, width=4,
                                   validate="key")
@@ -448,9 +446,9 @@ class ClipControl:
             val_entry.bind('<Return>', lambda e: var1.set(var2.get()))
             val_entry.bind('<Up>', lambda e: var1.set(min(var1.get() + 0.05, 10)))
             val_entry.bind('<Down>', lambda e: var1.set(max(var1.get() - 0.05, 0)))
-            label.pack(side=tk.TOP)
-            scale.pack(side=tk.TOP)
-            val_entry.pack(side=tk.TOP)
+            label.grid(row=1, column=0)
+            scale.grid(row=2, column=0, ipady=2)
+            val_entry.grid(row=3, column=0)
 
         # dont want ultra thicc handles
         s = ttk.Style()
@@ -461,13 +459,13 @@ class ClipControl:
         setup_slider(self.control_spd_frame, 'spd', *spd_sens_vars[1], ss)
 
         # spd buts
-        double_but = ttk.Button(self.control_spd_but_frame, text="* 2", width=3, takefocus=False,
+        double_but = ttk.Button(self.control_bottom_frame, text="* 2", width=3, takefocus=False,
                                 command=lambda: self.speed_var.set(min(10, 2 * self.speed_var.get())))
-        half_but = ttk.Button(self.control_spd_but_frame, text="/ 2", width=3, takefocus=False,
+        half_but = ttk.Button(self.control_bottom_frame, text="/ 2", width=3, takefocus=False,
                               command=lambda: self.speed_var.set(0.5 * self.speed_var.get()))
 
-        double_but.pack(side=tk.TOP)
-        half_but.pack(side=tk.TOP)
+        double_but.grid(row=2, column=3)
+        half_but.grid(row=3, column=3)
 
     def setup_control_frame_bottom(self):
         self.ctrl_type_frame = ttk.Frame(self.bottom_right_frame, relief='groove')
@@ -486,7 +484,7 @@ class ClipControl:
         self.qp_lp_var = self.qp_lp_switch.bool_var
         self.qp_lp_var.trace('w', self.pad_reconfigure)
 
-        self.lp_selected_label = ttk.Label(self.ctrl_type_frame, textvariable=self.loop_selected_text_var, anchor='e', justify='right', padding='2 0 2 0')
+        self.lp_selected_label = ttk.Label(self.ctrl_type_frame, textvariable=self.loop_selected_text_var, padding='5 0 0 0')
         self.lp_selected_label.pack(side=tk.LEFT, expand=True, fill=tk.X)
         self.loop_selected_text_var.set('selected [-]')
 
@@ -924,6 +922,7 @@ class ProgressBar:
             else:
                 return c0 < b1
 
+        new_y1 = 0
         for j in range(1, len(nei)):
             # check any of the below loop ranges for intersect
             # next bar must go on top of it
@@ -1112,6 +1111,8 @@ if __name__ == '__main__':
             self.root = root
             self.backend = backend
             self.clip_controls = [None] * C.NO_LAYERS
+            C.themer.setup(C.CURRENT_THEME)
+
 
         def update_clip(self, layer, clip):
             print('update?')
