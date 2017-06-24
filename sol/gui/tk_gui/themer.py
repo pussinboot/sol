@@ -8,13 +8,20 @@
 
 def hex_to_rgb(hex_val):
     hex_val = hex_val.lstrip('#')
-    lv = len(hex_val)
-    return tuple(int(hex_val[i:i + lv // 3], 16) for i in range(0, lv, lv // 3))
+    if len(hex_val) < 6:
+        hex_val = hex_val * 2
+    return tuple(int(hex_val[i:i + 2], 16) for i in range(0, 6, 2))
 
 def rgb_to_hex(rgb_val):
     return '#%02x%02x%02x' % rgb_val
 
+def linerp_helper(c1, c2, d):
+    return tuple(int((c2[i] - c1[i]) * d + c1[i]) for i in range(3))
 
-from_to_hex = ('#aaa', '#333')
+def linerp_colors(two_colors, n):
+    # input is 2 hex vals, outputs n many hex vals between them
+    if (n <= 2):
+        return two_colors
+    from_col, to_col = hex_to_rgb(two_colors[0]), hex_to_rgb(two_colors[1])
+    return [rgb_to_hex(linerp_helper(from_col, to_col, (x / (n - 1)))) for x in range(n)]
 
-print([hex_to_rgb(from_to_hex[0]), hex_to_rgb(from_to_hex[1])])
