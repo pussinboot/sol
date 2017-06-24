@@ -1,8 +1,8 @@
 # defines global variables
 import os
 import pickle
-from pathlib import Path
 
+import sol.themer as themer
 
 class SingletonDecorator:
     def __init__(self, klass):
@@ -84,6 +84,10 @@ class GlobalConfig:
             if not os.path.exists(folder):
                 os.mkdir(folder)
 
+        # setup theme
+        self.themer = themer
+        self.CURRENT_THEME = themer.config_setup(self)
+
     def save(self):
         try:
             with open(self.config_savefile, 'wb') as save_handle:
@@ -97,15 +101,16 @@ class GlobalConfig:
                 print('failed to make config savedata')
 
     def load(self, load_file=None):
+        defaults = self.default_options.items()
         if load_file is not None and os.path.exists(load_file):
             try:
                 with open(load_file, 'rb') as save_handle:
                     load_dict = pickle.load(save_handle)
                 self.__dict__ = load_dict
-                return
             except:
                 if self.DEBUG:
                     print('failed to load config savedata\nloading defaults...')
 
-        for k, v in self.default_options.items():
-            self.dict[k] = v
+        for k, v in defaults:
+            if k not in self.dict:
+                self.dict[k] = v

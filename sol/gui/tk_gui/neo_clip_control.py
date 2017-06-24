@@ -9,10 +9,6 @@ import bisect
 from sol.config import GlobalConfig
 C = GlobalConfig()
 
-# temp
-import light_gray_theme as current_theme
-import themer
-
 class ClipControl:
     def __init__(self, root, backend, layer):
 
@@ -102,7 +98,7 @@ class ClipControl:
             if C.NO_Q % 4 != 0:
                 self.no_pad_rows += 1
 
-        self.pad_colors = [themer.linerp_colors(current_theme.pad_colors[i], self.no_pad_rows) for i in range(4)]
+        self.pad_colors = [C.themer.linerp_colors(C.CURRENT_THEME.pad_colors[i], self.no_pad_rows) for i in range(4)]
 
         # let's setup the gooey
         # it looks like
