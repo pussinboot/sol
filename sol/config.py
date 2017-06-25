@@ -52,7 +52,7 @@ class GlobalConfig:
 
             # gui params
             'ALWAYS_ON_TOP' 	: True,
-            'THUMB_W' 			: 160,
+            'THUMB_W' 			: 192,
             'REFRESH_INTERVAL'  : 200,
             'FFMPEG_PATH'		: '',
             'NO_FRAMES'			: 5,
@@ -84,11 +84,15 @@ class GlobalConfig:
             if not os.path.exists(folder):
                 os.mkdir(folder)
 
-        # setup theme
+        self.setup_theme()
+
+    def setup_theme(self):
         self.themer = themer
         self.CURRENT_THEME = themer.config_setup(self)
 
     def save(self):
+        del self.themer
+        del self.CURRENT_THEME
         try:
             with open(self.config_savefile, 'wb') as save_handle:
                 pickle.dump(self.dict, save_handle,
@@ -99,6 +103,7 @@ class GlobalConfig:
             print(e)
             if self.DEBUG:
                 print('failed to make config savedata')
+        self.setup_theme()
 
     def load(self, load_file=None):
         defaults = self.default_options.items()

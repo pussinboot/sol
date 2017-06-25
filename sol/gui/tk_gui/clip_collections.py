@@ -26,7 +26,7 @@ class ClipContainer:
         self.parent = parent
         self.backend = parent.backend
         self.root = parent.root
-        self.frame = ttk.Frame(self.parent.frame, padding='5 0 5 0')
+        self.frame = ttk.Frame(self.parent.frame, padding='2 0 2 4')
         self.grid = self.frame.grid
 
         self.imgs = []
@@ -213,7 +213,7 @@ class ContainerCollection:
     def __init__(self, root, parent_frame, clipcol, select_cmd, backend):
         self.clip_conts = []
         self.clip_collection = clipcol
-        self.frame = tk.Frame(parent_frame)
+        self.frame = ttk.Frame(parent_frame, padding=0)
         self.root = root
         self.backend = backend
         self.font_checker = tkFont.Font()
@@ -240,7 +240,7 @@ class ContainerCollection:
                 i = r * 4 + c
                 self.clip_conts[i].grid(row=r, column=c)
 
-        self.frame.grid(row=0, column=0, sticky='news')
+        self.frame.grid(row=0, column=0)#, sticky='news')
         self.frame.tkraise()
 
     def update_clip_col(self, clip_col):
@@ -272,20 +272,20 @@ class CollectionsHolder:
         defaultbg = s.configure('.')['background']
         self.frame = parent_frame
         self.col_frame = ttk.Frame(self.frame)
-        self.collections_frame = ttk.Frame(self.col_frame)
+        self.collections_frame = ttk.Frame(self.col_frame, padding='0')
 
         self.collections_bottom_frame = ttk.Frame(self.col_frame, padding='0 1 0 1')
         self.collection_label_canvas = tk.Canvas(self.collections_bottom_frame, borderwidth=0,
-                                                 background=defaultbg, width=(4 * C.THUMB_W - 75), height=C.FONT_HEIGHT + 2)
+                                                 background=defaultbg, width=(3 * C.THUMB_W + 20), height=C.FONT_HEIGHT + 2)
         self.collections_labels_frame = ttk.Frame(self.collection_label_canvas, padding='0')
         self.collection_label_canvas.create_window((0, 0), window=self.collections_labels_frame, anchor="nw")
 
-        self.xsb = tk.Scrollbar(self.collections_bottom_frame, orient="horizontal", command=self.collection_label_canvas.xview, width=C.FONT_HEIGHT)
+        self.xsb = tk.Scrollbar(self.collections_bottom_frame, orient="horizontal", command=self.collection_label_canvas.xview,
+                                width=C.FONT_HEIGHT)
         self.collection_label_canvas.configure(xscrollcommand=self.xsb.set)
 
         self.collections_labels_frame.bind("<Configure>", lambda event: self.canvas_scroll_update())
 
-        # self.collections_labels_frame = tk.Frame(self.col_frame,height=15,width=(4*C.THUMB_W+20))
         self.search_frame = ttk.Frame(self.frame)
 
         self.library_browse = LibraryBrowser(self.backend, self.search_frame)
@@ -297,11 +297,11 @@ class CollectionsHolder:
         self.add_col_but.pack(side=tk.RIGHT)
 
         self.collections_frame.pack(side=tk.TOP)
-        self.collections_bottom_frame.pack(side=tk.TOP, fill=tk.X, expand=True)
-        self.collection_label_canvas.pack(side=tk.LEFT, fill=tk.Y, expand=True)
-        self.xsb.pack(side=tk.RIGHT, fill=tk.X, expand=True)
-        self.search_frame.pack(side=tk.LEFT, fill=tk.Y, anchor='e')
-        self.col_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.collections_bottom_frame.pack(side=tk.TOP, fill=tk.X, expand=False)
+        self.collection_label_canvas.pack(side=tk.LEFT, fill=tk.Y, expand=False, anchor='s')
+        self.xsb.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        self.search_frame.pack(side=tk.LEFT, fill=tk.BOTH, anchor='e', expand=True)
+        self.col_frame.pack(side=tk.LEFT, fill=tk.X, expand=False)
 
         self.xsb.bind('<Button-3>', self.xsb_hax)
 
@@ -389,7 +389,7 @@ class CollectionsHolder:
         self.add_collection_label(collection)
 
     def add_collection_label(self, collection):
-        newlabel = ttk.Label(self.collections_labels_frame, text=collection.name, justify=tk.CENTER, padding='4 2 4 1', borderwidth='2', width=-4)
+        newlabel = ttk.Label(self.collections_labels_frame, text=collection.name, justify=tk.CENTER, padding='4 2 4 1', borderwidth='2', width=-4, anchor='s')
         newlabel.bind('<ButtonPress-1>', lambda *args: self.select_collection(self.container_labels.index(newlabel)))
         newlabel.bind("<Double-1>", lambda *args: self.change_name_dialog(self.container_labels.index(newlabel)))
         newlabel.bind('<ButtonPress-2>', lambda *args: self.remove_collection(self.container_labels.index(newlabel)))
@@ -397,7 +397,7 @@ class CollectionsHolder:
         newlabel.bind("<MouseWheel>", self.canvas_scroll_mouse)
         newlabel.bind("<Button-4>", self.canvas_scroll_mouse)
         newlabel.bind("<Button-5>", self.canvas_scroll_mouse)
-        newlabel.pack(side=tk.LEFT)
+        newlabel.pack(side=tk.LEFT, anchor='s', fill=tk.Y, expand=True)
         self.container_labels.append(newlabel)
 
     def remove_collection_frame(self, index):
@@ -449,7 +449,7 @@ class LibraryBrowser:
         self.folders = {}
 
         self.parent_frame = parent_frame
-        self.frame = ttk.Frame(self.parent_frame)
+        self.frame = ttk.Frame(self.parent_frame)  # , relief='groove')
         self.browsers = ttk.Notebook(self.frame)
 
         self.search_frame = ttk.Frame(self.parent_frame)
@@ -506,7 +506,7 @@ class LibraryBrowser:
         self.browsers.add(self.tag_frame, text='tags')
         self.browsers.add(self.browse_frame, text='browse')
 
-        self.frame.pack(fill=tk.BOTH, expand=tk.Y)
+        self.frame.pack(fill=tk.BOTH, expand=True)
         self.browsers.pack(expand=True, fill=tk.BOTH)
 
         # finally populate the trees
