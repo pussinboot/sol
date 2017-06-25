@@ -29,10 +29,10 @@ class MainGui:
 
     def __init__(self, root):
 
-        # theming
-        C.themer.setup(C.CURRENT_THEME)
         # tk
         self.root = root
+        # theming
+        C.themer.setup(C.CURRENT_THEME, root)
         self.mainframe = ttk.Frame(root, padding='0')
         self.cc_frame = ttk.Frame(self.mainframe, padding='0')
         self.cc_frames = []
