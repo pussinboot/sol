@@ -156,6 +156,8 @@ class SetupGui:
         self.compile_config_page(video_tab_instr, self.video_tab)
         self.compile_config_page(gui_tab_instr, self.gui_tab)
 
+        self.name_to_var['NO_LP'][0].trace('w', self.loop_lim_check)
+
         if reopen_tab >= 0:
             self.config_book.select(self.config_book.tabs()[reopen_tab])
 
@@ -410,6 +412,17 @@ class SetupGui:
         str_entry.pack(side=tk.RIGHT, fill=tk.X, anchor='e', expand=True)
 
         return new_var, 'str', new_frame
+
+    ################
+    # EXTRA CHECKS
+
+    def loop_lim_check(self, *args):
+        try:
+            no_lp, no_qp = int(self.name_to_var['NO_LP'][0].get()), int(self.name_to_var['NO_Q'][0].get())
+            if no_lp > no_qp:
+                self.name_to_var['NO_LP'][0].set(no_qp)
+        except:
+            pass
 
 
 if __name__ == '__main__':
