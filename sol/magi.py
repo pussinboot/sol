@@ -391,17 +391,19 @@ class Magi:
             return [0, 1, 'd', None]
         return cur_lp
 
-    def loop_check(self,layer):
+    def loop_check(self, layer):
         # returns current loop points for layer if they are complete
         # otherwise returns none (if no clip selected etc)
         cur_clip = self.clip_storage.current_clips[layer]
-        if cur_clip is None: return
-        if not cur_clip.params['loop_on']: return
+        if (cur_clip is None) or (not cur_clip.params['loop_on']):
+            return
         ls = cur_clip.params['loop_selection']
-        if ls < 0: return
+        if ls < 0:
+            return
         # current loop points
         cl = cur_clip.params['loop_points'][ls]
-        if None in cl[:2]: return
+        if (cl is None) or (None in cl[:2]):
+            return
         if cl[0] > cl[1]:
             cl[1], cl[0] = cl[0], cl[1]
         return [cur_clip, cl]

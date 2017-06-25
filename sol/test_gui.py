@@ -184,7 +184,7 @@ class MainGui:
             self.cc_frames[i].pack_forget()
 
         # resize the 1 clip control
-        self.clip_controls[0].resize(4 * C.THUMB_W)
+        self.clip_controls[0].resize(4 * C.THUMB_W, True)
         # we want different library browser sry
         self.clip_conts.search_frame.pack_forget()
         self.clip_org = clip_collections.ClipOrg(tk.Toplevel(), self)
@@ -208,7 +208,7 @@ class MainGui:
             self.cc_frames[i].pack_forget()
 
         # resize the 1 clip control
-        self.clip_controls[0].resize(4 * C.THUMB_W)
+        self.clip_controls[0].resize(4 * C.THUMB_W, True)
         # we want different library browser sry
         self.clip_conts.search_frame.pack_forget()
         self.lib_org = lib_org.LibraryOrgGui(tk.Toplevel(), self)
