@@ -322,6 +322,20 @@ class ClipControl:
                 but.config(background='')
                 but.config(relief='flat')
 
+    def resize(self, new_width, minus_controls=False):
+        if minus_controls:
+            new_width -= self.bottom_right_frame.winfo_width()
+
+        self.width = new_width
+
+        pad_padding = '{0} 15 {0} 15'.format(new_width // 8 - 4)
+        for but in self.pad_buts:
+            but.config(padding=pad_padding)
+
+        self.progressbar.resize(new_width)
+        self.update_cues(self.cur_clip)
+        self.update_loop(self.cur_clip)
+
     # tk setup
 
     def setup_main_tk(self):
@@ -921,6 +935,13 @@ class ProgressBar:
 
 
     # # # event actions
+
+    def resize(self, new_width):
+        self.width = new_width
+        self.total_width = new_width * self.zoom_factor
+        self.canvas.config(width=self.width, scrollregion=(0, 0, self.width, self.height))
+        self.canvas.coords(self.canvasbg, 0, 0, self.width, self.height)
+        self.canvas.coords(self.bottombg, 0, self.height, self.width, self.height + 15)
 
     def adjust_zoom(self, by_factor):
         new_factor = self.zoom_factor * by_factor
