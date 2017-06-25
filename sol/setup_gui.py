@@ -6,10 +6,12 @@ import tkinter.messagebox as tkmb
 
 import os
 import string
+import pkgutil
 
 from sol.config import GlobalConfig
 C = GlobalConfig()
 
+import sol.themes
 
 class SetupGui:
     def __init__(self, rootwin=None, parent=None):
@@ -65,6 +67,10 @@ class SetupGui:
 
         self.config_book = ttk.Notebook(self.root_frame)
         self.config_book.pack(expand=True, fill=tk.BOTH)
+
+        # generate theme info
+        sol_theme_path = os.path.dirname(sol.themes.__file__)
+        self.theme_names = [name for _, name, _ in pkgutil.walk_packages([sol_theme_path])]
 
         # tabs
         self.reset()
@@ -145,6 +151,7 @@ class SetupGui:
 
         gui_tab_instr = [
             ('label_frame', 'sol options', '', []),
+            ('list_choice', 'theme', 'SELECTED_THEME', self.theme_names),
             ('bool_choice', 'always on top', 'ALWAYS_ON_TOP', []),
             ('label_frame', 'thumbnail options', '', []),
             ('int_choice', 'display width', 'THUMB_W', []),
