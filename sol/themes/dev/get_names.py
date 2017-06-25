@@ -1,4 +1,5 @@
 import tkinter as tk
+import tkinter.font as tkFont
 from tkinter import ttk
 s = ttk.Style()
 
@@ -6,7 +7,7 @@ s = ttk.Style()
 # use this to find what's inside of a widget
 # print(s.layout('TButton'))
 
-# all of the available options 
+# all of the available options
 # print(s.element_options('TButton.label'))
 
 def ppl(subelem, prefix=""):
@@ -55,6 +56,11 @@ list_of_widgets = [
 # 'Spinbox',
 ]
 
-for w in list_of_widgets:
-    pretty_print_layout(w)
+# for w in list_of_widgets:
+#     pretty_print_layout(w)
 
+root = tk.Tk()
+
+print(root.keys())
+
+ 'background', 'colormap',  'cursor', 'highlightbackground', 'highlightcolor',  

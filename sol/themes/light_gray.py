@@ -1,5 +1,30 @@
 default_style = 'clam'
 
+default_font = {
+    'size': 9,
+    'weight': 'normal',
+    'underline': 0,
+    'overstrike': 0,
+    'slant': 'roman',
+    # 'family': 'Segoe UI'
+    'family': 'Tamsyn6x12'
+}
+
+default_colors = {
+    'foreground': 'black',
+    # 'activeForeground': '',
+    # 'disabledForeground': '',
+    'background': '#aaa',
+    # 'activeBackground': '',
+    # 'insertBackground': '',
+    # 'selectColor': '',
+    # 'selectForeground': '',
+    # 'selectBackground': '',
+    # 'highlightColor': '',
+    # 'highlightBackground': '',
+    # 'troughColor': '',
+}
+
 # http://paletton.com/#uid=72R0P0kc-FOnpt1kIvkaUvzcSqc
 pad_colors = [
    # primary color
