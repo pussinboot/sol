@@ -1,6 +1,7 @@
 # defines global variables
 import os
 import pickle
+import importlib
 
 import sol.themer as themer
 
@@ -88,7 +89,8 @@ class GlobalConfig:
 
     def setup_theme(self):
         self.themer = themer
-        self.CURRENT_THEME = themer.config_setup(self)
+        theme_package_name = 'sol.themes.' + self.dict['SELECTED_THEME']
+        self.CURRENT_THEME = importlib.import_module(theme_package_name)
 
     def save(self):
         del self.themer
