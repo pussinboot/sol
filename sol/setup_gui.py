@@ -70,7 +70,7 @@ class SetupGui:
 
         # generate theme info
         sol_theme_path = os.path.dirname(sol.themes.__file__)
-        self.theme_names = [name for _, name, _ in pkgutil.walk_packages([sol_theme_path])]
+        self.theme_names = [name for _, name, _ in pkgutil.iter_modules([sol_theme_path])]
 
         # tabs
         self.reset()
@@ -325,7 +325,7 @@ class SetupGui:
                 new_file_path = os.sep.join(new_file_path.split('/'))
                 new_var.set(new_file_path)
 
-        dot_but = ttk.Button(new_frame, text='..', command=change_file, takefocus=False)
+        dot_but = ttk.Button(new_frame, text='..', command=change_file, width=1, takefocus=False)
         dot_but.pack(side=tk.RIGHT, anchor='e')
 
         current_path_label = ttk.Label(
@@ -376,8 +376,9 @@ class SetupGui:
     def add_list_choice(self, hint_text, parent_frame, starting_choice=None, extra_args=None):
         new_frame = self.add_choice_row(parent_frame, hint_text)
         new_var = tk.StringVar()
-
-        selector = tk.OptionMenu(new_frame, new_var, *extra_args)
+        pos_values = ' '.join(extra_args)
+        selector = ttk.Combobox(new_frame, textvariable=new_var, values=pos_values)
+        selector.config(state='readonly')
         selector.pack(side=tk.RIGHT, anchor='e')
 
         if starting_choice is not None:
