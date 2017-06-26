@@ -1,3 +1,6 @@
+# goat resource
+# http://www.tkdocs.com/tutorial/styles.html
+
 import tkinter as tk
 import tkinter.font as tkFont
 from tkinter import ttk

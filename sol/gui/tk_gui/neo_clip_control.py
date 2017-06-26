@@ -621,11 +621,11 @@ class SwitchButton:
 
         self.send_cmd = None
 
-        self.but_1 = ttk.Label(frame, text=text1, borderwidth=2,
-                               width=min_width, anchor='e')
+        self.but_1 = ttk.Label(frame, text=text1, borderwidth=4,
+                               width=min_width, anchor='e', style='fakebut.TLabel')
         self.but_1.bind('<Button-1>', lambda e: self.switch(False))
-        self.but_2 = ttk.Label(frame, text=text2, borderwidth=2,
-                               width=min_width)
+        self.but_2 = ttk.Label(frame, text=text2, borderwidth=4,
+                               width=min_width, style='fakebut.TLabel')
         self.but_2.bind('<Button-1>', lambda e: self.switch(True))
 
         if padding is not None:
@@ -644,17 +644,17 @@ class SwitchButton:
         self.bool_var.set(new_val)
         if (new_val):
             # button 2 now
-            self.but_2.config(relief='sunken')
-            self.but_1.config(relief='raised')
+            self.but_2.config(relief='sunken', state='disabled')
+            self.but_1.config(relief='raised', state='')
         else:
-            self.but_1.config(relief='sunken')
-            self.but_2.config(relief='raised')
+            self.but_1.config(relief='sunken', state='disabled')
+            self.but_2.config(relief='raised', state='')
 
 
 class ToggleButton:
     def __init__(self, frame, text, min_width=5, padding=None):
         self.bool_var = tk.BooleanVar()
-        self.but = ttk.Label(frame, text=text, borderwidth=2, width=min_width)
+        self.but = ttk.Label(frame, text=text, borderwidth=4, width=min_width, style='fakebut.TLabel')
         self.but.bind('<Button-1>', self.toggle)
 
         self.send_cmd = None
@@ -674,9 +674,9 @@ class ToggleButton:
     def update(self, new_val):
         self.bool_var.set(new_val)
         if (new_val):
-            self.but.config(relief='sunken')
+            self.but.config(relief='sunken', state='disabled')
         else:
-            self.but.config(relief='raised')
+            self.but.config(relief='raised', state='')
 
 
 class ProgressBar:
