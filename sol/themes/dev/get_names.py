@@ -62,8 +62,48 @@ list_of_widgets = [
 # for w in list_of_widgets:
 #     pretty_print_layout(w)
 
-root = tk.Tk()
+# root = tk.Tk()
+# w = ttk.Treeview(root)
+# aa = w.insert('', 'end', text='tes')
+# print(w.winfo_children())
+# print(w.config())
 
-print(root.keys())
+# print(root.keys())
 
- 'background', 'colormap',  'cursor', 'highlightbackground', 'highlightcolor',  
+# another good resource 
+# https://stackoverflow.com/questions/42931533/create-custom-ttk-style-same-as-clam-ttk-theme-button-widget-specific
+
+# print(ttk.Style().lookup("Treeview", "background"))
+# pretty_print_layout('Treeview')
+# pretty_print_layout('Treeview.Row')
+# pretty_print_layout('Treeview.Cell')
+# pretty_print_layout('Treeview.Item')
+# s.theme_use('clam')
+
+# # print(ttk.Style().element_options('Treeview.row'))
+# def p_m_c_o(of_what):
+#     print('==',of_what,'==')
+#     print(s.map(of_what))
+#     print(s.configure(of_what))
+#     print(s.element_options(of_what))
+# # oooh
+# # https://github.com/nomad-software/tcltk/blob/master/dist/library/ttk/clamTheme.tcl
+
+# pls_ifnd = ['Treeview',
+# 'Treeview.Row',
+# 'Treeview.Cell',
+# 'Treeview.Item',
+# 'Treeview.field',
+# 'Treeview.padding',
+# 'Treeview.treearea',
+# 'Treeitem.row',
+# 'Treedata.padding',
+# 'Treeitem.text',
+# 'Treeitem.padding',
+# 'Treeitem.indicator',
+# 'Treeitem.image',
+# 'Treeitem.focus',
+# 'Treeitem.text',]
+
+# for p in pls_ifnd:
+#     p_m_c_o(p)
