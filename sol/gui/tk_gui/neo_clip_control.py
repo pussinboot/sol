@@ -342,8 +342,9 @@ class ClipControl:
         self.root_frame = ttk.Frame(self.root, padding='5 1 5 2')
         self.root_frame.dnd_accept = self.dnd_accept  # for dnd
 
-        self.info_frame = ttk.Frame(self.root_frame, relief='ridge', padding='1')
-        self.name_label = ttk.Label(self.info_frame, textvariable=self.name_var, padding='0 1 0 2')
+        self.info_frame = ttk.Frame(self.root_frame, relief='ridge', padding='2')
+        self.name_label = ttk.Label(self.info_frame, textvariable=self.name_var, 
+                                    anchor='center', padding='0 1 0 2')
 
         left_frame_padding = '2 0 5 0'
 
@@ -359,7 +360,7 @@ class ClipControl:
         self.root_frame.pack(fill=tk.X, expand=True)
 
         self.info_frame.pack(side=tk.TOP, fill=tk.X, expand=True)
-        self.name_label.pack(expand=True)
+        self.name_label.pack(expand=True, pady=2, fill=tk.X)
 
         self.top_frame.pack(side=tk.TOP)
         self.progress_frame.pack(side=tk.LEFT)
@@ -496,7 +497,7 @@ class ClipControl:
         self.qp_lp_switch.but_2.grid(row=0, column=1, sticky='we')
 
         self.lp_selected_label = ttk.Label(self.bottom_right_frame, textvariable=self.loop_selected_text_var,
-                                           relief='groove', padding='2', anchor='e')
+                                           relief='groove', padding='4', anchor='center')
         self.lp_selected_label.grid(row=0, column=3, columnspan=2, sticky='we')
         self.loop_selected_text_var.set('selected [-]')
 
