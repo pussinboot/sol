@@ -224,8 +224,8 @@ class ClipControl:
         if clip is None:
             for i in range(C.NO_Q):
                 but = self.pad_buts[i]
-                but.config(state='disabled')
-                but.config(relief='groove')
+                but.config(state='disabled', relief='groove', background='')
+
                 # unbind
                 but.unbind("<ButtonPress-1>")
                 but.unbind("<ButtonPress-3>")
@@ -1115,7 +1115,7 @@ if __name__ == '__main__':
             self.root = root
             self.backend = backend
             self.clip_controls = [None] * C.NO_LAYERS
-            C.themer.setup(C.CURRENT_THEME)
+            C.themer.setup(C.CURRENT_THEME, self.root)
 
 
         def update_clip(self, layer, clip):

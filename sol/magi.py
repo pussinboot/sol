@@ -412,7 +412,7 @@ class Magi:
         # if a layer is under control then its current clip dir wont have been reset
         return self.clip_storage.cur_clip_dirs[layer] is not None
 
-    def loop_get(self,layer):
+    def loop_get(self, layer):
         # returns currently selected lp, even if incomplete
         cur_clip = self.clip_storage.current_clips[layer]
         if cur_clip is None: return
@@ -814,36 +814,43 @@ class Magi:
 
             def set_loop_a_b(_,ns):
                 pos = self.osc_server.osc_value(ns)
-                print(pos)
-                if len(pos) != 2: return
+                if len(pos) != 2:
+                    return
                 pos.sort()
                 cur_clip = self.clip_storage.current_clips[i]
-                if cur_clip is None: return
+                if cur_clip is None:
+                    return
                 ls = cur_clip.params['loop_selection']
-                if ls < 0: return
+                if ls < 0:
+                    return
                 # current loop points
                 cl = cur_clip.params['loop_points'][ls]
                 cl = self.lp_create(cl)
                 cl[:2] = pos
                 cur_clip.params['loop_points'][ls] = cl
                 self.send_loop(i)
-                if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
-                                                                  'loop_points')
+                if self.gui is not None:
+                    self.gui.update_clip_params(i, cur_clip, 'loop_points')
 
-            def clear_loop(_,n):
+            def clear_loop(_, n):
                 n = self.osc_server.osc_value(n)
                 cur_clip = self.clip_storage.current_clips[i]
-                if cur_clip is None: return
-                if n > len(cur_clip.params['loop_points']) or n < 0: return
+                if (cur_clip is None) or (n > len(cur_clip.params['loop_points'])) or (n < 0):
+                    return
                 cur_clip.params['loop_points'][n] = None
                 self.send_loop(i)
-                if self.gui is not None: self.gui.update_clip_params(i,cur_clip,
-                                                                  'loop_points')
+                ls = cur_clip.params['loop_selection']
+                # if currently selected loop is cleared, deselect it
+                if ls == n:
+                    cur_clip.params['loop_selection'] = -1
+
+                if self.gui is not None:
+                    self.gui.update_clip_params(i, cur_clip, 'loop_points')
 
 
             return [cue_point,clear_cue,toggle_loop,set_loop_on_off,
-                    set_loop_type,loop_select, loop_select_move, set_loop_a, 
-                    set_loop_b, set_loop_a_b, set_loop_a_cur, set_loop_b_cur, 
+                    set_loop_type,loop_select, loop_select_move, set_loop_a,
+                    set_loop_b, set_loop_a_b, set_loop_a_cur, set_loop_b_cur,
                     clear_loop]
 
         base_addr = "/magi/layer{}"
