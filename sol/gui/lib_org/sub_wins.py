@@ -61,7 +61,7 @@ class ChildWin:
 
 class RenameWin(ChildWin):
     def __init__(self, parent, clip, callback):
-        super(RenameWin, self).__init__(parent, 'rename', 0.6, 0.25)
+        super(RenameWin, self).__init__(parent, 'rename', 0.45, 0.25)
         self.clip = clip
         self.callback = callback
         self.fname_var = tk.StringVar()
@@ -106,12 +106,12 @@ class RenameWin(ChildWin):
 
 class MoveWin(ChildWin):
     def __init__(self, parent, clip, callback):
-        super(MoveWin, self).__init__(parent, 'move', 0.75, 0.5)
+        super(MoveWin, self).__init__(parent, 'move', 0.5, 0.5)
         self.parent = parent
         self.clip = clip
         self.callback = callback
         self.top_frame = ttk.Frame(self.root_frame)
-        self.top_frame.pack(side=tk.TOP, expand=True, fill=tk.BOTH, anchor=tk.S)
+        self.top_frame.pack(side=tk.TOP, expand=True, fill=tk.BOTH, anchor=tk.S, pady=2)
         self.setup_ok_cancel(True)
         self.add_new_fun = self.add_new_folder  # or can add new folder
 
@@ -127,7 +127,7 @@ class MoveWin(ChildWin):
         self.mc_frame = ttk.Frame(self.top_frame, relief='ridge')
         self.mc_frame.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
         instruction_text = ttk.Label(self.mc_frame, text='select a folder to move to')
-        instruction_text.pack(side=tk.TOP)
+        instruction_text.pack(side=tk.TOP, pady=2)
 
         selection_texts = [fn[0] for fn in self.parent.all_folder_names]
         self.mc_pane = MultiChoicePane(self, selection_texts, True)
@@ -159,7 +159,7 @@ class MoveWin(ChildWin):
 
 class TagWin(ChildWin):
     def __init__(self, parent, clip, callback):
-        super(TagWin, self).__init__(parent, 'edit tags', 0.75, 0.5)
+        super(TagWin, self).__init__(parent, 'edit tags', 0.5, 0.5)
         self.parent = parent
         self.clip = clip
         self.callback = callback  # callback will update tags of the clip
@@ -172,12 +172,12 @@ class TagWin(ChildWin):
         self.add_new_fun = self.add_new_tag  # or can add new folder
 
         clip_label = ttk.Label(self.top_frame, text='editing tags for: {}'.format(clip.name))
-        clip_label.pack(side=tk.TOP)
+        clip_label.pack(side=tk.TOP, pady=2)
 
         self.mc_frame = ttk.Frame(self.top_frame, relief='ridge')
         self.mc_frame.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
         instruction_text = ttk.Label(self.mc_frame, text='select tags')
-        instruction_text.pack(side=tk.TOP)
+        instruction_text.pack(side=tk.TOP, pady=2)
 
         starting_options = [(tag, tag in clip.tags) for tag in self.parent.all_tags]
         self.mc_pane = MultiChoicePane(self, starting_options, False)
@@ -206,7 +206,7 @@ class TagWin(ChildWin):
 
 class AddTagWin(TagWin):
     def __init__(self, parent, clips, callback):
-        super(TagWin, self).__init__(parent, 'add tags', 0.75, 0.5)
+        super(TagWin, self).__init__(parent, 'add tags', 0.5, 0.5)
         self.parent = parent
         self.clips = clips
         self.callback = callback  # callback will add tags to every clip
@@ -219,12 +219,12 @@ class AddTagWin(TagWin):
         self.add_new_fun = self.add_new_tag  # or can add new folder
 
         clip_label = ttk.Label(self.top_frame, text='adding tags for {} clips'.format(len(self.clips)))
-        clip_label.pack(side=tk.TOP)
+        clip_label.pack(side=tk.TOP, pady=2)
 
         self.mc_frame = ttk.Frame(self.top_frame, relief='ridge')
         self.mc_frame.pack(side=tk.TOP, expand=True, fill=tk.BOTH)
         instruction_text = ttk.Label(self.mc_frame, text='select tags to add')
-        instruction_text.pack(side=tk.TOP)
+        instruction_text.pack(side=tk.TOP, pady=2)
 
         starting_options = [(tag, False) for tag in self.parent.all_tags]
         self.mc_pane = MultiChoicePane(self, starting_options, False)
@@ -288,7 +288,7 @@ class MultiChoicePane:
 
         self.go_r_but.pack(side=tk.RIGHT, anchor='e')
         self.go_l_but.pack(side=tk.RIGHT, anchor='e')
-        self.bot_text.pack(side=tk.RIGHT, anchor='e')
+        self.bot_text.pack(side=tk.RIGHT, anchor='e', pady=2)
 
         self.add_new_but.pack(side=tk.LEFT, anchor='w')
 
@@ -348,9 +348,12 @@ class MultiChoicePane:
     def update_tab_selection(self):
         if len(self.sub_frames) > 0:
             bot_text = "{}/{}".format(self.sub_frame_i + 1, len(self.sub_frames))
-            cs = 'active'
         else:
             bot_text = "-/-"
+
+        if len(self.sub_frames) > 0:
+            cs = 'active'
+        else:
             cs = 'disabled'
 
         self.pane_selection_text.set(bot_text)
@@ -411,7 +414,7 @@ class MultiChoiceSubPane:
         radio_but.pack(side=tk.TOP, anchor='w')
 
         shortcut_label = ttk.Label(self.lr_frames[col + 1], text=shortcut_text)
-        shortcut_label.pack(side=tk.TOP, anchor='e')
+        shortcut_label.pack(side=tk.TOP, anchor='e', pady=1)
 
     def add_check_but(self, tag_selected):
         text_label = tag_selected[0]
@@ -429,7 +432,7 @@ class MultiChoiceSubPane:
         check_but.pack(side=tk.TOP, anchor='w')
 
         shortcut_label = ttk.Label(self.lr_frames[col + 1], text=shortcut_text)
-        shortcut_label.pack(side=tk.TOP, anchor='e')
+        shortcut_label.pack(side=tk.TOP, anchor='e', pady=1)
 
 
 class Treeview:
