@@ -497,7 +497,7 @@ class ClipControl:
         self.qp_lp_switch.but_2.grid(row=0, column=1, sticky='we')
 
         self.lp_selected_label = ttk.Label(self.bottom_right_frame, textvariable=self.loop_selected_text_var,
-                                           relief='groove', padding='4', anchor='center')
+                                           relief='groove', padding='2 4 2 4', anchor='center', borderwidth=2)
         self.lp_selected_label.grid(row=0, column=3, columnspan=2, sticky='we')
         self.loop_selected_text_var.set('selected [-]')
 
