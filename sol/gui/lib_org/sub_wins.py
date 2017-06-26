@@ -40,9 +40,9 @@ class ChildWin:
         self.button_frame = ttk.Frame(self.bottom_frame)
         self.button_frame.pack(anchor='center')
 
-        self.ok_but = ttk.Button(self.button_frame, text='ok', command=self.ok)
+        self.ok_but = ttk.Button(self.button_frame, text='ok', command=self.ok, takefocus=False)
         self.ok_but.pack(side=tk.LEFT)
-        self.cancel_but = ttk.Button(self.button_frame, text='cancel', command=self.cancel)
+        self.cancel_but = ttk.Button(self.button_frame, text='cancel', command=self.cancel, takefocus=False)
         self.cancel_but.pack(side=tk.LEFT)
         self.root_frame.bind('<Escape>', self.cancel)
         self.root_frame.bind('<Return>', self.ok)
@@ -274,13 +274,16 @@ class MultiChoicePane:
         self.notebook.pack(expand=True, fill=tk.BOTH)
 
         # bottombar
-        self.go_l_but = ttk.Button(self.bot_frame, text='<', command=lambda: self.switch_tab(-1), width=1)
+        self.go_l_but = ttk.Button(self.bot_frame, text='<', takefocus=False,
+                                   command=lambda: self.switch_tab(-1), width=1)
         self.parent.root_frame.bind(',', lambda e: self.switch_tab(-1))
-        self.go_r_but = ttk.Button(self.bot_frame, text='>', command=lambda: self.switch_tab(+1), width=1)
+        self.go_r_but = ttk.Button(self.bot_frame, text='>', takefocus=False,
+                                   command=lambda: self.switch_tab(+1), width=1)
         self.parent.root_frame.bind('.', lambda e: self.switch_tab(+1))
         self.bot_text = ttk.Label(self.bot_frame, textvariable=self.pane_selection_text)
 
-        self.add_new_but = ttk.Button(self.bot_frame, text=self.add_but_text, command=self.parent.add_new_fun)
+        self.add_new_but = ttk.Button(self.bot_frame, text=self.add_but_text, takefocus=False,
+                                      command=self.parent.add_new_fun)
         self.parent.root_frame.bind('n', self.parent.add_new_fun)
 
         self.go_r_but.pack(side=tk.RIGHT, anchor='e')
@@ -403,7 +406,8 @@ class MultiChoiceSubPane:
         col = 2 * (self.last_i % 2)
         shortcut_text = "({})".format(self.opt_keybinds[col // 2][self.last_i // 2].upper())
 
-        radio_but = ttk.Radiobutton(self.lr_frames[col], text=text_label, variable=self.chosen_value, value=self.last_i)
+        radio_but = ttk.Radiobutton(self.lr_frames[col], text=text_label, variable=self.chosen_value,
+                                    value=self.last_i, takefocus=False)
         radio_but.pack(side=tk.TOP, anchor='w')
 
         shortcut_label = ttk.Label(self.lr_frames[col + 1], text=shortcut_text)
@@ -420,7 +424,8 @@ class MultiChoiceSubPane:
         col = 2 * (self.last_i % 2)
         shortcut_text = "({})".format(self.opt_keybinds[col // 2][self.last_i // 2].upper())
 
-        check_but = ttk.Checkbutton(self.lr_frames[col], text=text_label, variable=new_var)
+        check_but = ttk.Checkbutton(self.lr_frames[col], text=text_label, variable=new_var,
+                                    takefocus=False)
         check_but.pack(side=tk.TOP, anchor='w')
 
         shortcut_label = ttk.Label(self.lr_frames[col + 1], text=shortcut_text)
