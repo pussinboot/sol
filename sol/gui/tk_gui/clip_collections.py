@@ -240,7 +240,7 @@ class ContainerCollection:
                 i = r * 4 + c
                 self.clip_conts[i].grid(row=r, column=c)
 
-        self.frame.grid(row=0, column=0)#, sticky='news')
+        self.frame.grid(row=0, column=0)
         self.frame.tkraise()
 
     def update_clip_col(self, clip_col):
@@ -368,8 +368,8 @@ class CollectionsHolder:
             index = self.clip_storage.cur_clip_col
         self.containers[index].frame.tkraise()
         for cl in self.container_labels:
-            cl.configure(relief=tk.RIDGE)
-        self.container_labels[index].configure(relief=tk.SUNKEN)
+            cl.configure(relief=tk.RIDGE, state='')
+        self.container_labels[index].configure(relief=tk.SUNKEN, state='disabled')
         # scroll into view
         left_x, wid_width = self.container_labels[index].winfo_x(), self.container_labels[index].winfo_width()
         total_width = self.collection_label_canvas.bbox("all")[2]
@@ -389,7 +389,9 @@ class CollectionsHolder:
         self.add_collection_label(collection)
 
     def add_collection_label(self, collection):
-        newlabel = ttk.Label(self.collections_labels_frame, text=collection.name, justify=tk.CENTER, padding='4 2 4 1', borderwidth='2', width=-4, anchor='s')
+        newlabel = ttk.Label(self.collections_labels_frame, text=collection.name,
+                             justify=tk.CENTER, padding='4 2 4 1', borderwidth='4',
+                             width=-4, anchor='s', style='fakebut.TLabel')
         newlabel.bind('<ButtonPress-1>', lambda *args: self.select_collection(self.container_labels.index(newlabel)))
         newlabel.bind("<Double-1>", lambda *args: self.change_name_dialog(self.container_labels.index(newlabel)))
         newlabel.bind('<ButtonPress-2>', lambda *args: self.remove_collection(self.container_labels.index(newlabel)))

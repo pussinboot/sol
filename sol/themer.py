@@ -40,3 +40,11 @@ def setup(sel_theme, tk_root):
         tk_root.tk_setPalette(**sel_theme.default_colors)
         styling.configure('.', **sel_theme.default_colors)
 
+    for so in sel_theme.ttk_style_opts_to_config:
+        styling.configure(so[0], **so[1])
+
+    for som in sel_theme.ttk_style_opts_to_map:
+        styling.map(som[0], **som[1])
+
+
+# print(linerp_colors(('#CFCDC5', '#bdbdbd'), 3))
