@@ -267,7 +267,6 @@ class CollectionsHolder:
         self.select_cmd = backend.select_clip
 
         self.root = root
-        # defaultbg = self.root.cget('bg')
         s = ttk.Style()
         defaultbg = s.configure('.')['background']
         self.frame = parent_frame
@@ -439,12 +438,6 @@ class CollectionsHolder:
 # this stuff belongs in another class imo, nevermind it uses clipcontainers : )
 class LibraryBrowser:
     def __init__(self, backend, parent_frame):
-        style = ttk.Style()
-        style.layout("Treeview", [
-            ('Treeview.treearea', {'sticky': 'nswe'})
-        ])
-        style.configure('Treeview', indent=2)
-
         self.backend = backend
         # db (has searcher & search fun)
         self.db = self.backend.db
