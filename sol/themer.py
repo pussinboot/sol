@@ -28,13 +28,13 @@ def setup(sel_theme, tk_root):
     styling = ttk.Style()
     styling.theme_use(sel_theme.default_style)
 
-    # this doesn't set font inside of treeviews or menus tho
-    # (menus are system font unfortunately)
     if sel_theme.default_font is not None:
         default_font = tkFont.nametofont("TkDefaultFont")
         default_font.configure(**sel_theme.default_font)
         tk_root.option_add("*Font", default_font)
         styling.configure('.', font=default_font)
+        styling.configure('Treeview.Heading', font=default_font)
+        # (menus are system font unfortunately)
 
     if sel_theme.default_colors is not None:
         tk_root.tk_setPalette(**sel_theme.default_colors)
