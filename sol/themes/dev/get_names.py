@@ -1,5 +1,7 @@
 # goat resource
 # http://www.tkdocs.com/tutorial/styles.html
+# another great
+# http://wiki.tcl.tk/37973
 
 import tkinter as tk
 import tkinter.font as tkFont
@@ -48,6 +50,7 @@ list_of_widgets = [
 'TSeparator',
 'Vertical.TScrollbar',
 'Horizontal.TScrollbar',
+'TScale',
 'TNotebook',
 'Treeview',
 'TRadiobutton',
@@ -78,14 +81,14 @@ list_of_widgets = [
 # pretty_print_layout('Treeview.Row')
 # pretty_print_layout('Treeview.Cell')
 # pretty_print_layout('Treeview.Item')
-# s.theme_use('clam')
+s.theme_use('clam')
 
 # # print(ttk.Style().element_options('Treeview.row'))
-# def p_m_c_o(of_what):
-#     print('==',of_what,'==')
-#     print(s.map(of_what))
-#     print(s.configure(of_what))
-#     print(s.element_options(of_what))
+def p_m_c_o(of_what):
+    print('==',of_what,'==')
+    print(s.map(of_what))
+    print(s.configure(of_what))
+    print(s.element_options(of_what))
 # # oooh
 # # https://github.com/nomad-software/tcltk/blob/master/dist/library/ttk/clamTheme.tcl
 
@@ -107,3 +110,5 @@ list_of_widgets = [
 
 # for p in pls_ifnd:
 #     p_m_c_o(p)
+pretty_print_layout('TLabel')
+p_m_c_o('TLabel.label')
