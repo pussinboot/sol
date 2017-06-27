@@ -12,7 +12,7 @@ default_font = {
 
 default_colors = {
     'foreground': 'black',
-    'activeForeground': '#ccc',
+    'activeForeground': '#CCC',
     'disabledForeground': '#222',
     'background': '#CFCDC5',
     # 'activeBackground': '', # menus
@@ -22,10 +22,10 @@ default_colors = {
     # but not ttk...
     'selectForeground': 'white',
     'selectBackground': '#6C97DA',
-    #
-    'highlightColor': 'pink',
     # 'highlightBackground': '',  # this goes around canvases for some reason
-    # 'troughColor': '',  # doesn't seem to do anything
+    # these don't seem to do anything
+    # 'highlightColor': '', 
+    # 'troughColor': '',  
 }
 
 # for consistency
@@ -47,66 +47,61 @@ pad_colors = [
     '#E7473E']
 ]
 
-
-# shit i still need to fix
-# ttk entries consistency
-
-# button default colors
-# button hover colors
-
+# ttk styled specific colors
+styled_button_color = '#D6D5D2'
+styled_button_disabled_color = '#C6C5C1'
+styled_button_disabled_color_darker = '#BBB'
 
 # list of tuples of style to replace & a dict of all their options
 ttk_style_opts_to_config = [ 
 ('TButton', {
-  'background': '#D6D5D2'
+  'background': styled_button_color
 }),
 ('TLabel', {
-  'background': '#D6D5D2'
+  'background': styled_button_color
 }),
 ('TEntry', {
-  'fieldbackground': '#D6D5D2',
-  'background': '#D6D5D2',
-  'selectbackground': '#6C97DA',
+  'fieldbackground': styled_button_color,
+  'background': styled_button_color,
+  'selectbackground': default_colors['selectColor'],
 }),
 ('TCheckbutton', {
-  'background': '#CFCDC5',
+  'background': default_colors['background'],
 }),
 ('TRadiobutton', {
-  'background': '#CFCDC5',
+  'background': default_colors['background'],
 }),
 ('Treeview', {
   'indent': 2,
-  'background': "#ccc",
-  'fieldbackground': "#ccc",
-  'selectforeground': '#6C97DA'
+  'background': default_colors['activeForeground'],
+  'fieldbackground': default_colors['activeForeground'],
+  'selectforeground': default_colors['selectColor']
 }),
 ('Treeview.Heading', {
-  'background': "#CFCDC5",
+  'background': default_colors['background'],
 }),
-
-
 ]
 
-# things that need to be mapped
+# style options that need to be mapped (for active/disabled states usually)
 ttk_style_opts_to_map = [
 ('TButton', {
-    'background': [('disabled','#c6c5c1'), ('active','#bbb')],
+    'background': [('disabled', styled_button_disabled_color), ('active', styled_button_disabled_color_darker)],
     'relief': [('pressed', '!disabled', 'sunken')]
 }),
 ('TLabel', {
-    'background': [('disabled','#c6c5c1'), ('active','#D6D5D2')],
+    'background': [('disabled', styled_button_disabled_color), ('active', styled_button_color)],
 }),
 ('fakebut.TLabel', {
-    'background': [('disabled','#bbb'), ('active','#D6D5D2')],
-    'foreground': [('disabled','black'), ('active','black')],
+    'background': [('disabled', styled_button_disabled_color_darker), ('active', styled_button_color)],
+    'foreground': [('disabled', default_colors['foreground']), ('active', default_colors['foreground'])],
 }),
 ('TCheckbutton', {
-    'background': [('disabled','#c6c5c1'), ('active','#D6D5D2')],
+    'background': [('disabled', styled_button_disabled_color), ('active', styled_button_color)],
 }),
 ('TRadiobutton', {
-    'background': [('disabled','#c6c5c1'), ('active','#D6D5D2')],
+    'background': [('disabled', styled_button_disabled_color), ('active', styled_button_color)],
 }),
-('Treeview',{
-   'background' : [('selected', 'focus', '#6C97DA'), ('selected', '!focus', '#6087C4')],
+('Treeview', {
+   'background': [('selected', 'focus', default_colors['selectColor']), ('selected', '!focus', '#6087C4')],
 }),
 ]
