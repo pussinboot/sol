@@ -51,6 +51,7 @@ pad_colors = [
 
 # ttk styled specific colors
 styled_button_color = '#2B2B2B'
+styled_button_border = '#1E1E1E'
 styled_button_disabled_color = '#202020'
 styled_button_disabled_color_darker = '#17191D'
 
@@ -58,20 +59,26 @@ styled_button_disabled_color_darker = '#17191D'
 ttk_style_opts_to_config = [ 
 ('TButton', {
   'background': styled_button_color,
-  'bordercolor': styled_button_color,
-  'lightcolor': styled_button_color,
-  'darkcolor': styled_button_color,
+  'bordercolor': styled_button_border,
+  'lightcolor': styled_button_border,
+  'darkcolor': styled_button_border,
 }),
 ('TLabel', {
   'background': styled_button_color,
-  'bordercolor': styled_button_color,
-  'lightcolor': styled_button_color,
-  'darkcolor': styled_button_color,
+  'bordercolor': styled_button_border,
+  'lightcolor': styled_button_border,
+  'darkcolor': styled_button_border,
 }),
 ('TFrame', {
   'bordercolor': styled_button_color,
+  'lightcolor': styled_button_border,
+  'darkcolor': styled_button_border,
+}),
+('fakesep.TFrame', {
+  'bordercolor': styled_button_color,
   'lightcolor': styled_button_color,
   'darkcolor': styled_button_color,
+  'background': styled_button_border,
 }),
 ('TEntry', {
   'fieldbackground': styled_button_color,
