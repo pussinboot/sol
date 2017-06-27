@@ -28,10 +28,6 @@ def setup(sel_theme, tk_root):
     styling = ttk.Style()
     styling.theme_use(sel_theme.default_style)
 
-    # all my treeviews have this layout
-    styling.layout("Treeview", [
-        ('Treeview.treearea', {'sticky': 'nswe'})
-    ])
     # this doesn't set font inside of treeviews or menus tho
     # (menus are system font unfortunately)
     if sel_theme.default_font is not None:
@@ -50,5 +46,7 @@ def setup(sel_theme, tk_root):
     for som in sel_theme.ttk_style_opts_to_map:
         styling.map(som[0], **som[1])
 
-
-# print(linerp_colors(('#CFCDC5', '#bdbdbd'), 3))
+    # stylistic choices for everything
+    styling.layout("Treeview", [
+        ('Treeview.treearea', {'sticky': 'nswe'})
+    ])
