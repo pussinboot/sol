@@ -40,7 +40,7 @@ class SetupGui:
             # baddies
             self.major_changes = ['NO_LAYERS', 'NO_Q', 'NO_LP', 'MODEL_SELECT',
                                   'OSC_PORT', 'MTGUI_ENABLED', 'MTGUI_IP_ADDR',
-                                  'XTERNAL_PLAYER_SELECT']
+                                  'XTERNAL_PLAYER_SELECT', 'SELECTED_THEME']
 
             def close_fun(*args):
                 self.close()

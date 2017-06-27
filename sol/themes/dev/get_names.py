@@ -110,7 +110,8 @@ def p_m_c_o(of_what):
 
 # for p in pls_ifnd:
 #     p_m_c_o(p)
-pretty_print_layout('Vertical.TSeparator')
-p_m_c_o('Separator.separator')
+pretty_print_layout('TCombobox')
+p_m_c_o('TCombobox')
 
-print(s.layout('TSeparator'))
+p_m_c_o('Combobox.field')
+p_m_c_o('Combobox.textarea')

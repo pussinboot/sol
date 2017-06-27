@@ -20,7 +20,7 @@ default_colors = {
     'selectColor': '#367AE3',
     # these are for selecting text w/in entries?
     # but not ttk...
-    'selectForeground': 'green',
+    'selectForeground': '#222',
     'selectBackground': '#367AE3',
     'troughColor': '#232626',  
     # 'highlightBackground': '',  # this goes around canvases for some reason
@@ -96,6 +96,8 @@ ttk_style_opts_to_config = [
 }),
 ('Treeview', {
   'indent': 2,
+  'borderwidth':  0,
+  'relief': 'flat',
   'background': default_colors['activeForeground'],
   'fieldbackground': default_colors['activeForeground'],
   'selectforeground': default_colors['selectColor'],
@@ -105,6 +107,27 @@ ttk_style_opts_to_config = [
 }),
 ('Treeview.Heading', {
   'background': default_colors['background'],
+}),
+('TNotebook', {
+  'relief': 'flat',
+  'background': default_colors['background'],
+  'bordercolor': styled_button_color,
+  'lightcolor': styled_button_color,
+  'darkcolor': styled_button_color,
+}),
+('TNotebook.Tab', {
+  'relief': 'flat',
+  'background': styled_button_disabled_color,
+  'bordercolor': styled_button_disabled_color,
+  'lightcolor': styled_button_color,
+  'darkcolor': styled_button_color,
+}),
+('TLabelFrame', {
+  'relief': 'flat',
+  'background': default_colors['background'],
+  'bordercolor': styled_button_color,
+  'lightcolor': styled_button_color,
+  'darkcolor': styled_button_color,
 }),
 ('Vertical.TScrollbar', {
   'background': styled_button_color,
@@ -134,6 +157,14 @@ ttk_style_opts_to_config = [
   'lightcolor': styled_button_disabled_color,
   'darkcolor': styled_button_disabled_color_darker,
 }),
+('Combobox.field', {
+  'background': styled_button_color,
+  'fieldbackground': styled_button_color,
+  'bordercolor': styled_button_color,
+  'lightcolor': styled_button_color,
+  'darkcolor': styled_button_color,
+}),
+
 ]
 
 # style options that need to be mapped (for active/disabled states usually)
@@ -158,6 +189,12 @@ ttk_style_opts_to_map = [
 ('Treeview', {
    'background': [('selected', 'focus', default_colors['selectColor']), ('selected', '!focus', '#6087C4')],
 }),
+('Treeview.Heading', {
+   'background': [('selected', 'focus', default_colors['selectColor']), ('selected', '!focus', '#6087C4')],
+}),
+('TNotebook.Tab', {
+   'background': [('selected', styled_button_color)],
+}),
 ('Vertical.TScrollbar', {
     'background': [('disabled', styled_button_disabled_color), ('active', default_colors['troughColor'])],
 }),
@@ -170,4 +207,10 @@ ttk_style_opts_to_map = [
 ('Horizontal.TScale', {
     'background': [('disabled', styled_button_disabled_color), ('active', default_colors['troughColor'])],
 }),
+('TCombobox', {
+    'fieldbackground': [('readonly', 'focus', '#6087C4'), ('readonly', styled_button_disabled_color)],
+    'background': [('active', styled_button_color), ('pressed', styled_button_border)],
+    'foreground': [('readonly', 'focus', default_colors['selectForeground'])],
+}),
+
 ]
