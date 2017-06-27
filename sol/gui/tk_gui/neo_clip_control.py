@@ -383,7 +383,7 @@ class ClipControl:
     def setup_control_frame_top(self):
         self.control_bottom_frame = ttk.Frame(self.top_right_frame)
 
-        control_slice_pads = '2 0 10 2'
+        control_slice_pads = '6 0 6 2'
         self.control_sens_frame = ttk.Frame(self.control_bottom_frame, padding=control_slice_pads)
         self.control_spd_frame = ttk.Frame(self.control_bottom_frame, padding=control_slice_pads)
 
@@ -406,7 +406,7 @@ class ClipControl:
                               command=self.gen_send_cmd('clear'))
 
         for i, but in enumerate([rvrsbut, pausebut, playbut, clearbut]):
-            but.grid(row=0, column=i, pady=2)
+            but.grid(row=0, column=i, pady=2, padx=2)
 
         # zoom buts
         def update_zoom_follow(*args):
@@ -504,8 +504,8 @@ class ClipControl:
         self.loop_on_toggle.send_cmd = self.gen_toggle_cmd('loop_on_off')
         self.loop_on_toggle.but.grid(row=2, column=0, columnspan=2, sticky='we', pady=2)
 
-        ttk.Separator(self.bottom_right_frame, orient='horizontal').grid(row=1, column=0, columnspan=5, sticky='we', pady=4)
-        ttk.Separator(self.bottom_right_frame, orient='vertical').grid(row=2, column=2, rowspan=2, sticky='ns', padx=2)
+        ttk.Frame(self.bottom_right_frame, style='fakesep.TFrame', width=1).grid(row=1, column=0, columnspan=5, sticky='we', pady=4)
+        ttk.Frame(self.bottom_right_frame, style='fakesep.TFrame', width=1).grid(row=2, column=2, rowspan=2, sticky='ns', padx=2)
         self.loop_type_switch = SwitchButton(self.bottom_right_frame, 'dflt', 'bnce', padding='2 4 2 4')
         self.loop_type_var = self.loop_type_switch.bool_var
         self.loop_type_switch.send_cmd = self.gen_toggle_cmd('loop_type', ['d', 'b'])

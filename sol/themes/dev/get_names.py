@@ -110,5 +110,7 @@ def p_m_c_o(of_what):
 
 # for p in pls_ifnd:
 #     p_m_c_o(p)
-pretty_print_layout('TLabel')
-p_m_c_o('TLabel.label')
+pretty_print_layout('Vertical.TSeparator')
+p_m_c_o('Separator.separator')
+
+print(s.layout('TSeparator'))
