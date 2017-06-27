@@ -279,8 +279,11 @@ class CollectionsHolder:
         self.collections_labels_frame = ttk.Frame(self.collection_label_canvas, padding='0')
         self.collection_label_canvas.create_window((0, 0), window=self.collections_labels_frame, anchor="nw")
 
-        self.xsb = tk.Scrollbar(self.collections_bottom_frame, orient="horizontal", command=self.collection_label_canvas.xview,
-                                width=C.FONT_HEIGHT)
+        s.configure('colbar.Horizontal.TScrollbar', arrowsize=C.FONT_HEIGHT + 2)
+
+        self.xsb = ttk.Scrollbar(self.collections_bottom_frame, orient='horizontal',
+                                 style='colbar.Horizontal.TScrollbar', command=self.collection_label_canvas.xview)
+
         self.collection_label_canvas.configure(xscrollcommand=self.xsb.set)
 
         self.collections_labels_frame.bind("<Configure>", lambda event: self.canvas_scroll_update())
@@ -429,9 +432,9 @@ class CollectionsHolder:
 
     def xsb_hax(self, event):
         click_what = self.xsb.identify(event.x, event.y)
-        if click_what == 'arrow1':
+        if click_what == 'leftarrow':
             self.swap_left()
-        elif click_what == 'arrow2':
+        elif click_what == 'rightarrow':
             self.swap_right()
 
 
