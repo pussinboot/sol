@@ -33,22 +33,21 @@ default_colors['highlightBackground'] = default_colors['background']
 
 # default_colors['troughColor'] = default_colors['background']
 
-# http://paletton.com/#uid=70Q1G0k9gpUjkjTgAmz9BjU97gs
+# http://paletton.com/#uid=7001G0k72lzjLdFijmMbwigdZeD
 pad_colors = [
    # primary color
-   ['#CEB893',
-    '#9E7B3F'],
+  ['#AC8686',
+   '#6D2A2A'],
    # secondary color 1
-   ['#A2BB85',
-    '#679039'],
+  ['#ACA986',
+   '#6D682A'],
    # secondary color 2
-   ['#B27F93',
-    '#893656'],
+  ['#675D74',
+   '#33204A'],
    # complement color
-   ['#647388',
-    '#2F4768']
+  ['#6B896B',
+   '#215721']
 ]
-
 # ttk styled specific colors
 styled_button_color = '#2B2B2B'
 styled_button_border = '#1E1E1E'
