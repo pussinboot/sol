@@ -381,14 +381,12 @@ class ClipControl:
         self.setup_pads()
 
     def setup_control_frame_top(self):
-        self.control_but_frame = ttk.Frame(self.top_right_frame)
         self.control_bottom_frame = ttk.Frame(self.top_right_frame)
 
         control_slice_pads = '2 0 10 2'
         self.control_sens_frame = ttk.Frame(self.control_bottom_frame, padding=control_slice_pads)
         self.control_spd_frame = ttk.Frame(self.control_bottom_frame, padding=control_slice_pads)
 
-        self.control_but_frame.pack(side=tk.TOP, anchor='w')
         self.control_bottom_frame.pack(side=tk.TOP, anchor='w')
 
         self.control_sens_frame.grid(row=1, column=1, rowspan=4)
@@ -408,7 +406,7 @@ class ClipControl:
                               command=self.gen_send_cmd('clear'))
 
         for i, but in enumerate([rvrsbut, pausebut, playbut, clearbut]):
-            but.grid(row=0, column=i)
+            but.grid(row=0, column=i, pady=2)
 
         # zoom buts
         def update_zoom_follow(*args):
