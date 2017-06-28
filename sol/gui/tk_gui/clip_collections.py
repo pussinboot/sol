@@ -332,9 +332,11 @@ class CollectionsHolder:
 
     def swap_left(self, *args):
         self.clip_storage.swap_left()
+        self.clip_storage.go_left()
 
     def swap_right(self, *args):
         self.clip_storage.swap_right()
+        self.clip_storage.go_right()
 
     # gui updating
     def refresh_after_load(self):
