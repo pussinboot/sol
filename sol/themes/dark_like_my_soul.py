@@ -1,14 +1,16 @@
 default_style = 'clam'
 
-default_font = {
-    'size': 9,
-    'weight': 'normal',
-    'underline': 0,
-    'overstrike': 0,
-    'slant': 'roman',
-    # 'family': 'Segoe UI'
-    'family': 'Tamsyn6x12'
-}
+default_font = None
+
+# {
+#     'size': 9,
+#     'weight': 'normal',
+#     'underline': 0,
+#     'overstrike': 0,
+#     'slant': 'roman',
+#     # 'family': 'Segoe UI'
+#     'family': 'Tamsyn6x12'
+# }
 
 default_colors = {
     'foreground': 'white',
@@ -22,32 +24,30 @@ default_colors = {
     # but not ttk...
     'selectForeground': '#222',
     'selectBackground': '#367AE3',
-    'troughColor': '#232626',  
+    'troughColor': '#232626',
     # 'highlightBackground': '',  # this goes around canvases for some reason
-    # 'highlightColor': '', 
+    # 'highlightColor': '',
 }
 
 # for consistency
 default_colors['highlightBackground'] = default_colors['background']
-# default_colors['indicatorColor'] = default_colors['background']
-
-# default_colors['troughColor'] = default_colors['background']
 
 # http://paletton.com/#uid=7001G0k72lzjLdFijmMbwigdZeD
 pad_colors = [
    # primary color
-  ['#AC8686',
-   '#6D2A2A'],
+   ['#AC8686',
+    '#6D2A2A'],
    # secondary color 1
-  ['#ACA986',
-   '#6D682A'],
+   ['#ACA986',
+    '#6D682A'],
    # secondary color 2
-  ['#675D74',
-   '#33204A'],
+   ['#675D74',
+    '#33204A'],
    # complement color
-  ['#6B896B',
-   '#215721']
+   ['#6B896B',
+    '#215721']
 ]
+
 # ttk styled specific colors
 styled_button_color = '#2B2B2B'
 styled_button_border = '#1E1E1E'
@@ -211,5 +211,4 @@ ttk_style_opts_to_map = [
     'background': [('active', styled_button_color), ('pressed', styled_button_border)],
     'foreground': [('readonly', 'focus', default_colors['selectForeground'])],
 }),
-
 ]
