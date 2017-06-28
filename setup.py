@@ -24,7 +24,7 @@ config = {
     'author_email': 'mkaynospam@gmail.com',
     'url': 'https://github.com/pussinboot/sol',
     'license': 'MIT',
-    'version': '2.0.4',
+    'version': '2.1.0',
     'install_requires': [
         'python-osc>=1.6',
         'lxml>=3.6.0',
