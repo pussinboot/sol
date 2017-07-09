@@ -2,7 +2,8 @@
   #   #   # #   # #   #
   #    ###  ####   ###
 
-# fix docu for 2.1 ....
+standalone executable (windows, idk about mac)
+    - include ffmpeg but idk quite how
 
 # 2.2
     - better midi, mayb kb support too
