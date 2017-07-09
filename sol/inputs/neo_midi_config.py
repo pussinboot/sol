@@ -8,7 +8,7 @@ import rtmidi
 # can use any number of midi controllers
 # copy pasta all the stuff from midi basically lol
 # no longer need to map stuff to osc
-# handle errors? what happens on midi disconnect : ( ?
+# handle errors? what happens on midi disconnect : ( ? nothing..
 
 class MidiInterface:
     def __init__(self):
@@ -33,21 +33,29 @@ class MidiInterface:
         if input_name not in self.input_ports:
             return
         self.close_midi_input(input_name)
-        port_nos = self.input_ports[input_name]
+        try:
+            port_nos = self.input_ports[input_name]
 
-        new_input = rtmidi.MidiIn(port_nos[0])
-        new_input.open_port(port_nos[1])
-        new_input.set_callback(self.midi_callback_fun, data=input_name)
-        self.midi_inputs[input_name] = new_input
+            new_input = rtmidi.MidiIn(port_nos[0])
+            new_input.open_port(port_nos[1])
+            new_input.set_callback(self.midi_callback_fun, data=input_name)
+            new_input.set_error_callback(self.midi_error_fun)
+            self.midi_inputs[input_name] = new_input
+        except:
+            self.close_midi_input(input_name)
 
     def close_midi_input(self, name):
         if name in self.midi_inputs:
             self.midi_inputs[name].close_port()
             self.midi_inputs[name].cancel_callback()
+            self.midi_inputs[name].cancel_error_callback()
             del self.midi_inputs[name]
 
     def midi_callback_fun(self, midi_tuple, input_name):
         print(midi_tuple)
+
+    def midi_error_fun(self, error, error_msg):
+        pass
 
 
 class MidiConfig:
@@ -62,7 +70,7 @@ class MidiConfig:
 
         self.midi_choice = tk.StringVar()
 
-        self.choose_midi = ttk.Combobox(self.main_frame, values=input_options, textvariable=self.midi_choice)
+        self.choose_midi = ttk.Combobox(self.main_frame, values=input_options, textvariable=self.midi_choice, name='poop')
         self.choose_midi.config(state='readonly')
         self.choose_midi.set('None')
 
