@@ -3,12 +3,15 @@ from tkinter import ttk
 
 import rtmidi
 
+import re
+
 # to-do
 # need toggle for config vs usage
 # can use any number of midi controllers
 # copy pasta all the stuff from midi basically lol
 # no longer need to map stuff to osc
 # handle errors? what happens on midi disconnect : ( ? nothing..
+
 
 class MidiInterface:
     def __init__(self):
@@ -70,7 +73,7 @@ class MidiConfig:
 
         self.midi_choice = tk.StringVar()
 
-        self.choose_midi = ttk.Combobox(self.main_frame, values=input_options, textvariable=self.midi_choice, name='poop')
+        self.choose_midi = ttk.Combobox(self.main_frame, values=input_options, textvariable=self.midi_choice)
         self.choose_midi.config(state='readonly')
         self.choose_midi.set('None')
 
@@ -78,11 +81,45 @@ class MidiConfig:
 
         self.choose_midi.pack()
 
+        self.overlay = MidiOverlay(self)
+
     def midi_choice_changed(self, *args):
         new_choice = self.midi_choice.get()
         if new_choice != 'None':
             self.midi_int.open_midi_input(new_choice)
 
+
+class MidiOverlay:
+    def __init__(self, parent):
+        self.parent = parent
+        self.last_pos = ""
+        self.offsets = [0, 0]
+        self.geo_regex = re.compile(r'(\d+)x(\d+)\+(\-?\d+)\+(-?\d+)')
+
+        self.root = tk.Toplevel()
+        self.canvas = tk.Canvas(self.root, bg="black")
+        self.canvas.pack()
+
+        self.root.wm_attributes("-topmost", True)
+        self.root.wm_attributes("-transparentcolor", "black")
+        self.root.overrideredirect(True)
+
+        self.parent.root.bind('<Configure>', self.parent_moved)
+
+    def parent_moved(self, *args):
+        parent_pos = self.parent.root.geometry()
+        if self.last_pos != parent_pos:
+            new_dims = list(map(int, self.geo_regex.match(parent_pos).groups()))
+            # index of first plus, before this is width/height
+            wi = parent_pos.index('+')
+            if parent_pos[:wi] != self.last_pos[:wi]:
+                self.offsets = [self.parent.root.winfo_rootx() - new_dims[2],
+                                self.parent.root.winfo_rooty() - new_dims[3]]
+                self.canvas.configure(width=new_dims[0] + self.offsets[0],
+                                      height=new_dims[1] + 2 * self.offsets[0] + self.offsets[1])
+                # redraw everything..
+            self.root.geometry('+{}+{}'.format(*new_dims[2:]))
+            self.last_pos = parent_pos
 
 
 if __name__ == '__main__':
