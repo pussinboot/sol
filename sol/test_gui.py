@@ -10,7 +10,7 @@ from sol.magi import Magi
 from sol.gui.lib_org import lib_org
 
 # from sol.gui.tk_gui import clip_control
-from sol.gui.tk_gui import neo_clip_control as clip_control
+from sol.gui.tk_gui import clip_control
 from sol.gui.tk_gui import clip_collections
 # from sol.gui.tk_gui import midi_config
 from sol.inputs import neo_midi_config as midi_config
@@ -397,8 +397,6 @@ def main():
         testgui.refresh_after_load()
 
         testgui.start()
-        # temp as i work on midi config
-        testgui.configure_midi()
 
     root.mainloop()
 

@@ -338,6 +338,12 @@ class ClipControl:
 
     # tk setup
 
+    def format_name(self, wname, i=-1):
+        if i > -1:
+            wname = wname.format(i)
+        wname += '_l{}'.format(self.layer)
+        return wname
+
     def setup_main_tk(self):
         self.root_frame = ttk.Frame(self.root, padding='5 1 5 2')
         self.root_frame.dnd_accept = self.dnd_accept  # for dnd
@@ -384,8 +390,10 @@ class ClipControl:
         self.control_bottom_frame = ttk.Frame(self.top_right_frame)
 
         control_slice_pads = '6 0 6 2'
-        self.control_sens_frame = ttk.Frame(self.control_bottom_frame, padding=control_slice_pads)
-        self.control_spd_frame = ttk.Frame(self.control_bottom_frame, padding=control_slice_pads)
+        self.control_sens_frame = ttk.Frame(self.control_bottom_frame, padding=control_slice_pads,
+                                            name=self.format_name('ctrl_sens'))
+        self.control_spd_frame = ttk.Frame(self.control_bottom_frame, padding=control_slice_pads,
+                                           name=self.format_name('pb_speed'))
 
         self.control_bottom_frame.pack(side=tk.TOP, anchor='w')
 
