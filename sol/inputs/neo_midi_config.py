@@ -27,6 +27,9 @@ class MidiInterface:
         self.input_ports = {}
         self.midi_inputs = {}
         self.refresh_input_ports()
+        # used for when a single widget has multiple associated cmds
+        self.wname_to_names = {}
+        self.all_wnames = []
         self.name_to_cmd = {}
         self.gen_name_to_cmd()
 
@@ -74,60 +77,75 @@ class MidiInterface:
     def gen_name_to_cmd(self):
 
         def add_cmd(cmd_array, l=-1, i=-1):
-            [cmd_name, cmd_osc, cmd_desc] = cmd_array
+            [cmd_name, cmd_osc, cmd_desc, wname] = cmd_array
+            wn = '{}'
+            if wname is not None:
+                wn = wname
             if l > -1:
                 cmd_name += '_l{}'.format(l)
+                wn += '_l{}'.format(l)
                 cmd_osc = cmd_osc.format(l)
             if i > -1:
                 cmd_name = cmd_name.format(i)
+                wn = wn.format(i)
                 cmd_osc += ' {}'.format(i)
             self.name_to_cmd[cmd_name] = {'addr': cmd_osc, 'desc': cmd_desc}
 
+            if wname is not None:
+                if wn in self.wname_to_names:
+                    self.wname_to_names[wn].append(cmd_name)
+                else:
+                    self.wname_to_names[wn] = [cmd_name]
+                    self.all_wnames.append(wn)
+            else:
+                self.all_wnames.append(cmd_name)
+
         # not per layer cmds
+        # cmds are as follows: cmd_name, osc_addr, cmd_desc, widget_name
         not_per_layer_cmds = [
-        ['coln_next','/magi/cur_col/select_left', 'select collection to the left'],
-        ['coln_prev','/magi/cur_col/select_right', 'select collection to the right'],
+        ['coln_next', '/magi/cur_col/select_left', 'select collection to the left', None],
+        ['coln_prev', '/magi/cur_col/select_right', 'select collection to the right', None],
         ]
 
         # per layer cmds
         # timeline control
         per_layer_cmds = [
-        ['ctrl_start', '/magi/control{}/start', 'start control'],
-        ['ctrl_stop', '/magi/control{}/stop', 'stop control'],
-        ['ctrl_do', '/magi/control{}/do', 'do control'],
-        ['ctrl_sens', '/magi/control{}/sens', 'modify control sensitivity'],
+        ['ctrl_start', '/magi/control{}/start', 'start control', None],
+        ['ctrl_stop', '/magi/control{}/stop', 'stop control', None],
+        ['ctrl_do', '/magi/control{}/do', 'do control', None],
+        ['ctrl_sens', '/magi/control{}/sens', 'modify control sensitivity', None],
         # playback
-        ['pb_play','/magi/layer{}/playback/play', 'play'],
-        ['pb_pause','/magi/layer{}/playback/pause', 'pause'],
-        ['pb_reverse','/magi/layer{}/playback/reverse', 'reverse'],
-        ['pb_clear','/magi/layer{}/playback/clear', 'clear'],
+        ['pb_play', '/magi/layer{}/playback/play', 'play', None],
+        ['pb_pause', '/magi/layer{}/playback/pause', 'pause', None],
+        ['pb_reverse', '/magi/layer{}/playback/reverse', 'reverse', None],
+        ['pb_clear', '/magi/layer{}/playback/clear', 'clear', None],
         # speed
-        ['pb_spd','/magi/layer{}/playback/speed', 'set speed'],
-        ['pb_spd_adjust','/magi/layer{}/playback/speed/adjust', 'adjust speed'],
-        ['pb_spd_double','/magi/layer{}/playback/speed/adjust/factor 2', 'increase speed by a factor of 2'],
-        ['pb_spd_halve','/magi/layer{}/playback/speed/adjust/factor 0.5', 'decrease speed by a factor of 2'],
+        ['pb_spd', '/magi/layer{}/playback/speed', 'set speed', 'pb_speed'],
+        ['pb_spd_adjust', '/magi/layer{}/playback/speed/adjust', 'adjust speed', 'pb_speed'],
+        ['pb_spd_double', '/magi/layer{}/playback/speed/adjust/factor 2', 'increase speed by a factor of 2', None],
+        ['pb_spd_halve', '/magi/layer{}/playback/speed/adjust/factor 0.5', 'decrease speed by a factor of 2', None],
         # loop points
-        ['pb_lp_on_off','/magi/layer{}/loop/on_off', 'de/activate looping'],
-        ['pb_lp_type','/magi/layer{}/loop/type', 'change loop type'],
-        ['pb_lp_select_next','/magi/layer{}/loop/select/move +1', 'select the next loop range'],
-        ['pb_lp_select_prev','/magi/layer{}/loop/select/move -1', 'select the previous loop range'],
-        ['pb_lp_set_a','/magi/layer{}/loop/set/a', 'set the loop range\'s beginning'],
-        ['pb_lp_set_b','/magi/layer{}/loop/set/b', 'set the loop range\'s end'],
+        ['pb_lp_on_off', '/magi/layer{}/loop/on_off', 'de/activate looping', None],
+        ['pb_lp_type', '/magi/layer{}/loop/type', 'change loop type', None],
+        ['pb_lp_select_next', '/magi/layer{}/loop/select/move +1', 'select the next loop range', None],
+        ['pb_lp_select_prev', '/magi/layer{}/loop/select/move -1', 'select the previous loop range', None],
+        ['pb_lp_set_a', '/magi/layer{}/loop/set/a', 'set the loop range\'s beginning', None],
+        ['pb_lp_set_b', '/magi/layer{}/loop/set/b', 'set the loop range\'s end', None],
         ]
         # cue points
         qp_cmds = [
         # x no qp
         # maybe instead of act/deact have a "press this button so next is delet" thing
-        ['pb_qp_{}_act','/magi/layer{}/cue', 'set/activate cue point'],
-        ['pb_qp_{}_deact','/magi/layer{}/cue/clear', 'clear cue point'],
+        ['pb_qp_{}_act', '/magi/layer{}/cue', 'set/activate cue point', 'pb_qp_{}'],
+        ['pb_qp_{}_deact', '/magi/layer{}/cue/clear', 'clear cue point', 'pb_qp_{}'],
         # collections
-        ['coln_select_{}','/magi/cur_col/select_clip/layer{}', 'select a clip from current collection'],
+        ['coln_select_{}', '/magi/cur_col/select_clip/layer{}', 'select a clip from current collection', None],
         ]
 
         lp_cmds = [
         # x no lp
-        ['pb_lp_{}_act','/magi/layer{}/loop/select', 'select loop range'],
-        ['pb_lp_{}_deact','/magi/layer{}/loop/clear', 'clear the loop range'],
+        ['pb_lp_{}_act', '/magi/layer{}/loop/select', 'select loop range', 'pb_lp_{}'],
+        ['pb_lp_{}_deact', '/magi/layer{}/loop/clear', 'clear the loop range', 'pb_lp_{}'],
         ]
 
         for c in not_per_layer_cmds:
@@ -145,7 +163,6 @@ class MidiInterface:
                 for i in range(C.NO_LP):
                     add_cmd(c, l, i)
 
-        pp.pprint(self.name_to_cmd)
 
 class MidiConfig:
     def __init__(self, root, parent):
@@ -169,8 +186,12 @@ class MidiConfig:
 
         self.choose_midi.pack()
 
-        self.overlay = MidiOverlay(self.parent)
+        self.overlay = MidiOverlay(self, self.parent)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
+        # undo topmost
+        self.parent.root.call('wm', 'attributes', '.', '-topmost', '0')
+
+
 
     def midi_choice_changed(self, *args):
         new_choice = self.midi_choice.get()
@@ -181,17 +202,23 @@ class MidiConfig:
         if self.overlay is not None:
             self.overlay.close()
         self.root.destroy()
-        # may need to undo topmost
-        # self.parent.root.call('wm', 'attributes', '.', '-topmost', str(int(self.parent.on_top_toggle.get())))
+        # redo topmost setting
+        self.parent.root.call('wm', 'attributes', '.', '-topmost', str(int(self.parent.on_top_toggle.get())))
 
 
 
 class MidiOverlay:
-    def __init__(self, parent):
+    def __init__(self, parent, base_gui):
         self.parent = parent
+        self.base_gui = base_gui
         self.last_pos = ""
         self.offsets = [0, 0]
+        self.base_coords = [0, 0]
         self.geo_regex = re.compile(r'(\d+)x(\d+)\+(\-?\d+)\+(-?\d+)')
+
+        self.wname_to_widget = {}
+        self.selected_cmd = None
+        self.hovered_cmd = None
 
         self.root = tk.Toplevel()
         self.canvas = tk.Canvas(self.root, bg="black")
@@ -201,26 +228,100 @@ class MidiOverlay:
         self.root.wm_attributes("-transparentcolor", "black")
         self.root.overrideredirect(True)
 
-        self.parent.root.bind('<Configure>', self.parent_moved)
-        self.parent_moved()
+        self.recursive_buildup()
 
-    def parent_moved(self, *args):
-        parent_pos = self.parent.root.geometry()
-        if self.last_pos != parent_pos:
-            new_dims = list(map(int, self.geo_regex.match(parent_pos).groups()))
+        self.base_gui.root.bind('<Configure>', self.base_moved)
+        self.base_moved()
+
+
+    def base_moved(self, *args):
+        base_pos = self.base_gui.root.geometry()
+        if self.last_pos != base_pos:
+            new_dims = list(map(int, self.geo_regex.match(base_pos).groups()))
+            self.base_coords = new_dims[2:]
             # index of first plus, before this is width/height
-            wi = parent_pos.index('+')
-            if parent_pos[:wi] != self.last_pos[:wi]:
-                self.offsets = [self.parent.root.winfo_rootx() - new_dims[2],
-                                self.parent.root.winfo_rooty() - new_dims[3]]
+            wi = base_pos.index('+')
+            if base_pos[:wi] != self.last_pos[:wi]:
+                self.offsets = [self.base_gui.root.winfo_rootx() - new_dims[2],
+                                self.base_gui.root.winfo_rooty() - new_dims[3]]
                 self.canvas.configure(width=new_dims[0] + self.offsets[0],
                                       height=new_dims[1] + self.offsets[1])
                 # redraw everything..
+                self.draw_everything()
             self.root.geometry('+{}+{}'.format(*new_dims[2:]))
-            self.last_pos = parent_pos
+            self.last_pos = base_pos
+
+    def draw_widget(self, coords, w_name):
+        [x, y, w, h] = coords
+        x1, y1 = x - self.base_coords[0], y - self.base_coords[1]
+        x2, y2 = x1 + w, y1 + h
+        # check fill
+        self.canvas.create_rectangle(x1, y1, x2, y2, fill="hot pink", tag=w_name)
+
+    def draw_single_widget(self, w, w_name):
+        # give a tag to fake square that corresponds to midi's cmd_name
+        x, y, width, height = w.winfo_rootx(), w.winfo_rooty(), w.winfo_width(), w.winfo_height()
+        self.draw_widget([x, y, width, height], w_name)
+
+    def draw_multiple_widgets(self, ws, w_key):
+        top_w = self.wname_to_widget[w_key]
+        bx, by, tw, th = top_w.winfo_rootx(), top_w.winfo_rooty(), top_w.winfo_width(), top_w.winfo_height()
+        # determine how to split, i only deal with 2 or 4..
+        n = len(ws)
+        if tw > th:
+            # sideways then vertical
+            tot_c = n // 2
+            w, h = tw // 2, th // tot_c
+            for i, wn in enumerate(ws):
+                r, c = i // 2, i % 2
+                x, y = bx + (c * w), by + (r * h)
+                self.draw_widget([x, y, w, h], wn)
+        else:
+            # vertical all the way
+            w, h = tw, th / n
+            for i, wn in enumerate(ws):
+                y = by + (i * h)
+                self.draw_widget([bx, y, w, h], wn)
+
+    def draw_everything(self):
+        self.canvas.delete("all")
+        for k in self.wname_to_widget:
+            # need to do multiple items
+            if k in self.parent.midi_int.wname_to_names:
+                self.draw_multiple_widgets(self.parent.midi_int.wname_to_names[k], k)
+            else:
+                self.draw_single_widget(self.wname_to_widget[k], k)
+        self.canvas.addtag_all('overlay')
+        self.create_binds()
+
+    def recursive_buildup(self, start_el=None):
+        if start_el is None:
+            start_el = self.base_gui.root
+        for c in start_el.winfo_children():
+            if c.winfo_name() in self.parent.midi_int.all_wnames:
+                self.wname_to_widget[c.winfo_name()] = c
+                # print('found', c)
+            self.recursive_buildup(c)
+
+    def create_binds(self):
+        self.canvas.tag_bind("overlay", "<Enter>", self.hover_check)
+        self.canvas.tag_bind("overlay", "<Leave>", self.hover_restore)
+        self.canvas.bind("<ButtonPress-1>", self.select_bind)
+
+    def hover_check(self, event):
+        item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y), halo=5)[0]
+        self.hovered_cmd = self.canvas.gettags(item)[0]
+        print(self.hovered_cmd)
+
+    def hover_restore(self, event):
+        self.hovered_cmd = None
+
+    def select_bind(self, event):
+        item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y), halo=5)[0]
+        self.selected_cmd = self.canvas.gettags(item)[0]
 
     def close(self):
-        self.parent.root.unbind('<Configure>')
+        self.base_gui.root.unbind('<Configure>')
         self.root.destroy()
 
 if __name__ == '__main__':
