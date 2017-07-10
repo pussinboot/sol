@@ -12,7 +12,8 @@ from sol.gui.lib_org import lib_org
 # from sol.gui.tk_gui import clip_control
 from sol.gui.tk_gui import neo_clip_control as clip_control
 from sol.gui.tk_gui import clip_collections
-from sol.gui.tk_gui import midi_config
+# from sol.gui.tk_gui import midi_config
+from sol.inputs import neo_midi_config as midi_config
 from sol.setup_gui import SetupGui
 
 from sol.mt_gui import MTGui
@@ -150,7 +151,8 @@ class MainGui:
         # print([0],self.magi.clip_storage.current_clips[1])
 
     def configure_midi(self):
-        midi_config.ConfigGui(tk.Toplevel(), self)
+        # midi_config.ConfigGui(tk.Toplevel(), self)
+        midi_config.MidiConfig(tk.Toplevel(), self)
 
     def edit_config(self):
         if self.setup_gui is not None:
@@ -395,6 +397,8 @@ def main():
         testgui.refresh_after_load()
 
         testgui.start()
+        # temp as i work on midi config
+        testgui.configure_midi()
 
     root.mainloop()
 

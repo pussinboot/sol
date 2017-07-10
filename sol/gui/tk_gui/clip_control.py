@@ -343,7 +343,7 @@ class ClipControl:
         self.root_frame.dnd_accept = self.dnd_accept  # for dnd
 
         self.info_frame = ttk.Frame(self.root_frame, relief='ridge', padding='2')
-        self.name_label = ttk.Label(self.info_frame, textvariable=self.name_var, 
+        self.name_label = ttk.Label(self.info_frame, textvariable=self.name_var,
                                     anchor='center', padding='0 1 0 2')
 
         left_frame_padding = '2 0 5 0'
