@@ -185,6 +185,7 @@ class ClipControl:
     def toggle_pad_mode(self, i=-1):
         self.deleting_mode = not self.deleting_mode
         # maybe update gui somehow
+        self.update_loop(self.cur_clip)
 
 
     # update dispatch
@@ -279,12 +280,15 @@ class ClipControl:
             self.loop_but_states = [(lp[i] is not None) and (None not in lp[i][:2]) for i in range(C.NO_LP)]
         else:
             self.loop_but_states = [False for i in range(C.NO_LP)]
-
-        self.loop_selected_text_var.set('selected [{}]'.format(selected_ind))
-        if i >= 0:
-            self.lp_selected_label.config(background=self.pad_colors[i % 4][i // 4])
+        if self.deleting_mode:
+            self.loop_selected_text_var.set('DELETE')
+            self.lp_selected_label.config(background=C.CURRENT_THEME.delete_bg)
         else:
-            self.lp_selected_label.config(background='')
+            self.loop_selected_text_var.set('selected [{}]'.format(selected_ind))
+            if i >= 0:
+                self.lp_selected_label.config(background=self.pad_colors[i % 4][i // 4])
+            else:
+                self.lp_selected_label.config(background='')
 
         self.lp_data = lp
         self.pad_reconfigure()

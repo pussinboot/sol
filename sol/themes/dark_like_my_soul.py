@@ -48,6 +48,14 @@ pad_colors = [
     '#215721']
 ]
 
+delete_bg = '#661A1A'
+
+midi_setting_colors = {
+  'selected': '#345486',
+  'empty': '#F0F0F0',
+  'set': '#6BB321',
+}
+
 # ttk styled specific colors
 styled_button_color = '#2B2B2B'
 styled_button_border = '#1E1E1E'
