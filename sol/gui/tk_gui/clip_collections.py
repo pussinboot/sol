@@ -18,7 +18,7 @@ EMPTY_CLIP = os.path.join(os.path.dirname(__file__), 'sample_clip.png')
 
 class ClipContainer:
     # gui element that holds a single clip
-    def __init__(self, parent, index, selectfun=None, clip=None):
+    def __init__(self, parent, index, selectfun=None, clip=None, first=False):
         self.index = index  # index in parent collection
         self.selectfun = selectfun
         self.last_clip = None
@@ -33,8 +33,11 @@ class ClipContainer:
         self.default_img = self.current_img = ImageTk.PhotoImage(Image.open(EMPTY_CLIP))
         self.current_img_i = 0
         self.hovered = False
-
-        self.label = tk.Label(self.frame, image=self.current_img, text='test', compound='top', width=C.THUMB_W, borderwidth='2')  # width of clip preview
+        if first:
+            self.label = tk.Label(self.frame, image=self.current_img, text='test', compound='top',
+                                  width=C.THUMB_W, borderwidth='2', name='coln_clip_{}'.format(index))  # width of clip preview
+        else:
+            self.label = tk.Label(self.frame, image=self.current_img, text='test', compound='top', width=C.THUMB_W, borderwidth='2')  # width of clip preview            
         self.label.image = self.current_img
         self.label.pack()
         self.label.bind('<Double-1>', self.activate_l)
@@ -210,7 +213,7 @@ class DragClip:
 
 class ContainerCollection:
     # gui element that holds multiple clips
-    def __init__(self, root, parent_frame, clipcol, select_cmd, backend):
+    def __init__(self, root, parent_frame, clipcol, select_cmd, backend, first=False):
         self.clip_conts = []
         self.clip_collection = clipcol
         self.frame = ttk.Frame(parent_frame, padding=0)
@@ -226,7 +229,7 @@ class ContainerCollection:
             start_clip = None
             if i < cc_len:
                 start_clip = self.clip_collection[i]
-            self.clip_conts.append(ClipContainer(self, i, select_cmd, start_clip))
+            self.clip_conts.append(ClipContainer(self, i, select_cmd, start_clip, first))
 
         n_buts = C.NO_Q
         n_rows = 1
@@ -281,7 +284,7 @@ class CollectionsHolder:
 
         s.configure('colbar.Horizontal.TScrollbar', arrowsize=C.FONT_HEIGHT + 2)
 
-        self.xsb = ttk.Scrollbar(self.collections_bottom_frame, orient='horizontal',
+        self.xsb = ttk.Scrollbar(self.collections_bottom_frame, orient='horizontal', name='coln_select',
                                  style='colbar.Horizontal.TScrollbar', command=self.collection_label_canvas.xview)
 
         self.collection_label_canvas.configure(xscrollcommand=self.xsb.set)
@@ -388,7 +391,8 @@ class CollectionsHolder:
     def add_collection_frame(self, collection=None):
         if collection is None:
             collection = self.clip_storage.clip_cols[-1]
-        new_cont = ContainerCollection(self.root, self.collections_frame, collection, self.select_cmd, self.backend)
+        new_cont = ContainerCollection(self.root, self.collections_frame, collection,
+                                       self.select_cmd, self.backend, len(self.containers)==0)
         self.containers.append(new_cont)
         self.add_collection_label(collection)
 

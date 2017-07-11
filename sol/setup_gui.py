@@ -119,9 +119,13 @@ class SetupGui:
             ('int_choice', '# of layers', 'NO_LAYERS', []),
             ('int_choice', '# of cue points', 'NO_Q', []),
             ('int_choice', '# of loop ranges', 'NO_LP', []),
-            ('float_choice', 'default sensitivity', 'DEFAULT_SENSITIVITY', []),
             ('list_enter', 'ignored directories', 'IGNORED_DIRS', []),
-            ('bool_choice', 'print debug info', 'DEBUG', [])
+            ('bool_choice', 'print debug info', 'DEBUG', []),
+            ('label_frame', 'midi options', '', []),
+            ('bool_choice', 'midi enabled', 'MIDI_ENABLED', []),
+            ('bool_choice', 'separate keys for cue/loop points', 'SEPARATE_QP_LP', []),
+            ('bool_choice', 'separate keys for de/activation', 'SEPARATE_DELETE', []),
+            ('float_choice', 'default control sensitivity', 'DEFAULT_SENSITIVITY', []),
         ]
 
         network_tab_instr = [
