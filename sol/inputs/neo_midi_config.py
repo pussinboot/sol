@@ -19,8 +19,20 @@ C = GlobalConfig()
 # no longer need to map stuff to osc
 # handle errors? what happens on midi disconnect : ( ? nothing..
 
+class LastNList:
+    def __init__(self, n, first_el=None):
+        self.n = n
+        self.list = []
+        if first_el is not None:
+            self.append(first_el)
 
+    def append(self, what):
+        self.list.append(what)
+        if len(self.list) > self.n:
+            return self.list.pop(0)
 
+    def __repr__(self):
+        return self.list.__repr__()
 
 class MidiInterface:
     def __init__(self):
@@ -34,9 +46,48 @@ class MidiInterface:
         self.double_width_pls = []
 
         self.gen_name_to_cmd()
+        # midi callback fun references a handle midi cmd
+        # that switches btwn config and live
+        self.handle_midi = None
+        self.midi_config = None
+        self.midi_queue = None
+        self.midi_keys_queue = None
+
+    def enter_config_mode(self, mc):
+        self.close_all_inputs()
+        self.midi_config = mc
+        self.midi_queue = {}
+        self.midi_keys_queue = LastNList(5)
+        self.handle_midi = self.id_midi
+
+    def exit_config_mode(self):
+        self.close_all_inputs()
+        self.midi_config = None
+        self.midi_queue = None
+        self.midi_keys_queue = None
+        self.handle_midi = self.pass_midi
+
+    def id_midi(self, midi_tuple, input_name):
+        # used for configuration
+        if self.midi_queue is not None:
+            key, n = str(midi_tuple[0][:2]), midi_tuple[0][2]
+            if key in self.midi_queue:
+                self.midi_queue[key].append(n)
+            else:
+                pos_drop_key = self.midi_keys_queue.append(key)
+                self.midi_queue[key] = LastNList(5, n)
+                if pos_drop_key and pos_drop_key in self.midi_queue:
+                    del self.midi_queue[pos_drop_key]
+        pp.pprint(self.midi_queue)
+
+    def pass_midi(self, midi_tuple, input_name):
+        # used for actual midi control
+        pass
 
     def refresh_input_ports(self):
         # get a list of all inputs
+        self.close_all_inputs()
+        self.input_ports = {}
         for api in rtmidi.get_compiled_api():
             try:
                 midi = rtmidi.MidiIn(api)
@@ -63,6 +114,10 @@ class MidiInterface:
         except:
             self.close_midi_input(input_name)
 
+    def close_all_inputs(self):
+        for inp in self.input_ports:
+            self.close_midi_input(inp)
+
     def close_midi_input(self, name):
         if name in self.midi_inputs:
             self.midi_inputs[name].close_port()
@@ -72,6 +127,8 @@ class MidiInterface:
 
     def midi_callback_fun(self, midi_tuple, input_name):
         print(midi_tuple)
+        if self.handle_midi is not None:
+            self.handle_midi(midi_tuple, input_name)
 
     def midi_error_fun(self, error, error_msg):
         pass
@@ -215,28 +272,34 @@ class MidiConfig:
         self.root = root
         self.parent = parent
         self.midi_int = MidiInterface()
+        self.midi_int.enter_config_mode(self)
 
         self.main_frame = ttk.Frame(self.root)
         self.main_frame.pack()
 
-        input_options = ['None'] + list(self.midi_int.input_ports.keys())
-
         self.midi_choice = tk.StringVar()
 
-        self.choose_midi = ttk.Combobox(self.main_frame, values=input_options, textvariable=self.midi_choice)
+        self.choose_midi = ttk.Combobox(self.main_frame, textvariable=self.midi_choice)
+        self.refresh_inputs()
         self.choose_midi.config(state='readonly')
         self.choose_midi.set('None')
 
         self.midi_choice.trace("w", self.midi_choice_changed)
 
-        self.choose_midi.pack()
+        self.refresh_inputs_but = ttk.Button(self.main_frame, text='[R]', command=self.refresh_inputs)
+
+        self.choose_midi.grid(row=0, column=0, columnspan=3)
+        self.refresh_inputs_but.grid(row=0, column=3)
 
         self.overlay = MidiOverlay(self, self.parent)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
         # undo topmost
         self.parent.root.call('wm', 'attributes', '.', '-topmost', '0')
 
-
+    def refresh_inputs(self, *args):
+        self.midi_int.refresh_input_ports()
+        input_options = ['None'] + list(self.midi_int.input_ports.keys())
+        self.choose_midi.config(values=input_options)
 
     def midi_choice_changed(self, *args):
         new_choice = self.midi_choice.get()
