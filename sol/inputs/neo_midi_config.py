@@ -272,13 +272,13 @@ class MidiConfig:
         self.root = root
         self.parent = parent
         self.midi_int = MidiInterface()
-        self.midi_int.enter_config_mode(self)
 
         self.main_frame = ttk.Frame(self.root)
         self.main_frame.pack()
 
         self.midi_choice = tk.StringVar()
 
+        self.input_label = ttk.Label(self.main_frame, text='input:')
         self.choose_midi = ttk.Combobox(self.main_frame, textvariable=self.midi_choice)
         self.refresh_inputs()
         self.choose_midi.config(state='readonly')
@@ -286,15 +286,44 @@ class MidiConfig:
 
         self.midi_choice.trace("w", self.midi_choice_changed)
 
-        self.refresh_inputs_but = ttk.Button(self.main_frame, text='[R]', command=self.refresh_inputs)
+        self.refresh_inputs_but = ttk.Button(self.main_frame, text='[f5]', command=self.refresh_inputs)
+        self.cmd_label = ttk.Label(self.main_frame, text='cmd:')
+        self.cmd_text_var = tk.StringVar()
+        self.cmd_text_label = ttk.Label(self.main_frame, textvariable=self.cmd_text_var)
+        self.desc_label = ttk.Label(self.main_frame, text='desc:')
+        self.desc_text_var = tk.StringVar()
+        self.desc_text_label = ttk.Label(self.main_frame, textvariable=self.desc_text_var)
 
-        self.choose_midi.grid(row=0, column=0, columnspan=3)
-        self.refresh_inputs_but.grid(row=0, column=3)
+        self.input_label.grid(row=0, column=0, sticky='we')
+        self.choose_midi.grid(row=0, column=1, columnspan=2, sticky='we')
+        self.refresh_inputs_but.grid(row=0, column=3, sticky='we')
+        self.cmd_label.grid(row=1, column=0, sticky='we')
+        self.cmd_text_label.grid(row=1, column=1, columnspan=3, sticky='we')
+        self.desc_label.grid(row=2, column=0, columnspan=4, sticky='we')
+        self.desc_text_label.grid(row=3, column=0, columnspan=4, sticky='we')
 
         self.overlay = MidiOverlay(self, self.parent)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
+        self.root.title('config midi')
         # undo topmost
         self.parent.root.call('wm', 'attributes', '.', '-topmost', '0')
+
+        self.midi_int.enter_config_mode(self)
+
+    def hovered(self):
+        hc = self.overlay.hovered_cmd
+        if hc is not None and hc in self.midi_int.name_to_cmd:
+            self.cmd_text_var.set(hc)
+            self.desc_text_var.set(self.midi_int.name_to_cmd[hc]['desc'])
+
+    def unhovered(self):
+        sc = self.overlay.selected_cmd
+        if sc is not None and sc in self.midi_int.name_to_cmd:
+            self.cmd_text_var.set(sc)
+            self.desc_text_var.set(self.midi_int.name_to_cmd[sc]['desc'])
+        else:
+            self.cmd_text_var.set('')
+            self.desc_text_var.set('')
 
     def refresh_inputs(self, *args):
         self.midi_int.refresh_input_ports()
@@ -342,6 +371,7 @@ class MidiOverlay:
         self.recursive_buildup()
 
         self.base_gui.root.bind('<Configure>', self.base_moved)
+
         self.base_moved()
 
 
@@ -360,7 +390,17 @@ class MidiOverlay:
                 # redraw everything..
                 self.draw_everything()
             self.root.geometry('+{}+{}'.format(*new_dims[2:]))
+            self.parent.root.geometry('+{}+{}'.format(self.base_gui.root.winfo_rootx() + new_dims[0],
+                                                      self.base_gui.root.winfo_rooty() - self.offsets[1]))
             self.last_pos = base_pos
+
+    def get_widget_color(self, w_name):
+        color_get = 'empty'
+        if w_name is not None and w_name in self.parent.midi_int.name_to_cmd:
+            if 'midi_key' in self.parent.midi_int.name_to_cmd[w_name]:
+                color_get = 'set'
+        return C.CURRENT_THEME.midi_setting_colors[color_get]
+
 
     def draw_widget(self, coords, w_name, s=0):
         [x, y, w, h] = coords
@@ -370,7 +410,7 @@ class MidiOverlay:
         x2, y2 = x1 + w - 2 * s, y1 + h - 2 * s
         # check fill
         self.wname_to_rect[w_name] = self.canvas.create_rectangle(x1, y1, x2, y2, tag=w_name,
-                                                                  fill=C.CURRENT_THEME.midi_setting_colors['empty'])
+                                                                  fill=self.get_widget_color(w_name))
 
     def draw_single_widget(self, w, w_name):
         # give a tag to fake square that corresponds to midi's cmd_name
@@ -432,14 +472,17 @@ class MidiOverlay:
     def hover_check(self, event):
         item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y), halo=5)[0]
         self.hovered_cmd = self.canvas.gettags(item)[0]
+        self.parent.hovered()
 
     def hover_restore(self, event):
         self.hovered_cmd = None
+        self.parent.unhovered()
 
     def select_bind(self, event):
         if self.selected_cmd in self.wname_to_rect:
             # restore color
-            pass
+            self.canvas.itemconfig(self.wname_to_rect[self.selected_cmd],
+                                   fill=self.get_widget_color(self.selected_cmd))
         item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y), halo=5)[0]
         self.selected_cmd = self.canvas.gettags(item)[0]
         print(self.selected_cmd)
