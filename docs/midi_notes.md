@@ -21,6 +21,16 @@ ie speed slider is different from a pad button
 some thing have multiple commands like pad can de/activate
 or clip collection clip can activate to diff layerz so these overlays need to be split up
 
-savedata is `cmd_desc` as key contains `osc_addr`, controller name, array of midi keys, key type
+savedata is `cmd_desc` as key contains `osc_addr`, controller names, array of midi keys, key type
 
 /midi osc addr still exists but it simply goes to a wrapper fun of the midi interface which calls the appropriate callback fun
+
+name_to_cmd [command_name] = {
+    addr - cmd_osc
+    desc - cmd_desc
+    midi_keys [control] - { // control = input name, a nested dict so that multiple controllers can map to same cmd
+        keys - [keys to bind]
+        type - midi control type
+        invert - bool flag
+    }    
+}
