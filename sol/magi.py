@@ -72,6 +72,7 @@ class Magi:
         self.map_search_funs()
         self.map_col_funs()
         self.map_loop_funs()
+        self.map_gui_funs()
         self.last_sent_loop = None
         if self.model.external_looping:
             def dont_resend(cl):
@@ -561,30 +562,82 @@ class Magi:
             spd_adj_fac_addr = base_addr.format(i) + 'speed/adjust/factor'
 
             spd_funs = gen_spd_funs(i)
-            self.osc_server.mapp(spd_addr,spd_funs[0])      
-            self.osc_server.mapp(spd_adj_addr,spd_funs[1])      
-            self.osc_server.mapp(spd_adj_fac_addr,spd_funs[2])  
+            self.osc_server.mapp(spd_addr, spd_funs[0])
+            self.osc_server.mapp(spd_adj_addr, spd_funs[1])
+            self.osc_server.mapp(spd_adj_fac_addr, spd_funs[2])
 
     def map_search_funs(self):
         # perform search
         search_addr = "/magi/search"
-        def do_search(_,msg):
+
+        def do_search(_, msg):
             search_term = str(msg).strip("'.,")
             self.db.search(search_term)
             self.debug_search_res()
-            if self.gui is not None: self.gui.update_search()
-        self.osc_server.mapp(search_addr,do_search)
+            if self.gui is not None:
+                self.gui.update_search()
+        self.osc_server.mapp(search_addr, do_search)
 
         # select clip from last search res to certain layer
         select_addr = "/magi/search/select/layer{}"
-        def select_search_res(a,i):
+
+        def select_search_res(a, i):
             i = self.osc_server.osc_value(i)
             layer = self.osc_server.find_num_in_addr(a)
             if i < len(self.db.last_search) and layer >= 0:
                 clip = self.db.last_search[i]
-                self.select_clip(clip,layer)
+                self.select_clip(clip, layer)
         for i in range(C.NO_LAYERS):
-            self.osc_server.mapp(select_addr.format(i),select_search_res)
+            self.osc_server.mapp(select_addr.format(i), select_search_res)
+
+    def map_gui_funs(self):
+        # extra funs for midi gui control
+        gui_addr = "/magi/gui/layer{}/"
+
+        def gen_gui_helpers(idx):
+            i = idx
+
+            def toggle_qp_lp(_, n):
+                if self.gui is not None:
+                    self.gui.update_gui_directly(i, 'qp_lp_toggle')
+
+            def toggle_pads(_, n):
+                if self.gui is not None:
+                    self.gui.update_gui_directly(i, 'pads_toggle', n)
+
+            def activate_pad(_, n):
+                if self.gui is not None:
+                    self.gui.update_gui_directly(i, 'pad_activate', n)
+
+            def deactivate_pad(_, n):
+                if self.gui is not None:
+                    self.gui.update_gui_directly(i, 'pad_deactivate', n)
+
+            def press_pad(_, n):
+                if self.gui is not None:
+                    self.gui.update_gui_directly(i, 'pad_press', n)
+
+            return [toggle_qp_lp, toggle_pads, activate_pad, deactivate_pad, press_pad]
+
+        for i in range(C.NO_LAYERS):
+            # toggle qp/lp
+            gui_funs = gen_gui_helpers(i)
+            add_addrs = ['qp_lp_toggle', 'pads_toggle', 'pad/activate', 'pad/deactivate', 'pad/press']
+            base_addr = gui_addr.format(i)
+            for i, gui_fun in enumerate(gui_funs):
+                self.osc_server.mapp(base_addr + add_addrs[i], gui_fun)
+
+        # pad activate
+        select_addr = "/magi/search/select/layer{}"
+
+        def select_search_res(a, i):
+            i = self.osc_server.osc_value(i)
+            layer = self.osc_server.find_num_in_addr(a)
+            if i < len(self.db.last_search) and layer >= 0:
+                clip = self.db.last_search[i]
+                self.select_clip(clip, layer)
+        for i in range(C.NO_LAYERS):
+            self.osc_server.mapp(select_addr.format(i), select_search_res)
 
     def map_col_funs(self):
         # select from col
@@ -1193,6 +1246,9 @@ class TerminalGui:
         pass
 
     def update_clip_names(self):
+        pass
+
+    def update_gui_directly(self, layer, what, n=-1):
         pass
 
 
