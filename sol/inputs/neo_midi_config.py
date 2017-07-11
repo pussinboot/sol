@@ -138,23 +138,55 @@ class MidiInterface:
         ['pb_lp_set_b', '/magi/layer{}/loop/set/b', 'set the loop range\'s end'],
         ]
         # cue points
-        qp_cmds = [
-        # x no qp
-        # maybe instead of act/deact have a "press this button so next is delet" thing
-        ['pb_qp_{}_act', '/magi/layer{}/cue', 'set/activate cue point', 'pb_pad_{}'],
-        ['pb_qp_{}_deact', '/magi/layer{}/cue/clear', 'clear cue point', 'pb_pad_{}'],
-        # collections
-        ['coln_select_{}', '/magi/cur_col/select_clip/layer{}', 'select a clip from current collection', 'coln_clip_{}', True],
-        ]
+        if C.SEPARATE_QP_LP:
+            if C.SEPARATE_DELETE:
+                qp_cmds = [
+                # x no qp
+                ['pb_qp_{}_act', '/magi/layer{}/cue', 'set/activate cue point', 'pb_pad_{}'],
+                ['pb_qp_{}_deact', '/magi/layer{}/cue/clear', 'clear cue point', 'pb_pad_{}'],
+                ]
+                lp_cmds = [
+                # x no lp
+                ['pb_lp_{}_act', '/magi/layer{}/loop/select', 'select loop range', 'pb_pad_{}'],
+                ['pb_lp_{}_deact', '/magi/layer{}/loop/clear', 'clear the loop range', 'pb_pad_{}'],
+                ]
+            else:
+                qp_cmds = [
+                ['pb_qp_{}_press', '/magi/gui/layer{}/qp_pad_press', 'press cue point pad', 'pb_pad_{}'],
+                ]
+                lp_cmds = [
+                ['pb_lp_{}_press', '/magi/gui/layer{}/lp_pad_press', 'press loop range pad', 'pb_pad_{}'],
+                ]
+                per_layer_cmds.append(
+                ['pb_delet_toggle', '/magi/gui/layer{}/pads_toggle', 'pad deletion toggle']
+                )
+        else:
+            if C.SEPARATE_DELETE:
+                qp_cmds = [
+                ['pb_pad_{}_act', '/magi/gui/layer{}/pad_activate', 'activate pad', 'pb_pad_{}'],
+                ['pb_pad_{}_deact', '/magi/gui/layer{}/pad_deactivate', 'deactivate pad', 'pb_pad_{}'],
+                ]
+                lp_cmds = []
+                per_layer_cmds.append(
+                ['qp_lp_toggle', '/magi/gui/layer{}/qp_lp_toggle', 'qp/lp toggle']
+                )
 
-        lp_cmds = [
-        # x no lp
-        ['pb_lp_{}_act', '/magi/layer{}/loop/select', 'select loop range', 'pb_pad_{}'],
-        ['pb_lp_{}_deact', '/magi/layer{}/loop/clear', 'clear the loop range', 'pb_pad_{}'],
-        ]
+            else:
+                qp_cmds = [
+                ['pb_pad_{}_press', '/magi/gui/layer{}/qp_pad_press', 'press cue point pad', 'pb_pad_{}'],
+                ]
+                lp_cmds = []
+                per_layer_cmds.extend([
+                ['pb_delet_toggle', '/magi/gui/layer{}/pads_toggle', 'pad deletion toggle'],
+                ['qp_lp_toggle', '/magi/gui/layer{}/qp_lp_toggle', 'qp/lp toggle']
+                ])
+        # collections
+        qp_cmds.append(                
+                ['coln_select_{}', '/magi/cur_col/select_clip/layer{}', 'select a clip from current collection', 'coln_clip_{}', True],
+                )
 
         # aesthetic fixes for toggle switches
-        double_mes = ['pb_lp_type']
+        double_mes = ['pb_lp_type', 'qp_lp_toggle']
 
         for c in not_per_layer_cmds:
             add_cmd(c)
@@ -326,7 +358,7 @@ class MidiOverlay:
         for c in start_el.winfo_children():
             if c.winfo_name() in self.parent.midi_int.all_wnames:
                 self.wname_to_widget[c.winfo_name()] = c
-                print('found', c.winfo_name())
+                # print('found', c.winfo_name())
             self.recursive_buildup(c)
 
     def create_binds(self):
@@ -347,6 +379,7 @@ class MidiOverlay:
             pass
         item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y), halo=5)[0]
         self.selected_cmd = self.canvas.gettags(item)[0]
+        print(self.selected_cmd)
         self.canvas.itemconfig(self.wname_to_rect[self.selected_cmd],
                                fill=C.CURRENT_THEME.midi_setting_colors['selected'])
 

@@ -617,12 +617,20 @@ class Magi:
                 if self.gui is not None:
                     self.gui.update_gui_directly(i, 'pad_press', n)
 
+            def press_qp_pad(_, n):
+                if self.gui is not None:
+                    self.gui.update_gui_directly(i, 'qp_pad_press', n)
+
+            def press_lp_pad(_, n):
+                if self.gui is not None:
+                    self.gui.update_gui_directly(i, 'lp_pad_press', n)
+
             return [toggle_qp_lp, toggle_pads, activate_pad, deactivate_pad, press_pad]
 
         for i in range(C.NO_LAYERS):
             # toggle qp/lp
             gui_funs = gen_gui_helpers(i)
-            add_addrs = ['qp_lp_toggle', 'pads_toggle', 'pad/activate', 'pad/deactivate', 'pad/press']
+            add_addrs = ['qp_lp_toggle', 'pads_toggle', 'pad/activate', 'pad/deactivate', 'pad/press', 'pad/press_qp', 'pad/press_lp']
             base_addr = gui_addr.format(i)
             for i, gui_fun in enumerate(gui_funs):
                 self.osc_server.mapp(base_addr + add_addrs[i], gui_fun)
