@@ -231,6 +231,7 @@ class MidiOverlay:
         self.geo_regex = re.compile(r'(\d+)x(\d+)\+(\-?\d+)\+(-?\d+)')
 
         self.wname_to_widget = {}
+        self.wname_to_rect = {}
         self.selected_cmd = None
         self.hovered_cmd = None
 
@@ -240,7 +241,7 @@ class MidiOverlay:
 
         self.root.wm_attributes("-topmost", True)
         self.root.wm_attributes("-transparentcolor", "black")
-        self.root.attributes('-alpha', 0.3)
+        self.root.attributes('-alpha', 0.5)
         self.root.overrideredirect(True)
 
         self.recursive_buildup()
@@ -273,7 +274,8 @@ class MidiOverlay:
         x1, y1 = x - self.base_coords[0] + s, y - self.base_coords[1] + s
         x2, y2 = x1 + w - 2 * s, y1 + h - 2 * s
         # check fill
-        self.canvas.create_rectangle(x1, y1, x2, y2, fill="hot pink", tag=w_name)
+        self.wname_to_rect[w_name] = self.canvas.create_rectangle(x1, y1, x2, y2, tag=w_name,
+                                                                  fill=C.CURRENT_THEME.midi_setting_colors['empty'])
 
     def draw_single_widget(self, w, w_name):
         # give a tag to fake square that corresponds to midi's cmd_name
@@ -340,9 +342,13 @@ class MidiOverlay:
         self.hovered_cmd = None
 
     def select_bind(self, event):
+        if self.selected_cmd in self.wname_to_rect:
+            # restore color
+            pass
         item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y), halo=5)[0]
         self.selected_cmd = self.canvas.gettags(item)[0]
-        print(self.selected_cmd)
+        self.canvas.itemconfig(self.wname_to_rect[self.selected_cmd],
+                               fill=C.CURRENT_THEME.midi_setting_colors['selected'])
 
     def close(self):
         self.base_gui.root.unbind('<Configure>')
