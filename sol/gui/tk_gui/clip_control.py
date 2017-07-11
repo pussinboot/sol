@@ -63,6 +63,8 @@ class ClipControl:
             'pad_deactivate': self.delet_pad,
             'pads_toggle': self.toggle_pad_mode,
             'pad_press': self.press_pad,
+            'qp_pad_press': self.press_pad_qp,
+            'lp_pad_press': self.press_pad_lp,
         }
 
         base_addr = '/magi/layer{}'.format(self.layer)
@@ -181,6 +183,18 @@ class ClipControl:
             self.delet_pad(i)
         else:
             self.activate_pad(i)
+
+    def press_pad_qp(self, i=-1):
+        if self.deleting_mode:
+            self.send_back['cue_clear'](i)
+        else:
+            self.send_back['cue_set'](i)
+
+    def press_pad_lp(self, i=-1):
+        if self.deleting_mode:
+            self.send_back['loop_clear'](i)
+        else:
+            self.send_back['loop_select'](i)
 
     def toggle_pad_mode(self, i=-1):
         self.deleting_mode = not self.deleting_mode
@@ -526,7 +540,8 @@ class ClipControl:
         half_but.grid(row=3, column=3)
 
     def setup_control_frame_bottom(self):
-        self.qp_lp_switch = SwitchButton(self.bottom_right_frame, 'QP', 'LP', padding='2')
+        self.qp_lp_switch = SwitchButton(self.bottom_right_frame, 'QP', 'LP', padding='2',
+                                         name=self.format_name('qp_lp_toggle'))
         self.qp_lp_var = self.qp_lp_switch.bool_var
         self.qp_lp_var.trace('w', self.pad_reconfigure)
 
@@ -536,7 +551,8 @@ class ClipControl:
         self.qp_lp_switch.but_2.grid(row=0, column=1, sticky='we')
 
         self.lp_selected_label = ttk.Label(self.bottom_right_frame, textvariable=self.loop_selected_text_var,
-                                           relief='groove', padding='2 4 2 4', anchor='center', borderwidth=2)
+                                           relief='groove', padding='2 4 2 4', anchor='center', borderwidth=2,
+                                           name=self.format_name('pb_delet_toggle'))
         self.lp_selected_label.grid(row=0, column=3, columnspan=2, sticky='we')
         self.loop_selected_text_var.set('selected [-]')
 
