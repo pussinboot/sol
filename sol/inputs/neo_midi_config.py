@@ -31,6 +31,8 @@ class MidiInterface:
         self.wname_to_names = {}
         self.all_wnames = []
         self.name_to_cmd = {}
+        self.double_width_pls = []
+
         self.gen_name_to_cmd()
 
     def refresh_input_ports(self):
@@ -77,13 +79,16 @@ class MidiInterface:
     def gen_name_to_cmd(self):
 
         def add_cmd(cmd_array, l=-1, i=-1):
-            [cmd_name, cmd_osc, cmd_desc, wname] = cmd_array
+            if len(cmd_array) < 5:
+                cmd_array.extend([None]*(5 - len(cmd_array)))
+            [cmd_name, cmd_osc, cmd_desc, wname, combined] = cmd_array
             wn = '{}'
             if wname is not None:
                 wn = wname
             if l > -1:
                 cmd_name += '_l{}'.format(l)
-                wn += '_l{}'.format(l)
+                if not combined:
+                    wn += '_l{}'.format(l)
                 cmd_osc = cmd_osc.format(l)
             if i > -1:
                 cmd_name = cmd_name.format(i)
@@ -103,50 +108,53 @@ class MidiInterface:
         # not per layer cmds
         # cmds are as follows: cmd_name, osc_addr, cmd_desc, widget_name
         not_per_layer_cmds = [
-        ['coln_next', '/magi/cur_col/select_left', 'select collection to the left', None],
-        ['coln_prev', '/magi/cur_col/select_right', 'select collection to the right', None],
+        ['coln_prev', '/magi/cur_col/select_right', 'select collection to the right', 'coln_select'],
+        ['coln_next', '/magi/cur_col/select_left', 'select collection to the left', 'coln_select'],
         ]
 
         # per layer cmds
         # timeline control
         per_layer_cmds = [
-        ['ctrl_start', '/magi/control{}/start', 'start control', None],
-        ['ctrl_stop', '/magi/control{}/stop', 'stop control', None],
-        ['ctrl_do', '/magi/control{}/do', 'do control', None],
-        ['ctrl_sens', '/magi/control{}/sens', 'modify control sensitivity', None],
+        ['ctrl_start', '/magi/control{}/start', 'start control', 'ctrl_bar'],
+        ['ctrl_stop', '/magi/control{}/stop', 'stop control', 'ctrl_bar'],
+        ['ctrl_do', '/magi/control{}/do', 'do control', 'ctrl_bar'],
+        ['ctrl_sens', '/magi/control{}/sens', 'modify control sensitivity'],
         # playback
-        ['pb_play', '/magi/layer{}/playback/play', 'play', None],
-        ['pb_pause', '/magi/layer{}/playback/pause', 'pause', None],
-        ['pb_reverse', '/magi/layer{}/playback/reverse', 'reverse', None],
-        ['pb_clear', '/magi/layer{}/playback/clear', 'clear', None],
+        ['pb_play', '/magi/layer{}/playback/play', 'play'],
+        ['pb_pause', '/magi/layer{}/playback/pause', 'pause'],
+        ['pb_reverse', '/magi/layer{}/playback/reverse', 'reverse'],
+        ['pb_clear', '/magi/layer{}/playback/clear', 'clear'],
         # speed
         ['pb_spd', '/magi/layer{}/playback/speed', 'set speed', 'pb_speed'],
         ['pb_spd_adjust', '/magi/layer{}/playback/speed/adjust', 'adjust speed', 'pb_speed'],
-        ['pb_spd_double', '/magi/layer{}/playback/speed/adjust/factor 2', 'increase speed by a factor of 2', None],
-        ['pb_spd_halve', '/magi/layer{}/playback/speed/adjust/factor 0.5', 'decrease speed by a factor of 2', None],
+        ['pb_spd_double', '/magi/layer{}/playback/speed/adjust/factor 2', 'increase speed by a factor of 2'],
+        ['pb_spd_halve', '/magi/layer{}/playback/speed/adjust/factor 0.5', 'decrease speed by a factor of 2'],
         # loop points
-        ['pb_lp_on_off', '/magi/layer{}/loop/on_off', 'de/activate looping', None],
-        ['pb_lp_type', '/magi/layer{}/loop/type', 'change loop type', None],
-        ['pb_lp_select_next', '/magi/layer{}/loop/select/move +1', 'select the next loop range', None],
-        ['pb_lp_select_prev', '/magi/layer{}/loop/select/move -1', 'select the previous loop range', None],
-        ['pb_lp_set_a', '/magi/layer{}/loop/set/a', 'set the loop range\'s beginning', None],
-        ['pb_lp_set_b', '/magi/layer{}/loop/set/b', 'set the loop range\'s end', None],
+        ['pb_lp_on_off', '/magi/layer{}/loop/on_off', 'de/activate looping'],
+        ['pb_lp_type', '/magi/layer{}/loop/type', 'change loop type'],
+        ['pb_lp_select_next', '/magi/layer{}/loop/select/move +1', 'select the next loop range'],
+        ['pb_lp_select_prev', '/magi/layer{}/loop/select/move -1', 'select the previous loop range'],
+        ['pb_lp_set_a', '/magi/layer{}/loop/set/a', 'set the loop range\'s beginning'],
+        ['pb_lp_set_b', '/magi/layer{}/loop/set/b', 'set the loop range\'s end'],
         ]
         # cue points
         qp_cmds = [
         # x no qp
         # maybe instead of act/deact have a "press this button so next is delet" thing
-        ['pb_qp_{}_act', '/magi/layer{}/cue', 'set/activate cue point', 'pb_qp_{}'],
-        ['pb_qp_{}_deact', '/magi/layer{}/cue/clear', 'clear cue point', 'pb_qp_{}'],
+        ['pb_qp_{}_act', '/magi/layer{}/cue', 'set/activate cue point', 'pb_pad_{}'],
+        ['pb_qp_{}_deact', '/magi/layer{}/cue/clear', 'clear cue point', 'pb_pad_{}'],
         # collections
-        ['coln_select_{}', '/magi/cur_col/select_clip/layer{}', 'select a clip from current collection', None],
+        ['coln_select_{}', '/magi/cur_col/select_clip/layer{}', 'select a clip from current collection', 'coln_clip_{}', True],
         ]
 
         lp_cmds = [
         # x no lp
-        ['pb_lp_{}_act', '/magi/layer{}/loop/select', 'select loop range', 'pb_lp_{}'],
-        ['pb_lp_{}_deact', '/magi/layer{}/loop/clear', 'clear the loop range', 'pb_lp_{}'],
+        ['pb_lp_{}_act', '/magi/layer{}/loop/select', 'select loop range', 'pb_pad_{}'],
+        ['pb_lp_{}_deact', '/magi/layer{}/loop/clear', 'clear the loop range', 'pb_pad_{}'],
         ]
+
+        # aesthetic fixes for toggle switches
+        double_mes = ['pb_lp_type']
 
         for c in not_per_layer_cmds:
             add_cmd(c)
@@ -162,6 +170,11 @@ class MidiInterface:
             for c in lp_cmds:
                 for i in range(C.NO_LP):
                     add_cmd(c, l, i)
+
+            self.double_width_pls.extend([c + '_l{}'.format(l) for c in double_mes])
+
+        # pp.pprint(self.all_wnames)
+        # pp.pprint(self.wname_to_names)
 
 
 class MidiConfig:
@@ -213,6 +226,7 @@ class MidiOverlay:
         self.base_gui = base_gui
         self.last_pos = ""
         self.offsets = [0, 0]
+        self.spacing = 1
         self.base_coords = [0, 0]
         self.geo_regex = re.compile(r'(\d+)x(\d+)\+(\-?\d+)\+(-?\d+)')
 
@@ -226,6 +240,7 @@ class MidiOverlay:
 
         self.root.wm_attributes("-topmost", True)
         self.root.wm_attributes("-transparentcolor", "black")
+        self.root.attributes('-alpha', 0.3)
         self.root.overrideredirect(True)
 
         self.recursive_buildup()
@@ -251,10 +266,12 @@ class MidiOverlay:
             self.root.geometry('+{}+{}'.format(*new_dims[2:]))
             self.last_pos = base_pos
 
-    def draw_widget(self, coords, w_name):
+    def draw_widget(self, coords, w_name, s=0):
         [x, y, w, h] = coords
-        x1, y1 = x - self.base_coords[0], y - self.base_coords[1]
-        x2, y2 = x1 + w, y1 + h
+        if w_name in self.parent.midi_int.double_width_pls:
+            w *= 2
+        x1, y1 = x - self.base_coords[0] + s, y - self.base_coords[1] + s
+        x2, y2 = x1 + w - 2 * s, y1 + h - 2 * s
         # check fill
         self.canvas.create_rectangle(x1, y1, x2, y2, fill="hot pink", tag=w_name)
 
@@ -269,19 +286,26 @@ class MidiOverlay:
         # determine how to split, i only deal with 2 or 4..
         n = len(ws)
         if tw > th:
-            # sideways then vertical
-            tot_c = n // 2
-            w, h = tw // 2, th // tot_c
-            for i, wn in enumerate(ws):
-                r, c = i // 2, i % 2
-                x, y = bx + (c * w), by + (r * h)
-                self.draw_widget([x, y, w, h], wn)
+            if n > 3:
+                # sideways then vertical
+                tot_c = n // 2
+                w, h = tw // 2, th // tot_c
+                for i, wn in enumerate(ws):
+                    r, c = i // 2, i % 2
+                    x, y = bx + (c * w), by + (r * h)
+                    self.draw_widget([x, y, w, h], wn, self.spacing)
+            else:
+                # horizontal all the way
+                w = tw / n
+                for i, wn in enumerate(ws):
+                    x = bx + (i * w)
+                    self.draw_widget([x, by, w, th], wn, self.spacing)
         else:
             # vertical all the way
-            w, h = tw, th / n
+            h = th / n
             for i, wn in enumerate(ws):
                 y = by + (i * h)
-                self.draw_widget([bx, y, w, h], wn)
+                self.draw_widget([bx, y, tw, h], wn, self.spacing)
 
     def draw_everything(self):
         self.canvas.delete("all")
@@ -300,7 +324,7 @@ class MidiOverlay:
         for c in start_el.winfo_children():
             if c.winfo_name() in self.parent.midi_int.all_wnames:
                 self.wname_to_widget[c.winfo_name()] = c
-                # print('found', c)
+                print('found', c.winfo_name())
             self.recursive_buildup(c)
 
     def create_binds(self):
@@ -311,7 +335,6 @@ class MidiOverlay:
     def hover_check(self, event):
         item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y), halo=5)[0]
         self.hovered_cmd = self.canvas.gettags(item)[0]
-        print(self.hovered_cmd)
 
     def hover_restore(self, event):
         self.hovered_cmd = None
@@ -319,6 +342,7 @@ class MidiOverlay:
     def select_bind(self, event):
         item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y), halo=5)[0]
         self.selected_cmd = self.canvas.gettags(item)[0]
+        print(self.selected_cmd)
 
     def close(self):
         self.base_gui.root.unbind('<Configure>')

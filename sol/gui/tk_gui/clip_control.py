@@ -27,6 +27,8 @@ class ClipControl:
         self.lp_data = None
         self.pad_but_cmds = []
 
+        self.deleting_mode = False
+
         # all tk vars
         self.name_var = tk.StringVar()
         self.zoom_follow_var = tk.BooleanVar()
@@ -53,6 +55,14 @@ class ClipControl:
             'loop_selection': self.update_loop,
             'playback_speed': self.update_speed,
             'control_sens': self.update_sens
+        }
+
+        # direct update fun
+        self.direct_updates = {
+            'pad_activate': self.activate_pad,
+            'pad_deactivate': self.delet_pad,
+            'pads_toggle': self.toggle_pad_mode,
+            'pad_press': self.press_pad,
         }
 
         base_addr = '/magi/layer{}'.format(self.layer)
@@ -152,21 +162,36 @@ class ClipControl:
 
     # send funs
 
-    def activate_pad(self, i):
+    def activate_pad(self, i=-1):
         if (self.qp_lp_var.get()):  # if lp selected
             fun_to_call = self.send_back['loop_select']
         else:
             fun_to_call = self.send_back['cue_set']
         fun_to_call('', i)
 
-    def delet_pad(self, i):
+    def delet_pad(self, i=-1):
         if (self.qp_lp_var.get()):  # if lp selected
             fun_to_call = self.send_back['loop_clear']
         else:
             fun_to_call = self.send_back['cue_clear']
         fun_to_call('', i)
 
+    def press_pad(self, i=-1):
+        if self.deleting_mode:
+            self.delet_pad(i)
+        else:
+            self.activate_pad(i)
+
+    def toggle_pad_mode(self, i=-1):
+        self.deleting_mode = not self.deleting_mode
+        # maybe update gui somehow
+
+
     # update dispatch
+
+    def update_directly(self, what, n=-1):
+        if what in self.direct_updates:
+            self.direct_updates[what](n)
 
     def update_cur_pos(self, pos):
         self.cur_pos = pos
@@ -405,13 +430,13 @@ class ClipControl:
         # ctrl buts
         ctrl_but_pad = '12 1 12 1'
         playbut = ttk.Button(self.control_bottom_frame, text=">", width=2, padding=ctrl_but_pad, takefocus=False,
-                             command=self.gen_send_cmd('play'))
+                             command=self.gen_send_cmd('play'), name=self.format_name('pb_play'))
         pausebut = ttk.Button(self.control_bottom_frame, text="||", width=2, padding=ctrl_but_pad, takefocus=False,
-                              command=self.gen_send_cmd('pause'))
+                              command=self.gen_send_cmd('pause'), name=self.format_name('pb_pause'))
         rvrsbut = ttk.Button(self.control_bottom_frame, text="<", width=2, padding=ctrl_but_pad, takefocus=False,
-                             command=self.gen_send_cmd('reverse'))
+                             command=self.gen_send_cmd('reverse'), name=self.format_name('pb_reverse'))
         clearbut = ttk.Button(self.control_bottom_frame, text="X", width=2, padding=ctrl_but_pad, takefocus=False,
-                              command=self.gen_send_cmd('clear'))
+                              command=self.gen_send_cmd('clear'), name=self.format_name('pb_clear'))
 
         for i, but in enumerate([rvrsbut, pausebut, playbut, clearbut]):
             but.grid(row=0, column=i, pady=2, padx=2)
@@ -487,9 +512,11 @@ class ClipControl:
 
         # spd buts
         double_but = ttk.Button(self.control_bottom_frame, text="* 2", width=3, takefocus=False,
-                                command=lambda: self.speed_var.set(min(10, 2 * self.speed_var.get())))
+                                command=lambda: self.speed_var.set(min(10, 2 * self.speed_var.get())),
+                                name=self.format_name('pb_spd_double'))
         half_but = ttk.Button(self.control_bottom_frame, text="/ 2", width=3, takefocus=False,
-                              command=lambda: self.speed_var.set(0.5 * self.speed_var.get()))
+                              command=lambda: self.speed_var.set(0.5 * self.speed_var.get()),
+                              name=self.format_name('pb_spd_halve'))
 
         double_but.grid(row=2, column=3)
         half_but.grid(row=3, column=3)
@@ -499,6 +526,8 @@ class ClipControl:
         self.qp_lp_var = self.qp_lp_switch.bool_var
         self.qp_lp_var.trace('w', self.pad_reconfigure)
 
+        self.direct_updates['qp_lp_toggle'] = self.qp_lp_switch.manual_toggle
+
         self.qp_lp_switch.but_1.grid(row=0, column=0, sticky='we')
         self.qp_lp_switch.but_2.grid(row=0, column=1, sticky='we')
 
@@ -507,14 +536,16 @@ class ClipControl:
         self.lp_selected_label.grid(row=0, column=3, columnspan=2, sticky='we')
         self.loop_selected_text_var.set('selected [-]')
 
-        self.loop_on_toggle = ToggleButton(self.bottom_right_frame, 'loop on', 7, padding='20 4 20 4')
+        self.loop_on_toggle = ToggleButton(self.bottom_right_frame, 'loop on', 7,
+                                           padding='20 4 20 4', name=self.format_name('pb_lp_on_off'))
         self.loop_on_var = self.loop_on_toggle.bool_var
         self.loop_on_toggle.send_cmd = self.gen_toggle_cmd('loop_on_off')
         self.loop_on_toggle.but.grid(row=2, column=0, columnspan=2, sticky='we', pady=2)
 
         ttk.Frame(self.bottom_right_frame, style='fakesep.TFrame', width=1).grid(row=1, column=0, columnspan=5, sticky='we', pady=4)
         ttk.Frame(self.bottom_right_frame, style='fakesep.TFrame', width=1).grid(row=2, column=2, rowspan=2, sticky='ns', padx=2)
-        self.loop_type_switch = SwitchButton(self.bottom_right_frame, 'dflt', 'bnce', padding='2 4 2 4')
+        self.loop_type_switch = SwitchButton(self.bottom_right_frame, 'dflt', 'bnce',
+                                             padding='2 4 2 4', name=self.format_name('pb_lp_type'))
         self.loop_type_var = self.loop_type_switch.bool_var
         self.loop_type_switch.send_cmd = self.gen_toggle_cmd('loop_type', ['d', 'b'])
         self.loop_type_switch.but_1.grid(row=2, column=3, sticky='we')
@@ -522,21 +553,21 @@ class ClipControl:
 
         loop_but_pad = '10 4 10 4'
         loop_in_but = ttk.Button(self.bottom_right_frame, text="in", width=3, padding=loop_but_pad, takefocus=False,
-                                 command=self.gen_send_cmd('loop_set_a_cur'))
+                                 command=self.gen_send_cmd('loop_set_a_cur'), name=self.format_name('pb_lp_set_a'))
         loop_out_but = ttk.Button(self.bottom_right_frame, text="out", width=3, padding=loop_but_pad, takefocus=False,
-                                  command=self.gen_send_cmd('loop_set_b_cur'))
+                                  command=self.gen_send_cmd('loop_set_b_cur'), name=self.format_name('pb_lp_set_b'))
 
         loop_prev_but = ttk.Button(self.bottom_right_frame, text="\\/", width=2, padding=loop_but_pad, takefocus=False,
-                                   command=self.gen_send_cmd('loop_move', -1))
+                                   command=self.gen_send_cmd('loop_move', -1), name=self.format_name('pb_lp_select_next'))
         loop_next_but = ttk.Button(self.bottom_right_frame, text="/\\", width=2, padding=loop_but_pad, takefocus=False,
-                                   command=self.gen_send_cmd('loop_move', +1))
+                                   command=self.gen_send_cmd('loop_move', +1), name=self.format_name('pb_lp_select_prev'))
 
         for i, lpb in enumerate([loop_in_but, loop_out_but, loop_prev_but, loop_next_but]):
             c = i + (i > 1)
             lpb.grid(row=3, column=c, sticky='we')
 
     def setup_progressbar(self):
-        self.progressbar = ProgressBar(self.progress_frame, self.width, 85)
+        self.progressbar = ProgressBar(self.progress_frame, self, self.width, 85)
 
         self.progressbar.send_funs['seek'] = self.send_back['seek']
         self.progressbar.send_funs['cue'] = self.send_back['cue_set']
@@ -580,7 +611,7 @@ class ClipControl:
             for c in range(4):
                 i = r * 4 + c
                 but = ttk.Label(self.pad_but_frame, text=str(i), borderwidth=4,
-                                padding=pad_str, relief='flat')
+                                padding=pad_str, relief='flat', name=self.format_name('pb_pad_{}', i))
                 but.grid(row=r, column=c)
                 but.config(state='disabled')
                 but.bind("<ButtonPress-1>", lambda e: print(e))
@@ -622,13 +653,16 @@ class ClipControl:
 
 
 class SwitchButton:
-    def __init__(self, frame, text1, text2, min_width=5, padding=None):
+    def __init__(self, frame, text1, text2, min_width=5, padding=None, name=None):
         self.bool_var = tk.BooleanVar()
         self.bool_var.set(False)
 
         self.send_cmd = None
-
-        self.but_1 = ttk.Label(frame, text=text1, borderwidth=4,
+        if name is not None:
+            self.but_1 = ttk.Label(frame, text=text1, borderwidth=4, name=name,
+                               width=min_width, anchor='e', style='fakebut.TLabel')
+        else:
+            self.but_1 = ttk.Label(frame, text=text1, borderwidth=4,
                                width=min_width, anchor='e', style='fakebut.TLabel')
         self.but_1.bind('<Button-1>', lambda e: self.switch(False))
         self.but_2 = ttk.Label(frame, text=text2, borderwidth=4,
@@ -647,6 +681,9 @@ class SwitchButton:
         else:
             self.update(new_val)
 
+    def manual_toggle(self, *args):
+        self.switch(not bool(self.bool_var.get()))
+
     def update(self, new_val):
         self.bool_var.set(new_val)
         if (new_val):
@@ -659,9 +696,13 @@ class SwitchButton:
 
 
 class ToggleButton:
-    def __init__(self, frame, text, min_width=5, padding=None):
+    def __init__(self, frame, text, min_width=5, padding=None, name=None):
         self.bool_var = tk.BooleanVar()
-        self.but = ttk.Label(frame, text=text, borderwidth=4, width=min_width, style='fakebut.TLabel')
+        if name is not None:
+            self.but = ttk.Label(frame, text=text, borderwidth=4, width=min_width,
+                                 style='fakebut.TLabel', name=name)
+        else:
+            self.but = ttk.Label(frame, text=text, borderwidth=4, width=min_width, style='fakebut.TLabel')
         self.but.bind('<Button-1>', self.toggle)
 
         self.send_cmd = None
@@ -687,9 +728,11 @@ class ToggleButton:
 
 
 class ProgressBar:
-    def __init__(self, root, width=300, height=33):
+    def __init__(self, root, parent, width=300, height=33):
         self.width, self.height = width, height
         self._drag_data = {'x': 0, 'y': 0, 'item': None, 'label': [], 'type': None}
+
+        self.parent = parent
 
         self.colors = {
             'bg': 'black',
@@ -727,7 +770,8 @@ class ProgressBar:
         self.frame = ttk.Frame(self.root)
         self.canvas_frame = ttk.Frame(self.frame)
         self.canvas = tk.Canvas(self.canvas_frame, width=width, height=height + 15,
-                                bg=self.colors['bg'], scrollregion=(0, 0, width, height))
+                                bg=self.colors['bg'], scrollregion=(0, 0, width, height),
+                                name=self.parent.format_name('ctrl_bar'))
         self.hbar = ttk.Scrollbar(self.canvas_frame, orient=tk.HORIZONTAL)
         self.hbar.config(command=self.canvas.xview)
         self.canvas.config(xscrollcommand=self.hbar.set)

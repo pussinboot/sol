@@ -33,13 +33,18 @@ class GlobalConfig:
             'NO_LAYERS'				: 2,
             'NO_Q'					: 8,
             'NO_LP'					: 8,
-            'DEFAULT_SENSITIVITY'	: 0.005,  # control hacks
             'IGNORED_DIRS'			: ['C:\\', 'dxv', 'VJ'],
 
+            # midi things
+            'MIDI_ENABLED'          : True,
+            'DEFAULT_SENSITIVITY'   : 0.005,  # control hacks
+            'SEPARATE_QP_LP'        : False,
+            'SEPARATE_DELETE'       : False,
+
             # network params
-            'OSC_PORT'			: 7001,
-            'MTGUI_ENABLED'		: False,
-            'MTGUI_IP_ADDR'		: '127.0.0.1',
+            'OSC_PORT'			    : 7001,
+            'MTGUI_ENABLED'		    : False,
+            'MTGUI_IP_ADDR'		    : '127.0.0.1',
 
             # model params
             'MODEL_SELECT'						: 'RESOLUME',
