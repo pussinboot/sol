@@ -381,6 +381,9 @@ class MainGui:
         if self.mt_gui is not None:
             self.mt_gui.update_clip_names()  # also doesn't do anything
 
+    def update_gui_directly(self, layer, what, n=-1):
+        self.clip_controls[layer].update_directly(what, n)
+
 
 def main():
     root = tk.Tk()
