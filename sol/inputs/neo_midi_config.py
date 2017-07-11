@@ -36,6 +36,14 @@ class LastNList:
 
 class MidiInterface:
     def __init__(self):
+        # midi callback fun references a handle midi cmd
+        # that switches btwn config and live
+        self.handle_midi = None
+        self.midi_config = None
+        self.midi_queue = None
+        self.midi_keys_queue = None
+        self.midi_config_callback = None
+
         self.input_ports = {}
         self.midi_inputs = {}
         self.refresh_input_ports()
@@ -46,12 +54,7 @@ class MidiInterface:
         self.double_width_pls = []
 
         self.gen_name_to_cmd()
-        # midi callback fun references a handle midi cmd
-        # that switches btwn config and live
-        self.handle_midi = None
-        self.midi_config = None
-        self.midi_queue = None
-        self.midi_keys_queue = None
+
 
     def enter_config_mode(self, mc):
         self.close_all_inputs()
@@ -70,15 +73,34 @@ class MidiInterface:
     def id_midi(self, midi_tuple, input_name):
         # used for configuration
         if self.midi_queue is not None:
+            mc_exists = self.midi_config is not None
             key, n = str(midi_tuple[0][:2]), midi_tuple[0][2]
             if key in self.midi_queue:
                 self.midi_queue[key].append(n)
             else:
                 pos_drop_key = self.midi_keys_queue.append(key)
+                if mc_exists:
+                    self.midi_config.add_key(key)
                 self.midi_queue[key] = LastNList(5, n)
                 if pos_drop_key and pos_drop_key in self.midi_queue:
                     del self.midi_queue[pos_drop_key]
-        pp.pprint(self.midi_queue)
+                    if mc_exists:
+                        self.midi_config.drop_key(pos_drop_key)
+        # pp.pprint(self.midi_queue)
+        if self.midi_config is not None:
+            if self.midi_config_callback is not None:
+                self.midi_config.root.after_cancel(self.midi_config_callback)
+            self.midi_config_callback = self.midi_config.root.after(100, self.midi_config.update_vals)
+
+    def midi_classify(self):
+        if self.midi_queue is None:
+            return
+        return [(k, self.midi_hist(self.midi_queue[k].list)) for k in self.midi_queue]
+
+    def midi_hist(self, key_list):
+        def gen_hist(s, d={}):
+            return ([d.__setitem__(i, d.get(i, 0) + 1) for i in s], d)[-1]
+        return gen_hist(key_list)
 
     def pass_midi(self, midi_tuple, input_name):
         # used for actual midi control
@@ -105,7 +127,6 @@ class MidiInterface:
         self.close_midi_input(input_name)
         try:
             port_nos = self.input_ports[input_name]
-
             new_input = rtmidi.MidiIn(port_nos[0])
             new_input.open_port(port_nos[1])
             new_input.set_callback(self.midi_callback_fun, data=input_name)
@@ -117,6 +138,9 @@ class MidiInterface:
     def close_all_inputs(self):
         for inp in self.input_ports:
             self.close_midi_input(inp)
+        if self.midi_queue is not None:
+            self.midi_queue = {}
+            self.midi_keys_queue = LastNList(5)
 
     def close_midi_input(self, name):
         if name in self.midi_inputs:
@@ -126,7 +150,7 @@ class MidiInterface:
             del self.midi_inputs[name]
 
     def midi_callback_fun(self, midi_tuple, input_name):
-        print(midi_tuple)
+        # print(midi_tuple)
         if self.handle_midi is not None:
             self.handle_midi(midi_tuple, input_name)
 
@@ -273,6 +297,8 @@ class MidiConfig:
         self.parent = parent
         self.midi_int = MidiInterface()
 
+        self.key_to_row = {}
+
         self.main_frame = ttk.Frame(self.root)
         self.main_frame.pack()
 
@@ -294,6 +320,13 @@ class MidiConfig:
         self.desc_text_var = tk.StringVar()
         self.desc_text_label = ttk.Label(self.main_frame, textvariable=self.desc_text_var)
 
+        self.key_fill_area = ttk.Frame(self.main_frame, height=6 * C.FONT_HEIGHT)
+        self.key_fill_area.grid_propagate(False)
+        ttk.Label(self.main_frame, text='key').grid(row=4, column=0, columnspan=2, sticky='we')
+        ttk.Label(self.main_frame, text='values').grid(row=4, column=2, columnspan=2, sticky='we')
+
+        self.key_fill_row = ttk.Frame(self.key_fill_area)
+
         self.input_label.grid(row=0, column=0, sticky='we')
         self.choose_midi.grid(row=0, column=1, columnspan=2, sticky='we')
         self.refresh_inputs_but.grid(row=0, column=3, sticky='we')
@@ -301,6 +334,8 @@ class MidiConfig:
         self.cmd_text_label.grid(row=1, column=1, columnspan=3, sticky='we')
         self.desc_label.grid(row=2, column=0, columnspan=4, sticky='we')
         self.desc_text_label.grid(row=3, column=0, columnspan=4, sticky='we')
+        self.key_fill_area.grid(row=5, rowspan=5, column=0, columnspan=4, sticky='nwes')
+        self.key_fill_row.grid(row=0, rowspan=5, column=0, columnspan=4, sticky='news')
 
         self.overlay = MidiOverlay(self, self.parent)
         self.root.protocol("WM_DELETE_WINDOW", self.close)
@@ -329,11 +364,45 @@ class MidiConfig:
         self.midi_int.refresh_input_ports()
         input_options = ['None'] + list(self.midi_int.input_ports.keys())
         self.choose_midi.config(values=input_options)
+        self.choose_midi.set('None')
 
     def midi_choice_changed(self, *args):
         new_choice = self.midi_choice.get()
+        self.midi_int.close_all_inputs()
         if new_choice != 'None':
             self.midi_int.open_midi_input(new_choice)
+        all_ks = list(self.key_to_row.keys())
+        for k in all_ks:
+            self.drop_key(k)
+
+    def update_vals(self, *args):
+        updates = self.midi_int.midi_classify()
+        if updates is not None:
+            for k, v in updates:
+                self.update_key_vals(k, v)
+
+    def add_key(self, key):
+        key_row = ttk.Frame(self.key_fill_row)
+        key_label = ttk.Label(key_row, text=key, width=10)
+        key_sel_var = tk.BooleanVar()
+        key_checkbox = ttk.Checkbutton(key_row, variable=key_sel_var, takefocus=False)
+        key_vals_var = tk.StringVar()
+        key_vals_label = ttk.Label(key_row, textvariable=key_vals_var)
+        key_label.pack(side=tk.LEFT)
+        key_checkbox.pack(side=tk.LEFT)
+        key_vals_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        key_row.pack(side=tk.TOP, anchor='w', expand=True, fill=tk.X)
+
+        self.key_to_row[key] = [key_row, key_sel_var, key_vals_var]
+
+    def update_key_vals(self, key, vals):
+        if key in self.key_to_row:
+            self.key_to_row[key][-1].set(str(vals))
+
+    def drop_key(self, key):
+        if key in self.key_to_row:
+            self.key_to_row[key][0].pack_forget()
+            del self.key_to_row[key]
 
     def close(self):
         if self.overlay is not None:
