@@ -378,43 +378,7 @@ class MidiConfig:
 
         self.midi_int.enter_config_mode(self)
 
-    @property
-    def cur_input_name(self):
-        inp = self.midi_choice.get()
-        if inp != 'None':
-            return inp
-
-    def hovered(self):
-        hc = self.hovered_cmd
-        if hc is not None and hc in self.midi_int.name_to_cmd:
-            self.cmd_text_var.set(hc)
-            self.desc_text_var.set(self.midi_int.name_to_cmd[hc]['desc'])
-
-    def selected(self):
-        sc = self.selected_cmd
-        if sc is not None and sc in self.midi_int.name_to_cmd:
-            saved = self.midi_int.name_to_cmd[sc]['midi_keys']
-            cur_inp = self.cur_input_name
-            if cur_inp is not None and cur_inp in saved:
-                k_type, inv = saved[cur_inp]['type'], saved[cur_inp]['invert']
-                keys = saved[cur_inp]['keys']
-                key_text = ', '.join(keys)
-                self.choose_type.set(k_type)
-                self.invert_type.set(inv)
-                self.keys_text_var.set(key_text)
-                return
-        self.choose_type.set('----')
-        self.invert_type.set(False)
-        self.keys_text_var.set('')
-
-    def unhovered(self):
-        sc = self.selected_cmd
-        if sc is not None and sc in self.midi_int.name_to_cmd:
-            self.cmd_text_var.set(sc)
-            self.desc_text_var.set(self.midi_int.name_to_cmd[sc]['desc'])
-        else:
-            self.cmd_text_var.set('')
-            self.desc_text_var.set('')
+    # midi interface related
 
     def refresh_inputs(self, *args):
         self.midi_int.refresh_input_ports()
@@ -430,33 +394,6 @@ class MidiConfig:
         all_ks = list(self.key_to_row.keys())
         for k in all_ks:
             self.drop_key(k)
-
-    def update_vals(self, *args):
-        updates = self.midi_int.midi_classify()
-        if updates is not None:
-            for k, v in updates:
-                self.update_key_vals(k, v)
-
-    def add_key(self, key):
-        key_row = ttk.Frame(self.key_fill_row)
-        key_label = ttk.Label(key_row, text=key, width=10)
-        key_sel_var = tk.BooleanVar()
-        key_checkbox = ttk.Checkbutton(key_row, variable=key_sel_var, takefocus=False)
-        key_vals_var = tk.StringVar()
-        key_vals_label = ttk.Label(key_row, textvariable=key_vals_var)
-        key_label.pack(side=tk.LEFT)
-        key_checkbox.pack(side=tk.LEFT)
-        key_vals_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
-        key_row.pack(side=tk.TOP, anchor='w', expand=True, fill=tk.X)
-
-        self.key_to_row[key] = [key_row, key_sel_var, key_vals_var]
-
-    def get_chosen_keys(self):
-        tor = []
-        for k, vs in self.key_to_row.items():
-            if vs[1].get():
-                tor.append(k)
-        return tor
 
     def save_cmd(self, *args):
         sc = self.selected_cmd
@@ -492,14 +429,85 @@ class MidiConfig:
         self.invert_type.set(False)
         self.keys_text_var.set('')
 
-    def update_key_vals(self, key, vals):
-        if key in self.key_to_row:
-            self.key_to_row[key][-1].set(str(vals))
+    # key fill
+
+    def add_key(self, key):
+        key_row = ttk.Frame(self.key_fill_row)
+        key_label = ttk.Label(key_row, text=key, width=10)
+        key_sel_var = tk.BooleanVar()
+        key_checkbox = ttk.Checkbutton(key_row, variable=key_sel_var, takefocus=False)
+        key_vals_var = tk.StringVar()
+        key_vals_label = ttk.Label(key_row, textvariable=key_vals_var)
+        key_label.pack(side=tk.LEFT)
+        key_checkbox.pack(side=tk.LEFT)
+        key_vals_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        key_row.pack(side=tk.TOP, anchor='w', expand=True, fill=tk.X)
+
+        self.key_to_row[key] = [key_row, key_sel_var, key_vals_var]
 
     def drop_key(self, key):
         if key in self.key_to_row:
             self.key_to_row[key][0].pack_forget()
             del self.key_to_row[key]
+
+    def update_vals(self, *args):
+        updates = self.midi_int.midi_classify()
+        if updates is not None:
+            for k, v in updates:
+                self.update_key_vals(k, v)
+
+    def update_key_vals(self, key, vals):
+        if key in self.key_to_row:
+            self.key_to_row[key][-1].set(str(vals))
+
+    def get_chosen_keys(self):
+        tor = []
+        for k, vs in self.key_to_row.items():
+            if vs[1].get():
+                tor.append(k)
+        return tor
+
+    # overlay related
+
+    def hovered(self):
+        hc = self.hovered_cmd
+        if hc is not None and hc in self.midi_int.name_to_cmd:
+            self.cmd_text_var.set(hc)
+            self.desc_text_var.set(self.midi_int.name_to_cmd[hc]['desc'])
+
+    def selected(self):
+        sc = self.selected_cmd
+        if sc is not None and sc in self.midi_int.name_to_cmd:
+            saved = self.midi_int.name_to_cmd[sc]['midi_keys']
+            cur_inp = self.cur_input_name
+            if cur_inp is not None and cur_inp in saved:
+                k_type, inv = saved[cur_inp]['type'], saved[cur_inp]['invert']
+                keys = saved[cur_inp]['keys']
+                key_text = ', '.join(keys)
+                self.choose_type.set(k_type)
+                self.invert_type.set(inv)
+                self.keys_text_var.set(key_text)
+                return
+        self.choose_type.set('----')
+        self.invert_type.set(False)
+        self.keys_text_var.set('')
+
+    def unhovered(self):
+        sc = self.selected_cmd
+        if sc is not None and sc in self.midi_int.name_to_cmd:
+            self.cmd_text_var.set(sc)
+            self.desc_text_var.set(self.midi_int.name_to_cmd[sc]['desc'])
+        else:
+            self.cmd_text_var.set('')
+            self.desc_text_var.set('')
+
+    # helpers
+
+    @property
+    def cur_input_name(self):
+        inp = self.midi_choice.get()
+        if inp != 'None':
+            return inp
 
     def close(self):
         if self.overlay is not None:
@@ -507,7 +515,6 @@ class MidiConfig:
         self.root.destroy()
         # redo topmost setting
         self.parent.root.call('wm', 'attributes', '.', '-topmost', str(int(self.parent.on_top_toggle.get())))
-
 
 
 class MidiOverlay:
@@ -538,25 +545,33 @@ class MidiOverlay:
 
         self.base_moved()
 
+    # helpers
 
-    def base_moved(self, *args):
-        base_pos = self.base_gui.root.geometry()
-        if self.last_pos != base_pos:
-            new_dims = list(map(int, self.geo_regex.match(base_pos).groups()))
-            self.base_coords = new_dims[2:]
-            # index of first plus, before this is width/height
-            wi = base_pos.index('+')
-            if base_pos[:wi] != self.last_pos[:wi]:
-                self.offsets = [self.base_gui.root.winfo_rootx() - new_dims[2],
-                                self.base_gui.root.winfo_rooty() - new_dims[3]]
-                self.canvas.configure(width=new_dims[0] + self.offsets[0],
-                                      height=new_dims[1] + self.offsets[1])
-                # redraw everything..
-                self.draw_everything()
-            self.root.geometry('+{}+{}'.format(*new_dims[2:]))
-            self.parent.root.geometry('+{}+{}'.format(self.base_gui.root.winfo_rootx() + new_dims[0],
-                                                      self.base_gui.root.winfo_rooty() - self.offsets[1]))
-            self.last_pos = base_pos
+    def recursive_buildup(self, start_el=None):
+        if start_el is None:
+            start_el = self.base_gui.root
+        for c in start_el.winfo_children():
+            if c.winfo_name() in self.parent.midi_int.all_wnames:
+                self.wname_to_widget[c.winfo_name()] = c
+                # print('found', c.winfo_name())
+            self.recursive_buildup(c)
+
+    def close(self):
+        self.base_gui.root.unbind('<Configure>')
+        self.root.destroy()
+
+    # draw funs
+
+    def draw_everything(self):
+        self.canvas.delete("all")
+        for k in self.wname_to_widget:
+            # need to do multiple items
+            if k in self.parent.midi_int.wname_to_names:
+                self.draw_multiple_widgets(self.parent.midi_int.wname_to_names[k], k)
+            else:
+                self.draw_single_widget(self.wname_to_widget[k], k)
+        self.canvas.addtag_all('overlay')
+        self.create_binds()
 
     def get_widget_color(self, w_name):
         color_get = 'empty'
@@ -607,30 +622,31 @@ class MidiOverlay:
                 y = by + (i * h)
                 self.draw_widget([bx, y, tw, h], wn, self.spacing)
 
-    def draw_everything(self):
-        self.canvas.delete("all")
-        for k in self.wname_to_widget:
-            # need to do multiple items
-            if k in self.parent.midi_int.wname_to_names:
-                self.draw_multiple_widgets(self.parent.midi_int.wname_to_names[k], k)
-            else:
-                self.draw_single_widget(self.wname_to_widget[k], k)
-        self.canvas.addtag_all('overlay')
-        self.create_binds()
-
-    def recursive_buildup(self, start_el=None):
-        if start_el is None:
-            start_el = self.base_gui.root
-        for c in start_el.winfo_children():
-            if c.winfo_name() in self.parent.midi_int.all_wnames:
-                self.wname_to_widget[c.winfo_name()] = c
-                # print('found', c.winfo_name())
-            self.recursive_buildup(c)
+    # events bindings
 
     def create_binds(self):
         self.canvas.tag_bind("overlay", "<Enter>", self.hover_check)
         self.canvas.tag_bind("overlay", "<Leave>", self.hover_restore)
         self.canvas.bind("<ButtonPress-1>", self.select_bind)
+
+    def base_moved(self, *args):
+        base_pos = self.base_gui.root.geometry()
+        if self.last_pos != base_pos:
+            new_dims = list(map(int, self.geo_regex.match(base_pos).groups()))
+            self.base_coords = new_dims[2:]
+            # index of first plus, before this is width/height
+            wi = base_pos.index('+')
+            if base_pos[:wi] != self.last_pos[:wi]:
+                self.offsets = [self.base_gui.root.winfo_rootx() - new_dims[2],
+                                self.base_gui.root.winfo_rooty() - new_dims[3]]
+                self.canvas.configure(width=new_dims[0] + self.offsets[0],
+                                      height=new_dims[1] + self.offsets[1])
+                # redraw everything..
+                self.draw_everything()
+            self.root.geometry('+{}+{}'.format(*new_dims[2:]))
+            self.parent.root.geometry('+{}+{}'.format(self.base_gui.root.winfo_rootx() + new_dims[0],
+                                                      self.base_gui.root.winfo_rooty() - self.offsets[1]))
+            self.last_pos = base_pos
 
     def hover_check(self, event):
         item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y), halo=5)[0]
@@ -653,9 +669,6 @@ class MidiOverlay:
         self.canvas.itemconfig(self.wname_to_rect[self.parent.selected_cmd],
                                fill=C.CURRENT_THEME.midi_setting_colors['selected'])
 
-    def close(self):
-        self.base_gui.root.unbind('<Configure>')
-        self.root.destroy()
 
 if __name__ == '__main__':
 
