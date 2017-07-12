@@ -1045,7 +1045,9 @@ class Magi:
         # finally map osc2midi
         self.osc_server.map_unique('/midi', self.midi_interface.osc2midi)
 
-    def gen_midi_fun(self, osc_addr):
+    def gen_midi_fun(self, osc_addr, factor=None):
+        if factor is None:
+            factor = 1
         # generate proper fun from the osc_addr
         funtor = None
         if ' ' in osc_addr:
@@ -1055,10 +1057,11 @@ class Magi:
                     # print(osc_addr)
                     self.fun_store[osc_addr[0]]('', osc_addr[1])
         else:
+            fac = factor
             if osc_addr in self.fun_store:
                 def funtor(n):
                     # print(osc_addr, n)
-                    self.fun_store[osc_addr]('', n)
+                    self.fun_store[osc_addr]('', fac * n)
         return funtor
 
     def reset(self):

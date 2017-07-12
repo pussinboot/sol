@@ -110,7 +110,8 @@ class MidiInterface:
         if input_name in self.key_to_fun:
             if key in self.key_to_fun[input_name]:
                 # print(key, n)
-                self.key_to_fun[input_name][key](n)
+                for fun in self.key_to_fun[input_name][key]:
+                    fun(n)
 
     def refresh_input_ports(self):
         # get a list of all inputs
@@ -215,8 +216,8 @@ class MidiInterface:
         # not per layer cmds
         # cmds are as follows: cmd_name, osc_addr, cmd_desc, widget_name
         not_per_layer_cmds = [
-        ['coln_prev', '/magi/cur_col/select_right', 'select collection to the right', 'coln_select'],
-        ['coln_next', '/magi/cur_col/select_left', 'select collection to the left', 'coln_select'],
+        ['coln_prev', '/magi/cur_col/select_left', 'select collection to the left', 'coln_select'],
+        ['coln_next', '/magi/cur_col/select_right', 'select collection to the right', 'coln_select'],
         ]
 
         # per layer cmds
@@ -385,7 +386,10 @@ class MidiInterface:
                     continue
                 midi_gen_fun = self.gen_fun_wrapper(midi_key['type'], midi_key['invert'], backend_gen_fun)
                 for k in midi_key['keys']:
-                    self.key_to_fun[ctrl_name][k] = midi_gen_fun
+                    if k in self.key_to_fun[ctrl_name]:
+                        self.key_to_fun[ctrl_name][k].append(midi_gen_fun)
+                    else:
+                        self.key_to_fun[ctrl_name][k] = [midi_gen_fun]
         if 'osc' in to_enable:
             to_enable.remove('osc')
         return to_enable
