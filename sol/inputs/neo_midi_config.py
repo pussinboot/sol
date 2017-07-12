@@ -116,6 +116,7 @@ class MidiConfig:
         all_ks = list(self.key_to_row.keys())
         for k in all_ks:
             self.drop_key(k)
+        self.overlay.recolor_everything()
 
     def save_cmd(self, *args):
         sc = self.selected_cmd
@@ -150,6 +151,7 @@ class MidiConfig:
         self.choose_type.set('----')
         self.invert_type.set(False)
         self.keys_text_var.set('')
+        self.unselect_all()
 
     # key fill
 
@@ -189,6 +191,10 @@ class MidiConfig:
                 tor.append(k)
         return tor
 
+    def unselect_all(self):
+        for k, vs in self.key_to_row.items():
+            vs[1].set(False)
+
     # overlay related
 
     def hovered(self):
@@ -202,6 +208,7 @@ class MidiConfig:
         if sc is not None and sc in self.midi_int.name_to_cmd:
             saved = self.midi_int.name_to_cmd[sc]['midi_keys']
             cur_inp = self.cur_input_name
+            self.unselect_all()
             if cur_inp is not None and cur_inp in saved:
                 k_type, inv = saved[cur_inp]['type'], saved[cur_inp]['invert']
                 keys = saved[cur_inp]['keys']
@@ -297,6 +304,11 @@ class MidiOverlay:
                 self.draw_single_widget(self.wname_to_widget[k], k)
         self.canvas.addtag_all('overlay')
         self.create_binds()
+
+    def recolor_everything(self):
+        for k, r in self.wname_to_rect.items():
+            if k != self.parent.selected_cmd:
+                self.canvas.itemconfig(r, fill=self.get_widget_color(k))
 
     def get_widget_color(self, w_name):
         color_get = 'empty'
