@@ -55,6 +55,11 @@ class MidiConfig:
         self.choose_type.set('----')
         self.invert_type = tk.BooleanVar()
         self.invert_check_but = ttk.Checkbutton(self.main_frame, text='invert', variable=self.invert_type, takefocus=False)
+        # scale factor
+        self.factor_label = ttk.Label(self.main_frame, text='scale:')
+        self.factor_var = tk.StringVar()
+        self.factor_entry = tk.Spinbox(self.main_frame, from_=0, to=2, increment=0.005,
+                                       textvariable=self.factor_var, justify=tk.CENTER, width=5)
         # configured keys
         self.keys_label = ttk.Label(self.main_frame, text='saved keys:')
         self.keys_text_var = tk.StringVar()
@@ -65,8 +70,8 @@ class MidiConfig:
         # gets filled in with midi keys
         self.key_fill_area = ttk.Frame(self.main_frame, height=6 * C.FONT_HEIGHT)
         self.key_fill_area.grid_propagate(False)
-        ttk.Label(self.main_frame, text='key').grid(row=6, column=0, columnspan=2, sticky='we')
-        ttk.Label(self.main_frame, text='values').grid(row=6, column=2, sticky='we')
+        ttk.Label(self.main_frame, text='key').grid(row=7, column=0, columnspan=2, sticky='we')
+        ttk.Label(self.main_frame, text='values').grid(row=7, column=2, sticky='we')
         self.key_fill_row = ttk.Frame(self.key_fill_area)
 
         # grid it
@@ -86,10 +91,13 @@ class MidiConfig:
         self.type_label.grid(row=4, column=0, sticky='we')
         self.choose_type.grid(row=4, column=1, sticky='we')
         self.invert_check_but.grid(row=4, column=2, sticky='we')
+        # scale factor
+        self.factor_label.grid(row=5, column=0, columnspan=2, sticky='we')
+        self.factor_entry.grid(row=5, column=2, sticky='we')
         # save/clear buts
-        self.save_but.grid(row=5, column=0, sticky='we')
-        self.clear_but.grid(row=5, column=2, sticky='we')
-        self.key_fill_area.grid(row=7, rowspan=5, column=0, columnspan=3, sticky='nwes')
+        self.save_but.grid(row=6, column=0, sticky='we')
+        self.clear_but.grid(row=6, column=2, sticky='we')
+        self.key_fill_area.grid(row=8, rowspan=5, column=0, columnspan=3, sticky='nwes')
         self.key_fill_row.grid(row=0, rowspan=5, column=0, columnspan=3, sticky='news')
 
         self.overlay = MidiOverlay(self, self.parent)
@@ -130,11 +138,18 @@ class MidiConfig:
             if cur_inp in self.midi_int.name_to_cmd[sc]['midi_keys']:
                 pos_keys = self.midi_int.name_to_cmd[sc]['midi_keys'][cur_inp]['keys']
 
+        factor = self.factor_var.get()
+        try:
+            factor = float(factor)
+        except:
+            factor = None
+
         self.midi_int.name_to_cmd[sc]['midi_keys'][cur_inp] = {
             'control': self.cur_input_name,
             'keys': pos_keys,
             'type': self.key_type_choice.get(),
-            'invert': self.invert_type.get()
+            'invert': self.invert_type.get(),
+            'factor': factor
         }
 
         self.keys_text_var.set(', '.join(pos_keys))
@@ -152,6 +167,7 @@ class MidiConfig:
         self.invert_type.set(False)
         self.keys_text_var.set('')
         self.unselect_all()
+        self.reset_sens_val()
 
     # key fill
 
@@ -209,6 +225,7 @@ class MidiConfig:
             saved = self.midi_int.name_to_cmd[sc]['midi_keys']
             cur_inp = self.cur_input_name
             self.unselect_all()
+            self.reset_sens_val()
             if cur_inp is not None and cur_inp in saved:
                 k_type, inv = saved[cur_inp]['type'], saved[cur_inp]['invert']
                 keys = saved[cur_inp]['keys']
@@ -217,6 +234,7 @@ class MidiConfig:
                 self.invert_type.set(inv)
                 self.keys_text_var.set(key_text)
                 return
+
         self.choose_type.set('----')
         self.invert_type.set(False)
         self.keys_text_var.set('')
@@ -237,6 +255,30 @@ class MidiConfig:
         inp = self.midi_choice.get()
         if inp != 'None':
             return inp
+
+    def reset_sens_val(self):
+        sc = self.selected_cmd
+
+        # default
+        self.factor_var.set('----')
+        self.factor_entry.config(state='disabled')
+
+        if sc is None:
+            return
+
+        sens_factor = self.midi_int.name_to_cmd[sc]['factor']
+        # if it has a factor
+        if sens_factor is not None:
+            cur_inp = self.cur_input_name
+            saved = self.midi_int.name_to_cmd[sc]['midi_keys']
+            # check if it has a saved factor value
+            if cur_inp is not None and cur_inp in saved:
+                saved_sens_factor = saved[cur_inp]['factor']
+                if saved_sens_factor is not None:
+                    sens_factor[0] = saved_sens_factor
+            if not sens_factor[1]:
+                self.factor_entry.config(state='normal')
+            self.factor_var.set(sens_factor[0])
 
     def close(self):
         if self.overlay is not None:

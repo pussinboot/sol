@@ -109,7 +109,7 @@ class MidiInterface:
         # used for actual midi control
         if input_name in self.key_to_fun:
             if key in self.key_to_fun[input_name]:
-                print(key, n)
+                # print(key, n)
                 self.key_to_fun[input_name][key](n)
 
     def refresh_input_ports(self):
@@ -169,10 +169,22 @@ class MidiInterface:
         pass
 
     def gen_name_to_cmd(self):
+        # commands that get scaled [default_factor, locked]
+        cmds_with_factors = {
+            'ctrl_do': [1, False],
+            'ctrl_sens': [10, True],
+            'pb_spd': [10, True],
+            'pb_spd_adjust': [0.1, False]
+        }
+
+        cwfk = list(cmds_with_factors.keys())
+        for l in range(C.NO_LAYERS):
+            for f_k in cwfk:
+                cmds_with_factors[f_k + '_l{}'.format(l)] = cmds_with_factors[f_k]
 
         def add_cmd(cmd_array, l=-1, i=-1):
             if len(cmd_array) < 5:
-                cmd_array.extend([None]*(5 - len(cmd_array)))
+                cmd_array.extend([None] * (5 - len(cmd_array)))
             [cmd_name, cmd_osc, cmd_desc, wname, combined] = cmd_array
             wn = '{}'
             if wname is not None:
@@ -186,7 +198,10 @@ class MidiInterface:
                 cmd_name = cmd_name.format(i)
                 wn = wn.format(i)
                 cmd_osc += ' {}'.format(i)
-            self.name_to_cmd[cmd_name] = {'addr': cmd_osc, 'desc': cmd_desc, 'midi_keys': {}}
+            self.name_to_cmd[cmd_name] = {'addr': cmd_osc, 'desc': cmd_desc, 'factor': None, 'midi_keys': {}}
+
+            if cmd_name in cmds_with_factors:
+                self.name_to_cmd[cmd_name]['factor'] = cmds_with_factors[cmd_name]
 
             if wname is not None:
                 if wn in self.wname_to_names:
@@ -297,6 +312,7 @@ class MidiInterface:
 
             self.double_width_pls.extend([c + '_l{}'.format(l) for c in double_mes])
 
+
         # pp.pprint(self.all_wnames)
         # pp.pprint(self.wname_to_names)
 
@@ -359,14 +375,14 @@ class MidiInterface:
         to_enable = []
         for cmd_name, vals in self.name_to_cmd.items():
             osc_addr = vals['addr']
-            backend_gen_fun = self.magi.gen_midi_fun(osc_addr)
-            if backend_gen_fun is None:
-                continue
             for ctrl_name, midi_key in vals['midi_keys'].items():
                 if ctrl_name not in self.key_to_fun:
                     self.key_to_fun[ctrl_name] = {}
                     to_enable.append(ctrl_name)
                 # generate proper fun per type for backend_gen_fun
+                backend_gen_fun = self.magi.gen_midi_fun(osc_addr, midi_key['factor'])
+                if backend_gen_fun is None:
+                    continue
                 midi_gen_fun = self.gen_fun_wrapper(midi_key['type'], midi_key['invert'], backend_gen_fun)
                 for k in midi_key['keys']:
                     self.key_to_fun[ctrl_name][k] = midi_gen_fun

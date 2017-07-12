@@ -479,6 +479,8 @@ class FileOPs:
             new_key.set('keys', '/'.join(mk[-1]['keys']))
             new_key.set('type', mk[-1]['type'])
             new_key.set('invert', str(mk[-1]['invert']))
+            if mk[-1]['factor'] is not None:
+                new_key.set('sens', str(mk[-1]['factor']))
 
         midi_fname = os.path.join(C.SAVEDATA_DIR, 'midi.xml')
         with open(midi_fname, 'wb') as f:
@@ -494,10 +496,16 @@ class FileOPs:
             for midi_el in root.findall('midi_cmd'):
                 cmd_name = midi_el.get('cmd_name')
                 input_name = midi_el.get('input_name')
+                factor = midi_el.get('sens')
+                try:
+                    factor = float(factor)
+                except:
+                    factor = None
                 midi_key = {
                     'keys': midi_el.get('keys').split('/'),
                     'type': midi_el.get('type'),
-                    'invert': midi_el.get('invert') == 'True'
+                    'invert': midi_el.get('invert') == 'True',
+                    'factor': factor
                 }
                 if len(midi_key['keys'][0]) > 0:
                     tor.append([cmd_name, input_name, midi_key])
@@ -514,6 +522,7 @@ class FileOPs:
         tree = ET.parse(filename, parser=parser)
         root = tree.getroot()
         return root
+
 
 class FileHierarchyNode:
     def __init__(self,name,what,data=None):
