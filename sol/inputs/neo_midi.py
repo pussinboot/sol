@@ -50,20 +50,29 @@ class MidiInterface:
 
         self.gen_name_to_cmd()
 
+    def enable_midi(self):
+        if C.MIDI_ENABLED:
+            inputs_to_enable = self.map_fun_keys()
+            self.handle_midi = self.pass_midi
+            for inp in inputs_to_enable:
+                self.open_midi_input(inp)
+        else:
+            self.handle_midi = None
+
     def enter_config_mode(self, mc):
         self.close_all_inputs()
         self.midi_config = mc
         self.midi_queue = {}
         self.midi_keys_queue = LastNList(5)
         self.handle_midi = self.id_midi
-        self.key_to_fun = {} # remapped on close
+        self.key_to_fun = {}  # remapped on close
 
     def exit_config_mode(self):
         self.close_all_inputs()
         self.midi_config = None
         self.midi_queue = None
         self.midi_keys_queue = None
-        self.handle_midi = self.pass_midi
+        self.enable_midi()
 
     def id_midi(self, input_name, key, n):
         # used for configuration
@@ -306,14 +315,59 @@ class MidiInterface:
         for vals in savedata:
             if vals[0] in self.name_to_cmd:
                 self.name_to_cmd[vals[0]]['midi_keys'][vals[1]] = vals[2]
-        # self.map_fun_keys()
+
+    def gen_fun_wrapper(self, m_type, invert, fun):
+
+        def funtor(n=0):
+            fun(n)
+
+        if not invert:  # for readability lol
+            # simple on/off
+            if m_type == 'togl':
+                def funtor(n):
+                    if n != 0:
+                        fun()
+            # +/- n at a time (relative control)
+            elif m_type == 'knob':
+                def funtor(n):
+                    if n > 64:
+                        n = n - 128
+                    fun(n)
+            # send new value (absolute control)
+            elif m_type == 'sldr':
+                def funtor(n):
+                    fun(n / 127)  # 0 to 127 translates to 0.0 - 1.0
+        else:
+            if m_type == 'togl':
+                def funtor(n):
+                    if n == 0:
+                        fun()
+            elif m_type == 'knob':
+                def funtor(n):
+                    if n > 64:
+                        n = n - 128
+                    fun(-1 * n)
+            elif m_type == 'sldr':
+                def funtor(n):
+                    fun(1 - (n / 127))
+
+        return funtor
 
     def map_fun_keys(self):
+        to_enable = []
         for cmd_name, vals in self.name_to_cmd.items():
             osc_addr = vals['addr']
             backend_gen_fun = self.magi.gen_midi_fun(osc_addr)
-            if backend_gen_fun is not None:
-                for ctrl_name, midi_key in vals['midi_keys'].items():
-                    # generate proper fun per type for backend_gen_fun
-                    pass
-                    # self.key_to_fun[ctrl_name][midi_key] = gen_fun
+            if backend_gen_fun is None:
+                continue
+            for ctrl_name, midi_key in vals['midi_keys'].items():
+                if ctrl_name not in self.key_to_fun:
+                    self.key_to_fun[ctrl_name] = {}
+                    to_enable.append(ctrl_name)
+                # generate proper fun per type for backend_gen_fun
+                midi_gen_fun = self.gen_fun_wrapper(midi_key['type'], midi_key['invert'], backend_gen_fun)
+                for k in midi_key['keys']:
+                    self.key_to_fun[ctrl_name][k] = midi_gen_fun
+        if 'osc' in to_enable:
+            to_enable.remove('osc')
+        return to_enable
