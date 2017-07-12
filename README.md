@@ -6,7 +6,7 @@ it controls playback and adds some missing features to re*sol*ume
 
 MIT licensed
 
-see [the wiki](https://github.com/pussinboot/sol/wiki/Initial-Setup) to get started
+see [the wiki](https://github.com/pussinboot/sol/wiki/Initial-Setup) for how to get started
 
 ## setup instructions
 
