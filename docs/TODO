@@ -6,14 +6,7 @@ standalone executable (windows, idk about mac)
     - include ffmpeg but idk quite how
 
 # 2.2
-    - better midi, mayb kb support too
     - audio analysis see notes below
-
-# to fix gui 
-    - difference between doing something from the gui and actually doing it
-    - doing something from the gui should ONLY tell magi what it did
-    - magi handles the actual updating..
-    - otherwise you get asked to do things multiple times...
 
 # someday/maybe
 
