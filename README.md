@@ -19,3 +19,13 @@ to use with resolume, see `/docs/templates` for a base composition
 ## tutorial vid
 
 [![](https://raw.githubusercontent.com/pussinboot/sol/master/docs/wiki/screens/vimeo_preview.png)](https://vimeo.com/220742126/0b27d24945)
+
+## changelog
+
+- [2.1.5]
+    - complete midi rehaul
+- [2.1.0]
+    - gui redesign
+    - added support for themes
+- [2.0.0]
+    - complete refactor
