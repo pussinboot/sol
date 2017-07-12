@@ -47,6 +47,7 @@ class MainGui:
         else:
             self.mt_gui = None
         self.setup_gui = None
+        self.midi_config_gui = None
         self.clip_controls = []
         self.clip_org = None
         self.lib_org = None
@@ -151,8 +152,10 @@ class MainGui:
         # print([0],self.magi.clip_storage.current_clips[1])
 
     def configure_midi(self):
-        # midi_config.ConfigGui(tk.Toplevel(), self)
-        midi_config.MidiConfig(tk.Toplevel(), self)
+        if self.midi_config_gui is not None:
+            self.midi_config_gui.root.focus_force()
+        else:
+            self.midi_config_gui = midi_config.MidiConfig(tk.Toplevel(), self)
 
     def edit_config(self):
         if self.setup_gui is not None:

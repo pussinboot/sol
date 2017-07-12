@@ -114,7 +114,7 @@ class Magi:
             if C.DEBUG: print('starting new save')
             self.clip_storage.add_collection()
             self.clip_storage.select_collection(0)
-        # self.load_midi()
+        self.load_midi()
 
     ###
     # internal state funs
@@ -997,7 +997,7 @@ class Magi:
             print(e)
             return False
 
-    def load_resolume_comp(self,filename):
+    def load_resolume_comp(self, filename):
         from sol.models.resolume import load_avc
         comp = load_avc.ResolumeLoader()
         comp.import_xml(filename)
@@ -1006,19 +1006,19 @@ class Magi:
             self.db.add_clip(new_clip)
         self.db.searcher.refresh()
 
-    def export_resolume_comp(self,filename,filename_out):
+    def export_resolume_comp(self, filename, filename_out):
         from sol.models.resolume import load_avc
         comp = load_avc.ResolumeLoader()
         all_col_clips = [clip for clip_col in self.clip_storage.clip_cols for clip in clip_col]
         all_col_fnames = [clip.f_name for clip in all_col_clips if clip is not None]
-        comp.export_subset(filename,filename_out,all_col_fnames)
-    
+        comp.export_subset(filename, filename_out, all_col_fnames)
 
-    def load_isadora_comp(self,path):
+    def load_isadora_comp(self, path):
         if self.loader is None:
             from sol.models.isadorabl import loader
             self.loader = loader.IsadoraLoader(len(self.db.clips.values()))
-        if C.DEBUG: print('adding folder', path)
+        if C.DEBUG:
+            print('adding folder', path)
         self.loader.add_folder(path)
         new_clips = self.loader.get_clips()
         for clip_rep in new_clips:
@@ -1026,12 +1026,18 @@ class Magi:
             self.db.add_clip(new_clip)
         self.db.searcher.refresh()
 
+    def save_midi(self):
+        savedata = self.midi_interface.gen_savedata()
+        self.db.file_ops.save_midi(savedata)
+
     def load_midi(self):
         midi_load = self.db.file_ops.load_midi()
-        if midi_load is None: 
-            if C.DEBUG: print('no midi config found')
+        if midi_load is None:
+            if C.DEBUG:
+                print('no midi config found')
             return
         # tell midi interface to load from midi_load
+        self.midi_interface.load(midi_load)
         # finally map osc2midi
         self.osc_server.map_unique('/midi', self.midi_interface.osc2midi)
 
