@@ -1,5 +1,6 @@
 from sol.database import database, clip, thumbs
-from sol.inputs import osc, midi
+from sol.inputs import osc#, midi
+from sol.inputs import neo_midi as midi
 from sol.models.resolume import model as ResolumeModel
 from sol.models.memepv import model as MPVModel
 from sol.models.isadorabl import model as IsadoraModel
@@ -32,7 +33,8 @@ class Magi:
         if serv_port is None:
             serv_port = C.OSC_PORT
         self.osc_server = osc.OscServer(ip=ip_addr_serv, port=serv_port)
-        self.midi_controller = midi.MidiController()
+        # self.midi_controller = midi.MidiController()
+        self.midi_interface = midi.MidiInterface(self)
         self.fun_store = {}  # dictionary containing address to function
         # duplicating osc_server (allows for guis to do things)
 
@@ -112,7 +114,7 @@ class Magi:
             if C.DEBUG: print('starting new save')
             self.clip_storage.add_collection()
             self.clip_storage.select_collection(0)
-        self.load_midi()
+        # self.load_midi()
 
     ###
     # internal state funs
@@ -1029,32 +1031,23 @@ class Magi:
         if midi_load is None: 
             if C.DEBUG: print('no midi config found')
             return
-        self.map_midi(midi_load)
-
-    def map_midi(self,midi_load):
-        for line in midi_load:
-            key, key_type, osc_cmd = line[0],line[1],line[2]
-
-            def gen_fun(osc_cmd):
-                # generate proper fun from the osc_cmd
-                funtor = None
-                if ' ' in osc_cmd:
-                    osc_cmd = osc_cmd.split(' ')
-                    if osc_cmd[0] in self.fun_store:
-                        def funtor(*args):
-                            self.fun_store[osc_cmd[0]]('',osc_cmd[1])
-                else:
-                    if osc_cmd in self.fun_store:
-                        def funtor(n):
-                            self.fun_store[osc_cmd]('',n)
-                return funtor
-
-            # pass it into our midi_controller
-            new_fun = gen_fun(osc_cmd)
-            if new_fun is not None:
-                self.midi_controller.map_fun_key(new_fun,key,key_type)
+        # tell midi interface to load from midi_load
         # finally map osc2midi
-        self.osc_server.map_unique('/midi',self.midi_controller.osc2midi)
+        self.osc_server.map_unique('/midi', self.midi_interface.osc2midi)
+
+    def gen_midi_fun(self, osc_addr):
+        # generate proper fun from the osc_addr
+        funtor = None
+        if ' ' in osc_addr:
+            osc_addr = osc_addr.split(' ')
+            if osc_addr[0] in self.fun_store:
+                def funtor(*args):
+                    self.fun_store[osc_addr[0]]('', osc_addr[1])
+        else:
+            if osc_addr in self.fun_store:
+                def funtor(n):
+                    self.fun_store[osc_addr]('', n)
+        return funtor
 
     def reset(self):
         self.db.file_ops.last_save = None
