@@ -1,6 +1,5 @@
 from sol.database import database, clip, thumbs
-from sol.inputs import osc#, midi
-from sol.inputs import neo_midi as midi
+from sol.inputs import osc, midi
 from sol.models.resolume import model as ResolumeModel
 from sol.models.memepv import model as MPVModel
 from sol.models.isadorabl import model as IsadoraModel
@@ -33,7 +32,6 @@ class Magi:
         if serv_port is None:
             serv_port = C.OSC_PORT
         self.osc_server = osc.OscServer(ip=ip_addr_serv, port=serv_port)
-        # self.midi_controller = midi.MidiController()
         self.midi_interface = midi.MidiInterface(self)
         self.fun_store = {}  # dictionary containing address to function
         # duplicating osc_server (allows for guis to do things)
