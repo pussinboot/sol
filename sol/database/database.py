@@ -497,7 +497,7 @@ class FileOPs:
                 midi_key = {
                     'keys': midi_el.get('keys').split('/'),
                     'type': midi_el.get('type'),
-                    'invert': bool(midi_el.get('invert'))
+                    'invert': midi_el.get('invert') == 'True'
                 }
                 if len(midi_key['keys'][0]) > 0:
                     tor.append([cmd_name, input_name, midi_key])

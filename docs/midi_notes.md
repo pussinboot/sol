@@ -34,3 +34,9 @@ name_to_cmd [command_name] = {
         invert - bool flag
     }    
 }
+
+next savedata
+    midi thing needs to 
+then properly implement pass midi
+
+osc2midi

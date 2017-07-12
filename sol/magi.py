@@ -1052,10 +1052,12 @@ class Magi:
             osc_addr = osc_addr.split(' ')
             if osc_addr[0] in self.fun_store:
                 def funtor(*args):
+                    # print(osc_addr)
                     self.fun_store[osc_addr[0]]('', osc_addr[1])
         else:
             if osc_addr in self.fun_store:
                 def funtor(n):
+                    # print(osc_addr, n)
                     self.fun_store[osc_addr]('', n)
         return funtor
 

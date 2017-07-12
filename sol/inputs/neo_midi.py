@@ -109,6 +109,7 @@ class MidiInterface:
         # used for actual midi control
         if input_name in self.key_to_fun:
             if key in self.key_to_fun[input_name]:
+                print(key, n)
                 self.key_to_fun[input_name][key](n)
 
     def refresh_input_ports(self):
@@ -326,7 +327,7 @@ class MidiInterface:
             if m_type == 'togl':
                 def funtor(n):
                     if n != 0:
-                        fun()
+                        fun(1)
             # +/- n at a time (relative control)
             elif m_type == 'knob':
                 def funtor(n):
@@ -337,11 +338,12 @@ class MidiInterface:
             elif m_type == 'sldr':
                 def funtor(n):
                     fun(n / 127)  # 0 to 127 translates to 0.0 - 1.0
+
         else:
             if m_type == 'togl':
                 def funtor(n):
                     if n == 0:
-                        fun()
+                        fun(1)
             elif m_type == 'knob':
                 def funtor(n):
                     if n > 64:
