@@ -84,6 +84,7 @@ class Magi:
                     if cl[1] == self.last_sent_loop[1]:
                         return True
                 return False
+
             def external_loop_fun(layer):
                 cl = self.loop_get(layer)
                 if dont_resend(cl):
@@ -111,10 +112,12 @@ class Magi:
         self.db = database.Database()
         if self.db.file_ops.last_save is None or not self.load(self.db.file_ops.last_save):
             # if nothing loaded
-            if C.DEBUG: print('starting new save')
+            if C.DEBUG:
+                print('starting new save')
             self.clip_storage.add_collection()
             self.clip_storage.select_collection(0)
         self.load_midi()
+        self.midi_interface.enable_midi()
 
     ###
     # internal state funs
@@ -1029,6 +1032,7 @@ class Magi:
     def save_midi(self):
         savedata = self.midi_interface.gen_savedata()
         self.db.file_ops.save_midi(savedata)
+        self.midi_interface.enable_midi()
 
     def load_midi(self):
         midi_load = self.db.file_ops.load_midi()
