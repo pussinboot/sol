@@ -24,11 +24,12 @@ config = {
     'author_email': 'mkaynospam@gmail.com',
     'url': 'https://github.com/pussinboot/sol',
     'license': 'MIT',
-    'version': '2.1.0',
+    'version': '2.1.5',
     'install_requires': [
         'python-osc>=1.6',
         'lxml>=3.6.0',
-        'Pillow>=4.1.0'
+        'Pillow>=4.1.0',
+        'python-rtmidi >= 1.1.0'
     ],
     'packages': packages,
     'package_data': {
