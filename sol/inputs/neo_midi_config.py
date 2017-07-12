@@ -138,7 +138,7 @@ class MidiConfig:
 
         self.keys_text_var.set(', '.join(pos_keys))
 
-        pp.pprint(self.midi_int.name_to_cmd[sc]['midi_keys'])
+        # pp.pprint(self.midi_int.name_to_cmd[sc]['midi_keys'])
 
     def clear_cmd(self, *args):
         sc = self.selected_cmd
@@ -235,6 +235,9 @@ class MidiConfig:
         if self.overlay is not None:
             self.overlay.close()
         self.root.destroy()
+        # pp.pprint(self.midi_int.gen_savedata())
+        self.parent.magi.save_midi()
+        self.parent.midi_config_gui = None
         # redo topmost setting
         self.parent.root.call('wm', 'attributes', '.', '-topmost', str(int(self.parent.on_top_toggle.get())))
 

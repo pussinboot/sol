@@ -290,11 +290,22 @@ class MidiInterface:
         # pp.pprint(self.all_wnames)
         # pp.pprint(self.wname_to_names)
 
+    def gen_savedata(self):
+        savedata = []
+        for cmd_name, vals in self.name_to_cmd.items():
+            if len(vals['midi_keys']) > 0:
+                for ctrl_name, midi_key in vals['midi_keys'].items():
+                    savedata.append([cmd_name, vals['addr'], ctrl_name, midi_key])
+
+        return savedata
 
     def load(self, savedata):
         # need to go through savedata
         # any cmd_name that's in name_to_cmd gets updated with filled in 'midi_keys'
-        pass
+        # each line is cmd_name, input_name, midi_key (dict)
+        for vals in savedata:
+            if vals[0] in self.name_to_cmd:
+                self.name_to_cmd[vals[0]]['midi_keys'][vals[1]] = vals[2]
         # self.map_fun_keys()
 
     def map_fun_keys(self):
