@@ -12,8 +12,7 @@ from sol.gui.lib_org import lib_org
 # from sol.gui.tk_gui import clip_control
 from sol.gui.tk_gui import clip_control
 from sol.gui.tk_gui import clip_collections
-# from sol.gui.tk_gui import midi_config
-from sol.inputs import neo_midi_config as midi_config
+from sol.gui.tk_gui import midi_config
 from sol.setup_gui import SetupGui
 
 from sol.mt_gui import MTGui

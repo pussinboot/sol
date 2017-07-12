@@ -1,326 +1,455 @@
 import tkinter as tk
 from tkinter import ttk
+import re
+# import pprint
+# pp = pprint.PrettyPrinter(indent=4)
 
 from sol.config import GlobalConfig
 C = GlobalConfig()
 
-blank_midi_key = '[-,-]'
-blank_midi_type = '----'
 
-
-class ConfigGui:
-    """
-    configure midi controls
-    rebind /midi osc to the one returned by magi.midi_controller.start_mapping
-    then save everything to midi.ini
-    then rebind midi_controller's osc2midi to /midi after config
-    """
-
+class MidiConfig:
     def __init__(self, root, parent):
-
+        # needs to show up to the top right of the main window.
         self.root = root
         self.parent = parent
-        self.backend = self.parent.magi
-        self.root.title('midi configuration')
+        self.midi_int = self.parent.magi.midi_interface
+
+        self.selected_cmd = None
+        self.hovered_cmd = None
+
+        self.key_to_row = {}
+
+        self.main_frame = ttk.Frame(self.root)
+        self.main_frame.pack()
+
+        self.midi_choice = tk.StringVar()
+
+        self.input_label = ttk.Label(self.main_frame, text='input:')
+        self.choose_midi = ttk.Combobox(self.main_frame, textvariable=self.midi_choice)
+        self.refresh_inputs()
+        self.choose_midi.config(state='readonly')
+        self.choose_midi.set('None')
+
+        self.midi_choice.trace("w", self.midi_choice_changed)
+
+        self.refresh_inputs_but = ttk.Button(self.main_frame, text='[f5]', command=self.refresh_inputs, takefocus=False)
+        # cmd name
+        self.cmd_label = ttk.Label(self.main_frame, text='cmd:')
+        self.cmd_text_var = tk.StringVar()
+        self.cmd_text_label = ttk.Label(self.main_frame, textvariable=self.cmd_text_var)
+        # cmd desc
+        self.desc_label = ttk.Label(self.main_frame, text='desc:')
+        self.desc_text_var = tk.StringVar()
+        self.desc_text_label = ttk.Label(self.main_frame, textvariable=self.desc_text_var)
+        # control type
+        self.type_label = ttk.Label(self.main_frame, text='type:')
+        self.key_type_choice = tk.StringVar()
+        self.choose_type = ttk.Combobox(self.main_frame, textvariable=self.key_type_choice)
+        type_options = ['----', 'togl', 'knob', 'sldr']
+        self.choose_type.config(values=type_options)
+        self.choose_type.config(state='readonly')
+        self.choose_type.set('----')
+        self.invert_type = tk.BooleanVar()
+        self.invert_check_but = ttk.Checkbutton(self.main_frame, text='invert', variable=self.invert_type, takefocus=False)
+        # scale factor
+        self.factor_label = ttk.Label(self.main_frame, text='scale:')
+        self.factor_var = tk.StringVar()
+        self.factor_entry = tk.Spinbox(self.main_frame, from_=0, to=2, increment=0.005,
+                                       textvariable=self.factor_var, justify=tk.CENTER, width=5)
+        # configured keys
+        self.keys_label = ttk.Label(self.main_frame, text='saved keys:')
+        self.keys_text_var = tk.StringVar()
+        self.keys_text_area = ttk.Label(self.main_frame, textvariable=self.keys_text_var)
+        # save/clear buts
+        self.save_but = ttk.Button(self.main_frame, text='save', command=self.save_cmd, takefocus=False)
+        self.clear_but = ttk.Button(self.main_frame, text='clear', command=self.clear_cmd, takefocus=False)
+        # gets filled in with midi keys
+        self.key_fill_area = ttk.Frame(self.main_frame, height=6 * C.FONT_HEIGHT)
+        self.key_fill_area.grid_propagate(False)
+        ttk.Label(self.main_frame, text='key').grid(row=7, column=0, columnspan=2, sticky='we')
+        ttk.Label(self.main_frame, text='values').grid(row=7, column=2, sticky='we')
+        self.key_fill_row = ttk.Frame(self.key_fill_area)
+
+        # grid it
+        # input choice
+        self.input_label.grid(row=0, column=0, sticky='we')
+        self.choose_midi.grid(row=0, column=1, sticky='we')
+        self.refresh_inputs_but.grid(row=0, column=2, sticky='we')
+        # cmd info
+        self.cmd_label.grid(row=1, column=0, sticky='we')
+        self.cmd_text_label.grid(row=1, column=1, columnspan=2, sticky='we')
+        self.desc_label.grid(row=2, column=0, sticky='we')
+        self.desc_text_label.grid(row=2, column=1, columnspan=2, sticky='we')
+        # configured keys
+        self.keys_label.grid(row=3, column=0, sticky='we')
+        self.keys_text_area.grid(row=3, column=1, columnspan=2, sticky='we')
+        # key type
+        self.type_label.grid(row=4, column=0, sticky='we')
+        self.choose_type.grid(row=4, column=1, sticky='we')
+        self.invert_check_but.grid(row=4, column=2, sticky='we')
+        # scale factor
+        self.factor_label.grid(row=5, column=0, columnspan=2, sticky='we')
+        self.factor_entry.grid(row=5, column=2, sticky='we')
+        # save/clear buts
+        self.save_but.grid(row=6, column=0, sticky='we')
+        self.clear_but.grid(row=6, column=2, sticky='we')
+        self.key_fill_area.grid(row=8, rowspan=5, column=0, columnspan=3, sticky='nwes')
+        self.key_fill_row.grid(row=0, rowspan=5, column=0, columnspan=3, sticky='news')
+
+        self.overlay = MidiOverlay(self, self.parent)
+        self.root.protocol("WM_DELETE_WINDOW", self.close)
+        self.root.title('config midi')
+        # undo topmost
         self.parent.root.call('wm', 'attributes', '.', '-topmost', '0')
 
-        self.inputs = []
-        self.fun_to_inp = {}
+        self.midi_int.enter_config_mode(self)
 
-        # how to generate the full list below
-        # all_funs = [fun_name for fun_name in self.backend.fun_store]
-        # all_funs.sort()
-        # for fun_name in all_funs:
-        #   print(fun_name)
+    # midi interface related
 
-        # functions that i will map to midi =)
-        # put each thing from  /magi/_wat__/ into a separate scrollable tab
-        # then duplicate old midi_config gui
-        # have to select midi device in proper midi2osc converter
+    def refresh_inputs(self, *args):
+        self.midi_int.refresh_input_ports()
+        input_options = ['None'] + list(self.midi_int.input_ports.keys()) + ['osc']
+        self.choose_midi.config(values=input_options)
+        self.choose_midi.set('None')
 
-        # * means needs for each cue/loop point
+    def midi_choice_changed(self, *args):
+        new_choice = self.cur_input_name
+        self.midi_int.close_all_inputs()
+        if new_choice != 'None' and new_choice != 'osc':
+            self.midi_int.open_midi_input(new_choice)
+        all_ks = list(self.key_to_row.keys())
+        for k in all_ks:
+            self.drop_key(k)
+        self.overlay.recolor_everything()
 
-        col_funs = [
-        '/magi/cur_col/select_clip/layer{} #',  # *
-        '/magi/cur_col/select_left',
-        '/magi/cur_col/select_right',
-        ]
+    def save_cmd(self, *args):
+        sc = self.selected_cmd
+        cur_inp = self.cur_input_name
+        if sc is None or cur_inp is None:
+            return
 
-        layer_funs = [
-        '/magi/layer{}/cue #',  # *
-        '/magi/layer{}/cue/clear #',  # *
-        '/magi/layer{}/loop/on_off',
-        '/magi/layer{}/loop/select #',  # *
-        '/magi/layer{}/loop/select/move',
-        '/magi/layer{}/loop/set/a',
-        '/magi/layer{}/loop/set/b',
-        '/magi/layer{}/loop/type',
-        '/magi/layer{}/playback/clear',
-        '/magi/layer{}/playback/pause',
-        '/magi/layer{}/playback/play',
-        '/magi/layer{}/playback/random',
-        '/magi/layer{}/playback/reverse',
-        '/magi/layer{}/playback/seek',
-        '/magi/layer{}/playback/speed',
-        ]
+        # if haven't selected any new keys then don't override
+        pos_keys = self.get_chosen_keys()
+        if len(pos_keys) == 0:
+            if cur_inp in self.midi_int.name_to_cmd[sc]['midi_keys']:
+                pos_keys = self.midi_int.name_to_cmd[sc]['midi_keys'][cur_inp]['keys']
 
-        def input_name(osc_cmd, layer=-1, i=-1):
-            if layer >= 0:
-                osc_cmd = osc_cmd.format(layer)
-            tor = osc_cmd.split('/')[3:]
-            tor = "/".join(tor)
-            if '#' in tor:
-                tor = tor[:tor.index('#')]
-                if i >= 0:
-                    tor += str(i)
-            return tor
+        factor = self.factor_var.get()
+        try:
+            factor = float(factor)
+        except:
+            factor = None
 
-        def input_osc(osc_cmd, layer=-1, i=-1):
-            if layer >= 0:
-                osc_cmd = osc_cmd.format(layer)
-            if '#' in osc_cmd:
-                osc_cmd = osc_cmd[:-2]
-            if i >= 0:
-                osc_cmd += " {}".format(i)
-            return osc_cmd
+        self.midi_int.name_to_cmd[sc]['midi_keys'][cur_inp] = {
+            'control': self.cur_input_name,
+            'keys': pos_keys,
+            'type': self.key_type_choice.get(),
+            'invert': self.invert_type.get(),
+            'factor': factor
+        }
 
-        self.mainframe = ttk.Frame(self.root)
-        self.configframe = ttk.Frame(self.mainframe)
-        self.configbook = ttk.Notebook(self.configframe)
-        self.deviceframe = ttk.Frame(self.mainframe, padding='5 0 5 0')
+        self.keys_text_var.set(', '.join(pos_keys))
 
-        self.col_tab = ScrollTab(self.configbook)
-        self.layer_tabs = [ScrollTab(self.configbook) for _ in range(C.NO_LAYERS)]
+        # pp.pprint(self.midi_int.name_to_cmd[sc]['midi_keys'])
 
-        # add the inputzz
+    def clear_cmd(self, *args):
+        sc = self.selected_cmd
+        cur_inp = self.cur_input_name
+        if sc is None:
+            return
+        if cur_inp in self.midi_int.name_to_cmd[sc]['midi_keys']:
+            del self.midi_int.name_to_cmd[sc]['midi_keys'][cur_inp]
+        self.choose_type.set('----')
+        self.invert_type.set(False)
+        self.keys_text_var.set('')
+        self.unselect_all()
+        self.reset_sens_val()
 
-        # collections
-        for l in range(C.NO_LAYERS):
-            for i in range(C.NO_Q):
-                # print(input_name(col_funs[0],l,i),input_osc(col_funs[0],l,i))
-                new_inp_b = InputBox(self, self.col_tab.interior,
-                                     input_name(col_funs[0], l, i),
-                                     input_osc(col_funs[0], l, i))
-                new_inp_b.topframe.grid(row=(l * 2 + i // 4), column=(i % 4))
-                self.inputs.append(new_inp_b)
-                self.fun_to_inp[new_inp_b.osc_command] = new_inp_b
+    # key fill
 
-        for i in range(1, len(col_funs)):
-            new_inp_b = InputBox(self, self.col_tab.interior,
-                                 input_name(col_funs[i]),
-                                 input_osc(col_funs[i]))
-            new_inp_b.topframe.grid(row=(4 + (i - 1) // 4), column=((i - 1) % 4))
-            self.inputs.append(new_inp_b)
-            self.fun_to_inp[new_inp_b.osc_command] = new_inp_b
+    def add_key(self, key):
+        key_row = ttk.Frame(self.key_fill_row)
+        key_label = ttk.Label(key_row, text=key, width=10)
+        key_sel_var = tk.BooleanVar()
+        key_checkbox = ttk.Checkbutton(key_row, variable=key_sel_var, takefocus=False)
+        key_vals_var = tk.StringVar()
+        key_vals_label = ttk.Label(key_row, textvariable=key_vals_var)
+        key_label.pack(side=tk.LEFT)
+        key_checkbox.pack(side=tk.LEFT)
+        key_vals_label.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        key_row.pack(side=tk.TOP, anchor='w', expand=True, fill=tk.X)
 
-        # per layer control
-        for l in range(C.NO_LAYERS):
-            cur_r = -1
-            cur_c = 0
-            for i in range(len(layer_funs)):
-                if layer_funs[i][-1] == "#":
-                    for c_i in range(C.NO_Q):
-                        if (cur_c % 4) == 0:
-                            cur_r += 1
-                        new_inp_b = InputBox(self, self.layer_tabs[l].interior,
-                                             input_name(layer_funs[i], l, c_i),
-                                             input_osc(layer_funs[i], l, c_i))
-                        new_inp_b.topframe.grid(row=cur_r, column=cur_c)
-                        self.inputs.append(new_inp_b)
-                        self.fun_to_inp[new_inp_b.osc_command] = new_inp_b
-                        cur_c = (cur_c + 1) % 4
-                else:
-                    new_inp_b = InputBox(self, self.layer_tabs[l].interior,
-                                         input_name(layer_funs[i], l),
-                                         input_osc(layer_funs[i], l))
-                    new_inp_b.topframe.grid(row=cur_r, column=cur_c)
-                    if new_inp_b.name.split('/')[0] == self.inputs[-1].name.split('/')[0]:
-                        cur_c = (cur_c + 1) % 4
-                        if cur_c == 0:
-                            cur_r += 1
-                    else:
-                        cur_r += 1
-                        cur_c = 0
-                    self.inputs.append(new_inp_b)
-                    self.fun_to_inp[new_inp_b.osc_command] = new_inp_b
+        self.key_to_row[key] = [key_row, key_sel_var, key_vals_var]
 
-        # tester
-        self.testbox = TestBox(self)
+    def drop_key(self, key):
+        if key in self.key_to_row:
+            self.key_to_row[key][0].pack_forget()
+            del self.key_to_row[key]
 
-        # pack it
+    def update_vals(self, *args):
+        updates = self.midi_int.midi_classify()
+        if updates is not None:
+            for k, v in updates:
+                self.update_key_vals(k, v)
 
-        self.configbook.add(self.col_tab.frame, text='collections')
-        for i in range(C.NO_LAYERS):
-            self.configbook.add(self.layer_tabs[i].frame, text='layer{}'.format(i))
-        self.configbook.pack(expand=True, fill=tk.BOTH)
-        self.configframe.pack(side=tk.LEFT, expand=True, fill=tk.BOTH)
-        self.deviceframe.pack(side=tk.LEFT, anchor=tk.NE)
+    def update_key_vals(self, key, vals):
+        if key in self.key_to_row:
+            self.key_to_row[key][-1].set(str(vals))
 
-        self.mainframe.pack()
+    def get_chosen_keys(self):
+        tor = []
+        for k, vs in self.key_to_row.items():
+            if vs[1].get():
+                tor.append(k)
+        return tor
 
-        self.start()
-        self.root.protocol("WM_DELETE_WINDOW", self.stop)
+    def unselect_all(self):
+        for k, vs in self.key_to_row.items():
+            vs[1].set(False)
 
-    def start(self):
-        self.backend.osc_server.map_unique('/midi', self.backend.midi_controller.start_mapping())
+    # overlay related
 
-        # load
-        try_to_load = self.backend.db.file_ops.load_midi()
-        if try_to_load is not None:
-            for key_line in try_to_load:
-                if key_line[2] in self.fun_to_inp:
-                    self.fun_to_inp[key_line[2]].value.set(key_line[0])
-                    self.fun_to_inp[key_line[2]].keytype.set(key_line[1])
+    def hovered(self):
+        hc = self.hovered_cmd
+        if hc is not None and hc in self.midi_int.name_to_cmd:
+            self.cmd_text_var.set(hc)
+            self.desc_text_var.set(self.midi_int.name_to_cmd[hc]['desc'])
 
-    def stop(self):
-        # generate midi save file
-        # map /midi to osc2midi
-        savedata = []
-        for inp in self.inputs:
-            tor = inp.gen_save_line()
-            if tor is not None:
-                savedata += [tor]
-        self.backend.db.file_ops.save_midi(savedata)
-        self.backend.map_midi(savedata)
+    def selected(self):
+        sc = self.selected_cmd
+        if sc is not None and sc in self.midi_int.name_to_cmd:
+            saved = self.midi_int.name_to_cmd[sc]['midi_keys']
+            cur_inp = self.cur_input_name
+            self.unselect_all()
+            self.reset_sens_val()
+            if cur_inp is not None and cur_inp in saved:
+                k_type, inv = saved[cur_inp]['type'], saved[cur_inp]['invert']
+                keys = saved[cur_inp]['keys']
+                key_text = ', '.join(keys)
+                self.choose_type.set(k_type)
+                self.invert_type.set(inv)
+                self.keys_text_var.set(key_text)
+                return
+
+        self.choose_type.set('----')
+        self.invert_type.set(False)
+        self.keys_text_var.set('')
+
+    def unhovered(self):
+        sc = self.selected_cmd
+        if sc is not None and sc in self.midi_int.name_to_cmd:
+            self.cmd_text_var.set(sc)
+            self.desc_text_var.set(self.midi_int.name_to_cmd[sc]['desc'])
+        else:
+            self.cmd_text_var.set('')
+            self.desc_text_var.set('')
+
+    # helpers
+
+    @property
+    def cur_input_name(self):
+        inp = self.midi_choice.get()
+        if inp != 'None':
+            return inp
+
+    def reset_sens_val(self):
+        sc = self.selected_cmd
+
+        # default
+        self.factor_var.set('----')
+        self.factor_entry.config(state='disabled')
+
+        if sc is None:
+            return
+
+        sens_factor = self.midi_int.name_to_cmd[sc]['factor']
+        # if it has a factor
+        if sens_factor is not None:
+            cur_inp = self.cur_input_name
+            saved = self.midi_int.name_to_cmd[sc]['midi_keys']
+            # check if it has a saved factor value
+            if cur_inp is not None and cur_inp in saved:
+                saved_sens_factor = saved[cur_inp]['factor']
+                if saved_sens_factor is not None:
+                    sens_factor[0] = saved_sens_factor
+            if not sens_factor[1]:
+                self.factor_entry.config(state='normal')
+            self.factor_var.set(sens_factor[0])
+
+    def close(self):
+        if self.overlay is not None:
+            self.overlay.close()
         self.root.destroy()
+        # pp.pprint(self.midi_int.gen_savedata())
+        self.parent.magi.save_midi()
+        self.parent.midi_config_gui = None
+        # redo topmost setting
         self.parent.root.call('wm', 'attributes', '.', '-topmost', str(int(self.parent.on_top_toggle.get())))
 
 
-class ScrollTab():
-    def __init__(self, parent):
-        self.frame = ttk.Frame(parent)
-        self.vsb = ttk.Scrollbar(self.frame, orient='vertical')
-        self.vsb.pack(fill=tk.Y, side=tk.RIGHT, expand=False)
-        self.canvas = tk.Canvas(self.frame, bd=0, highlightthickness=0,
-                                yscrollcommand=self.vsb.set, height=250)
-        self.canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
-        self.vsb.config(command=self.canvas.yview)
-
-        # reset the view
-        self.canvas.xview_moveto(0)
-        self.canvas.yview_moveto(0)
-
-        # create a frame inside the canvas which will be scrolled with it
-        self.interior = ttk.Frame(self.canvas)
-        self.interior_id = self.canvas.create_window(0, 0, window=self.interior,
-                                                     anchor=tk.NW)
-
-        # track changes to the canvas and frame width and sync them,
-        # also updating the scrollbar
-        def _configure_interior(event):
-            # update the scrollbars to match the size of the inner frame
-            size = (self.interior.winfo_reqwidth(), self.interior.winfo_reqheight())
-            self.canvas.config(scrollregion="0 0 %s %s" % size)
-            if self.interior.winfo_reqwidth() != self.canvas.winfo_width():
-                # update the canvas's width to fit the inner frame
-                self.canvas.config(width=self.interior.winfo_reqwidth())
-        self.interior.bind('<Configure>', _configure_interior)
-
-        def _configure_canvas(event):
-            if self.interior.winfo_reqwidth() != self.canvas.winfo_width():
-                # update the inner frame's width to fill the canvas
-                self.canvas.itemconfigure(self.interior_id, width=self.canvas.winfo_width())
-        self.canvas.bind('<Configure>', _configure_canvas)
-
-
-class InputBox:
-
-    def __init__(self, parent, frame, input_name, osc_command):
-        """
-        box that has desc & input for midi bind
-        """
+class MidiOverlay:
+    def __init__(self, parent, base_gui):
         self.parent = parent
-        self.name = input_name
-        self.value, self.keytype = tk.StringVar(), tk.StringVar()
-        self.value.set(blank_midi_key), self.keytype.set(blank_midi_type)
-        self.osc_command = osc_command
+        self.base_gui = base_gui
+        self.last_pos = ""
+        self.offsets = [0, 0]
+        self.spacing = 1
+        self.base_coords = [0, 0]
+        self.geo_regex = re.compile(r'(\d+)x(\d+)\+(\-?\d+)\+(-?\d+)')
 
-        self.topframe = ttk.Frame(frame, borderwidth=1, relief=tk.SUNKEN, padding='2')
-        self.bottom_frame = ttk.Frame(self.topframe)
-        self.label = ttk.Label(self.topframe, text=self.name, relief=tk.RAISED, width=20)
-        self.valuelabel = ttk.Label(self.bottom_frame, textvariable=self.value, relief=tk.GROOVE, width=10)
-        type_opts = ['togl', 'knob', 'sldr']
-        self.typeselect = ttk.OptionMenu(self.bottom_frame, self.keytype, blank_midi_type, *type_opts)
-        self.typeselect.config(width=4)
-        self.label.pack(side=tk.TOP)
-        self.bottom_frame.pack(side=tk.TOP)
-        self.valuelabel.pack(side=tk.LEFT)
-        self.typeselect.pack(side=tk.LEFT)
+        self.wname_to_widget = {}
+        self.wname_to_rect = {}
 
-        def id_midi(*args):
-            res = self.parent.backend.midi_controller.id_midi()
-            if not res:
-                return
-            self.value.set(res[0])
-            self.typeselect['menu'].delete(0, tk.END)
-            if len(res[1]) < 3:
-                self.keytype.set(type_opts[0])
+        self.root = tk.Toplevel()
+        self.canvas = tk.Canvas(self.root, bg="black")
+        self.canvas.pack()
+
+        self.root.wm_attributes("-topmost", True)
+        self.root.wm_attributes("-transparentcolor", "black")
+        self.root.attributes('-alpha', 0.5)
+        self.root.overrideredirect(True)
+
+        self.recursive_buildup()
+
+        self.base_gui.root.bind('<Configure>', self.base_moved)
+
+        self.base_moved()
+
+    # helpers
+
+    def recursive_buildup(self, start_el=None):
+        if start_el is None:
+            start_el = self.base_gui.root
+        for c in start_el.winfo_children():
+            if c.winfo_name() in self.parent.midi_int.all_wnames:
+                self.wname_to_widget[c.winfo_name()] = c
+                # print('found', c.winfo_name())
+            self.recursive_buildup(c)
+
+    def close(self):
+        self.base_gui.root.unbind('<Configure>')
+        self.root.destroy()
+
+    # draw funs
+
+    def draw_everything(self):
+        self.canvas.delete("all")
+        for k in self.wname_to_widget:
+            # need to do multiple items
+            if k in self.parent.midi_int.wname_to_names:
+                self.draw_multiple_widgets(self.parent.midi_int.wname_to_names[k], k)
             else:
-                for type_opt in type_opts[1:]:
-                    self.typeselect['menu'].add_command(label=type_opt, command=tk._setit(self.keytype, type_opt))
+                self.draw_single_widget(self.wname_to_widget[k], k)
+        self.canvas.addtag_all('overlay')
+        self.create_binds()
 
-        def copy_midi(*args):
-            self.value.set(self.parent.testbox.tested_inp.get())
-            self.typeselect['menu'].delete(0, tk.END)
-            if len(self.parent.testbox.tested_inp_ns.get().split(',')) < 3:
-                self.keytype.set(type_opts[0])
+    def recolor_everything(self):
+        for k, r in self.wname_to_rect.items():
+            if k != self.parent.selected_cmd:
+                self.canvas.itemconfig(r, fill=self.get_widget_color(k))
+
+    def get_widget_color(self, w_name):
+        color_get = 'empty'
+        if w_name is not None and w_name in self.parent.midi_int.name_to_cmd:
+            if self.parent.cur_input_name in self.parent.midi_int.name_to_cmd[w_name]['midi_keys']:
+                color_get = 'set'
+        return C.CURRENT_THEME.midi_setting_colors[color_get]
+
+    def draw_widget(self, coords, w_name, s=0):
+        [x, y, w, h] = coords
+        if w_name in self.parent.midi_int.double_width_pls:
+            w *= 2
+        x1, y1 = x - self.base_coords[0] + s, y - self.base_coords[1] + s
+        x2, y2 = x1 + w - 2 * s, y1 + h - 2 * s
+        # check fill
+        self.wname_to_rect[w_name] = self.canvas.create_rectangle(x1, y1, x2, y2, tag=w_name,
+                                                                  fill=self.get_widget_color(w_name))
+
+    def draw_single_widget(self, w, w_name):
+        # give a tag to fake square that corresponds to midi's cmd_name
+        x, y, width, height = w.winfo_rootx(), w.winfo_rooty(), w.winfo_width(), w.winfo_height()
+        self.draw_widget([x, y, width, height], w_name)
+
+    def draw_multiple_widgets(self, ws, w_key):
+        top_w = self.wname_to_widget[w_key]
+        bx, by, tw, th = top_w.winfo_rootx(), top_w.winfo_rooty(), top_w.winfo_width(), top_w.winfo_height()
+        # determine how to split, i only deal with 2 or 4..
+        n = len(ws)
+        if tw > th:
+            if n > 3:
+                # sideways then vertical
+                tot_c = n // 2
+                w, h = tw // 2, th // tot_c
+                for i, wn in enumerate(ws):
+                    r, c = i // 2, i % 2
+                    x, y = bx + (c * w), by + (r * h)
+                    self.draw_widget([x, y, w, h], wn, self.spacing)
             else:
-                for type_opt in type_opts:
-                    self.typeselect['menu'].add_command(label=type_opt, command=tk._setit(self.keytype, type_opt))
-
-        def clear_midi(*args):
-            self.value.set(blank_midi_key), self.keytype.set(blank_midi_type)
-            self.typeselect['menu'].delete(0, tk.END)
-            for type_opt in type_opts:
-                self.typeselect['menu'].add_command(label=type_opt, command=tk._setit(self.keytype, type_opt))
-
-        self.label.bind("<ButtonPress-1>", id_midi)
-        self.label.bind("<ButtonPress-2>", copy_midi)
-        self.label.bind("<ButtonPress-3>", clear_midi)
-
-    def gen_save_line(self):
-        key, keytype = self.value.get(), self.keytype.get()
-        if key == blank_midi_key or keytype == blank_midi_type:
-            return
+                # horizontal all the way
+                w = tw / n
+                for i, wn in enumerate(ws):
+                    x = bx + (i * w)
+                    self.draw_widget([x, by, w, th], wn, self.spacing)
         else:
-            return (key, keytype, self.osc_command)
+            # vertical all the way
+            h = th / n
+            for i, wn in enumerate(ws):
+                y = by + (i * h)
+                self.draw_widget([bx, y, tw, h], wn, self.spacing)
+
+    # events bindings
+
+    def create_binds(self):
+        self.canvas.tag_bind("overlay", "<Enter>", self.hover_check)
+        self.canvas.tag_bind("overlay", "<Leave>", self.hover_restore)
+        self.canvas.bind("<ButtonPress-1>", self.select_bind)
+
+    def base_moved(self, *args):
+        base_pos = self.base_gui.root.geometry()
+        if self.last_pos != base_pos:
+            new_dims = list(map(int, self.geo_regex.match(base_pos).groups()))
+            self.base_coords = new_dims[2:]
+            # index of first plus, before this is width/height
+            wi = base_pos.index('+')
+            if base_pos[:wi] != self.last_pos[:wi]:
+                self.offsets = [self.base_gui.root.winfo_rootx() - new_dims[2],
+                                self.base_gui.root.winfo_rooty() - new_dims[3]]
+                self.canvas.configure(width=new_dims[0] + self.offsets[0],
+                                      height=new_dims[1] + self.offsets[1])
+                # redraw everything..
+                self.draw_everything()
+            self.root.geometry('+{}+{}'.format(*new_dims[2:]))
+            self.parent.root.geometry('+{}+{}'.format(self.base_gui.root.winfo_rootx() + new_dims[0],
+                                                      self.base_gui.root.winfo_rooty() - self.offsets[1]))
+            self.last_pos = base_pos
+
+    def hover_check(self, event):
+        item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y), halo=5)[0]
+        self.parent.hovered_cmd = self.canvas.gettags(item)[0]
+        self.parent.hovered()
+
+    def hover_restore(self, event):
+        self.parent.hovered_cmd = None
+        self.parent.unhovered()
+
+    def select_bind(self, event):
+        scmd = self.parent.selected_cmd
+        if scmd in self.wname_to_rect:
+            # restore color
+            self.canvas.itemconfig(self.wname_to_rect[scmd],
+                                   fill=self.get_widget_color(scmd))
+        item = self.canvas.find_closest(self.canvas.canvasx(event.x), self.canvas.canvasy(event.y), halo=5)[0]
+        self.parent.selected_cmd = self.canvas.gettags(item)[0]
+        self.parent.selected()
+        self.canvas.itemconfig(self.wname_to_rect[self.parent.selected_cmd],
+                               fill=C.CURRENT_THEME.midi_setting_colors['selected'])
 
 
-class TestBox:
-    def __init__(self, parent):
-        self.parent = parent
+if __name__ == '__main__':
 
-        self.tested_inp, self.tested_inp_ns = tk.StringVar(), tk.StringVar()
-        self.tested_inp.set(blank_midi_key)
+    rootwin = tk.Tk()
+    rootwin.title('midi config')
 
-        self.topframe = self.parent.deviceframe
-        self.testframe = ttk.Frame(self.topframe)
-
-        self.testframe.grid_rowconfigure(0, weight=1)
-        self.testframe.grid_columnconfigure(0, weight=1)
-
-        self.inputtest = ttk.LabelFrame(self.testframe, text='test input')
-        self.inputtestlabel = ttk.Label(self.inputtest, textvariable=self.tested_inp)
-        self.inputtestlist = ttk.Entry(self.inputtest, textvariable=self.tested_inp_ns)
-
-        def test_inp(*args):
-            res = self.parent.backend.midi_controller.id_midi()
-            if res:
-                self.tested_inp.set(res[0])
-                self.inputtestlist.delete(0, tk.END)
-                self.inputtestlist.insert(tk.END, str(res[1]))
-
-        def clear_inp(*args):
-            self.tested_inp.set('[-,-]')
-            self.inputtestlist.delete(0, tk.END)
-
-        self.inputtestbut = ttk.Button(self.inputtest, text='id midi', command=test_inp)
-        self.inputtestbut.bind("<ButtonPress-3>", clear_inp)
-
-        self.inputtestbut.pack(side=tk.TOP)
-        self.inputtestlabel.pack(side=tk.LEFT)
-        self.inputtestlist.pack(side=tk.LEFT)
-
-        self.inputtest.grid(row=0, column=0, sticky='news')
-
-        self.testframe.pack()
+    test_config = MidiConfig(rootwin)
+    rootwin.mainloop()
