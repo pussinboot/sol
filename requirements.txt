@@ -1,4 +1,4 @@
-'python-osc >= 1.6',
-'lxml >= 3.6.0',
-'Pillow >= 4.1.0',
-'python-rtmidi >= 1.1.0'
+python-osc >= 1.6.6
+lxml >= 3.6.0
+Pillow >= 4.1.0
+python-rtmidi >= 1.1.0

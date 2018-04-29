@@ -125,13 +125,9 @@ __pycache__
 .coverage
 *.swp
 
-# my own
-*.ipynb????????
-urwid/
-pythonosc/
-pygame/
 sol/sol/scrot
 scrot/
 savedata/
 scrot_to_move/
 sol_dev.sublime-workspace
+venv/
