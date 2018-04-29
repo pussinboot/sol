@@ -9,6 +9,7 @@ import bisect
 from sol.config import GlobalConfig
 C = GlobalConfig()
 
+
 class ClipControl:
     def __init__(self, root, backend, layer):
 
@@ -200,7 +201,6 @@ class ClipControl:
         self.deleting_mode = not self.deleting_mode
         # maybe update gui somehow
         self.update_loop(self.cur_clip)
-
 
     # update dispatch
 
@@ -443,8 +443,6 @@ class ClipControl:
         self.control_sens_frame.grid(row=1, column=1, rowspan=4)
         self.control_spd_frame.grid(row=1, column=2, rowspan=4)
 
-
-
         # ctrl buts
         ctrl_but_pad = '12 1 12 1'
         playbut = ttk.Button(self.control_bottom_frame, text=">", width=2, padding=ctrl_but_pad, takefocus=False,
@@ -680,10 +678,10 @@ class SwitchButton:
         self.send_cmd = None
         if name is not None:
             self.but_1 = ttk.Label(frame, text=text1, borderwidth=4, name=name,
-                               width=min_width, anchor='e', style='fakebut.TLabel')
+                                   width=min_width, anchor='e', style='fakebut.TLabel')
         else:
             self.but_1 = ttk.Label(frame, text=text1, borderwidth=4,
-                               width=min_width, anchor='e', style='fakebut.TLabel')
+                                   width=min_width, anchor='e', style='fakebut.TLabel')
         self.but_1.bind('<Button-1>', lambda e: self.switch(False))
         self.but_2 = ttk.Label(frame, text=text2, borderwidth=4,
                                width=min_width, style='fakebut.TLabel')
@@ -843,7 +841,6 @@ class ProgressBar:
         self.canvas.tag_bind("bg", "<B1-Motion>", self.find_mouse)
         self.canvas.tag_bind("bg", "<ButtonRelease-1>", self.find_mouse)
 
-
         # cue points
         self.canvas.tag_bind("qp_line", "<ButtonPress-1>", self.find_nearest)
         self.canvas.tag_bind("qp_label", "<ButtonPress-1>", self.find_nearest)
@@ -892,7 +889,7 @@ class ProgressBar:
             for i in range(C.NO_Q):
                 self.remove_qp(i)
         else:
-            for i, qp in enumerate(qp_data):
+            for i, qp in enumerate(qp_data[:len(qp_on_off)]):
                 if qp_on_off[i]:
                     self.add_qp(qp, i)
                 else:
@@ -956,7 +953,6 @@ class ProgressBar:
                                lpd[0], dy * lpd[1],
                                lpd[2], dy * lpd[3])
 
-
     def add_lp(self, i, lpd):
         if None in lpd[:3]:
             self.remove_lp(i)
@@ -1003,7 +999,6 @@ class ProgressBar:
             lbbd[nei[j]][3] = new_y1 + 1
         # return the max height & nei
         return (new_y1 + 1, nei)
-
 
     # # # event actions
 
@@ -1187,7 +1182,6 @@ if __name__ == '__main__':
             self.backend = backend
             self.clip_controls = [None] * C.NO_LAYERS
             C.themer.setup(C.CURRENT_THEME, self.root)
-
 
         def update_clip(self, layer, clip):
             # print('update?')
